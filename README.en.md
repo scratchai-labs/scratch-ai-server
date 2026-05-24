@@ -1,6 +1,7 @@
 # Scratch AI Coach
 
 `Scratch AI Coach` server is the split-out classroom backend repo. It focuses on the teaching workflow built with `FastAPI + Vue`: teacher auth, student accounts, releases, progress reporting, and AI hint APIs.
+Cross-repo docs, architecture notes, and planning now live in [`scratch-ai-docs`](https://github.com/scratchai-labs/scratch-ai-docs/blob/main/README.en.md).
 
 ## Why This Project Exists
 
@@ -60,7 +61,7 @@ npm run server:dev
 
 - Project structure: [`docs/project-structure.en.md`](docs/project-structure.en.md)
 - Server development doc (Chinese): [`docs/server-development.zh-CN.md`](docs/server-development.zh-CN.md)
-- Roadmap: [`docs/roadmap.en.md`](docs/roadmap.en.md)
+- Cross-repo docs and planning: [`scratch-ai-docs`](https://github.com/scratchai-labs/scratch-ai-docs/blob/main/README.en.md)
 - Engineering docs index: [`docs/README.zh-CN.md`](docs/README.zh-CN.md)
 - Server API: `apps/server-api`
 - Teacher dashboard: `apps/server-web`
@@ -76,13 +77,8 @@ Contributions are welcome through issues, pull requests, docs improvements, and 
 
 ## Future Direction
 
-The direction from here includes:
-
-- a fuller classroom workflow
-- stronger deployment and migration discipline
-- cleaner protocol boundaries with the networked desktop client
-
-See [`docs/roadmap.en.md`](docs/roadmap.en.md) for the current direction.
+Cross-repo planning now lives in [`scratch-ai-docs`](https://github.com/scratchai-labs/scratch-ai-docs/blob/main/README.en.md).
+This repository stays focused on the server API, the teacher console, and the networked classroom flow.
 
 ## License
 

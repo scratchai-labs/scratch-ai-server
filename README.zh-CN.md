@@ -1,6 +1,7 @@
 # Scratch AI 教练
 
 `Scratch AI 教练` 服务器端仓负责教学场景下的联机链路：基于 `Python FastAPI + Vue` 维护老师后台、学生账号、发布单、进度上报和 AI 提示接口。
+跨仓库文档、总体架构和路线图已迁到 [`scratch-ai-docs`](https://github.com/scratchai-labs/scratch-ai-docs) 统一维护。
 
 ## 为什么做这个项目
 
@@ -60,7 +61,7 @@ npm run server:dev
 
 - 仓库结构：[`docs/project-structure.zh-CN.md`](docs/project-structure.zh-CN.md)
 - 服务器端开发说明：[`docs/server-development.zh-CN.md`](docs/server-development.zh-CN.md)
-- 路线图：[`docs/roadmap.zh-CN.md`](docs/roadmap.zh-CN.md)
+- 跨仓库文档与规划：[`scratch-ai-docs`](https://github.com/scratchai-labs/scratch-ai-docs)
 - 工程文档索引：[`docs/README.zh-CN.md`](docs/README.zh-CN.md)
 - 服务器 API：`apps/server-api`
 - 教师后台：`apps/server-web`
@@ -76,13 +77,8 @@ npm run server:dev
 
 ## 未来方向
 
-未来希望在这个项目基础上继续推进：
-
-- 更完整的课堂工作流
-- 更稳的服务端部署与数据迁移能力
-- 与联机桌面客户端更清晰的协议边界
-
-具体节奏见 [`docs/roadmap.zh-CN.md`](docs/roadmap.zh-CN.md)。
+跨仓库层面的总体规划已经转到 [`scratch-ai-docs`](https://github.com/scratchai-labs/scratch-ai-docs) 统一维护。
+当前仓主要聚焦服务器 API、教师后台和联机教学链路。
 
 ## 许可证
 

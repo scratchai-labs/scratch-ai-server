@@ -12,6 +12,7 @@ An open source Scratch teaching server workspace built around the `FastAPI + Vue
 
 - 当前主线只维护 **服务器端教学版**
 - 服务器端技术栈为 `Python FastAPI + Vue`
+- 跨仓库文档与总体规划见 `scratch-ai-docs`
 
 ## Quick Links
 
@@ -21,7 +22,7 @@ An open source Scratch teaching server workspace built around the `FastAPI + Vue
 - 行为准则：[`CODE_OF_CONDUCT.zh-CN.md`](CODE_OF_CONDUCT.zh-CN.md) / [`CODE_OF_CONDUCT.en.md`](CODE_OF_CONDUCT.en.md)
 - 安全说明：[`SECURITY.zh-CN.md`](SECURITY.zh-CN.md) / [`SECURITY.en.md`](SECURITY.en.md)
 - 支持与提问：[`SUPPORT.zh-CN.md`](SUPPORT.zh-CN.md) / [`SUPPORT.en.md`](SUPPORT.en.md)
-- 路线图：[`docs/roadmap.zh-CN.md`](docs/roadmap.zh-CN.md) / [`docs/roadmap.en.md`](docs/roadmap.en.md)
+- 跨仓库文档与规划 / Cross-repo docs and planning: [`scratch-ai-docs`](https://github.com/scratchai-labs/scratch-ai-docs)
 - 工程结构：[`docs/project-structure.zh-CN.md`](docs/project-structure.zh-CN.md) / [`docs/project-structure.en.md`](docs/project-structure.en.md)
 
 ## License

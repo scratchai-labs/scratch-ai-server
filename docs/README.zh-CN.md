@@ -10,7 +10,7 @@
 - 项目总览：[`../README.zh-CN.md`](../README.zh-CN.md)
 - English overview: [`../README.en.md`](../README.en.md)
 - 贡献指南：[`../CONTRIBUTING.zh-CN.md`](../CONTRIBUTING.zh-CN.md)
-- 路线图：[`./roadmap.zh-CN.md`](./roadmap.zh-CN.md)
+- 跨仓库文档与规划：[`scratch-ai-docs`](https://github.com/scratchai-labs/scratch-ai-docs)
 - 仓库结构：[`./project-structure.zh-CN.md`](./project-structure.zh-CN.md)
 
 ## 工程文档
