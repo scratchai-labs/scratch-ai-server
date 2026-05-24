@@ -24,6 +24,8 @@ An open source Scratch teaching server workspace built around the `FastAPI + Vue
 - 支持与提问：[`SUPPORT.zh-CN.md`](SUPPORT.zh-CN.md) / [`SUPPORT.en.md`](SUPPORT.en.md)
 - 跨仓库文档与规划 / Cross-repo docs and planning: [`scratch-ai-docs`](https://github.com/scratchai-labs/scratch-ai-docs)
 - 工程结构：[`docs/project-structure.zh-CN.md`](docs/project-structure.zh-CN.md) / [`docs/project-structure.en.md`](docs/project-structure.en.md)
+- 开发工作流：[`scratch-ai-docs/docs/development-workflow.zh-CN.md`](https://github.com/scratchai-labs/scratch-ai-docs/blob/main/docs/development-workflow.zh-CN.md)
+- 文档归属说明：[`scratch-ai-docs/docs/documentation-guide.zh-CN.md`](https://github.com/scratchai-labs/scratch-ai-docs/blob/main/docs/documentation-guide.zh-CN.md)
 
 ## License
 

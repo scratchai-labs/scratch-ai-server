@@ -62,6 +62,8 @@ npm run server:dev
 - Project structure: [`docs/project-structure.en.md`](docs/project-structure.en.md)
 - Server development doc (Chinese): [`docs/server-development.zh-CN.md`](docs/server-development.zh-CN.md)
 - Cross-repo docs and planning: [`scratch-ai-docs`](https://github.com/scratchai-labs/scratch-ai-docs/blob/main/README.en.md)
+- Development workflow: [`scratch-ai-docs/docs/development-workflow.zh-CN.md`](https://github.com/scratchai-labs/scratch-ai-docs/blob/main/docs/development-workflow.zh-CN.md)
+- Documentation guide: [`scratch-ai-docs/docs/documentation-guide.zh-CN.md`](https://github.com/scratchai-labs/scratch-ai-docs/blob/main/docs/documentation-guide.zh-CN.md)
 - Engineering docs index: [`docs/README.zh-CN.md`](docs/README.zh-CN.md)
 - Server API: `apps/server-api`
 - Teacher dashboard: `apps/server-web`
