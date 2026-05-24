@@ -34,7 +34,7 @@ See [`docs/server-development.zh-CN.md`](docs/server-development.zh-CN.md) for t
 ## Local Development
 
 ```bash
-git clone git@github.com:tesths/scratch-ai-server.git
+git clone git@github.com:scratchai-labs/scratch-ai-server.git
 cd scratch-ai-server
 npm ci
 npm run test

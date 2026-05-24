@@ -3,13 +3,13 @@
   "private": true,
   "description": "Open source workspace for the Scratch AI teaching server and teacher dashboard",
   "license": "AGPL-3.0",
-  "homepage": "https://github.com/tesths/scratch-ai-server#readme",
+  "homepage": "https://github.com/scratchai-labs/scratch-ai-server#readme",
   "bugs": {
-    "url": "https://github.com/tesths/scratch-ai-server/issues"
+    "url": "https://github.com/scratchai-labs/scratch-ai-server/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tesths/scratch-ai-server.git"
+    "url": "git+https://github.com/scratchai-labs/scratch-ai-server.git"
   },
   "workspaces": [
     "apps/server-web"
