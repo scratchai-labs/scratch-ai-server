@@ -59,6 +59,20 @@ func TestTeacherLoginRejectsInvalidPassword(t *testing.T) {
 	require.Equal(t, http.StatusUnauthorized, loginRes.Code)
 }
 
+func TestTeacherAuthRejectsMissingRequiredFields(t *testing.T) {
+	handler := newTestHandler()
+
+	registerRes := performJSONRequest(t, handler, http.MethodPost, "/api/teacher/register", map[string]any{
+		"username": "teacher-missing-password",
+	})
+	require.Equal(t, http.StatusBadRequest, registerRes.Code)
+
+	loginRes := performJSONRequest(t, handler, http.MethodPost, "/api/teacher/login", map[string]any{
+		"username": "teacher-missing-password",
+	})
+	require.Equal(t, http.StatusBadRequest, loginRes.Code)
+}
+
 func TestTeacherRouteRequiresBearerToken(t *testing.T) {
 	handler := newTestHandler()
 

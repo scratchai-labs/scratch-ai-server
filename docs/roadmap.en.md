@@ -4,7 +4,7 @@
 
 The mainline is now narrowed to the server teaching edition:
 
-- maintain the `Go API + Teacher Web` stack
+- maintain the `Gin`-based `Go` backend plus the Teacher Web app
 - keep the teacher, student, assignment, hint, and dashboard flow testable and easy to integrate
 - keep the repo easy to clone, test, build, and contribute to
 

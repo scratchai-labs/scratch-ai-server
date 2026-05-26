@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	serverapidocs "github.com/scratchai-labs/scratch-ai-server/apps/server-api/docs"
 	"github.com/scratchai-labs/scratch-ai-server/apps/server-api/internal/assignment"
 	"github.com/scratchai-labs/scratch-ai-server/apps/server-api/internal/auth"
 	"github.com/scratchai-labs/scratch-ai-server/apps/server-api/internal/config"
@@ -13,6 +14,8 @@ import (
 	"github.com/scratchai-labs/scratch-ai-server/apps/server-api/internal/sb3"
 	"github.com/scratchai-labs/scratch-ai-server/apps/server-api/internal/store/memory"
 	"github.com/scratchai-labs/scratch-ai-server/apps/server-api/internal/student"
+	swaggerfiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 const teacherContextKey = "teacher"
@@ -48,7 +51,10 @@ func NewRouter(cfg config.Config) (http.Handler, error) {
 	engine.Use(gin.Recovery())
 	engine.Use(allowCORS())
 
+	serverapidocs.SwaggerInfo.BasePath = "/"
+
 	engine.GET("/health", handleHealth)
+	engine.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 	engine.POST("/api/teacher/register", authRoutes.handleTeacherRegister)
 	engine.POST("/api/teacher/login", authRoutes.handleTeacherLogin)
 	engine.POST("/api/student/login", studentRoutes.handleStudentLogin)
@@ -57,8 +63,8 @@ func NewRouter(cfg config.Config) (http.Handler, error) {
 	teacherGroup.Use(requireTeacher(authService))
 	teacherGroup.GET("/me", authRoutes.handleTeacherMe)
 	teacherGroup.POST("/logout", authRoutes.handleTeacherLogout)
-	teacherGroup.GET("/students", studentRoutes.handleTeacherStudents)
-	teacherGroup.POST("/students", studentRoutes.handleTeacherStudents)
+	teacherGroup.GET("/students", studentRoutes.handleTeacherStudentsList)
+	teacherGroup.POST("/students", studentRoutes.handleTeacherStudentCreate)
 	teacherGroup.POST("/students/batch", studentRoutes.handleTeacherStudentsBatch)
 	teacherGroup.POST("/students/:id/reset-password", studentRoutes.handleTeacherStudentPasswordReset)
 	teacherGroup.GET("/assignments", assignmentRoutes.handleTeacherAssignmentsList)

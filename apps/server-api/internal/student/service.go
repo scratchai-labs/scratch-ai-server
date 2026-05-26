@@ -13,19 +13,19 @@ import (
 )
 
 type BatchCreateInput struct {
-	Username        string `json:"username"`
-	DisplayName     string `json:"displayName"`
-	InitialPassword string `json:"initialPassword"`
+	Username        string `json:"username" binding:"required"`
+	DisplayName     string `json:"displayName" binding:"required"`
+	InitialPassword string `json:"initialPassword" binding:"required"`
 }
 
 type BatchCreateRequest struct {
-	Students []BatchCreateInput `json:"students"`
+	Students []BatchCreateInput `json:"students" binding:"required,min=1,dive"`
 }
 
 type LoginInput struct {
-	Username   string `json:"username"`
-	Password   string `json:"password"`
-	ClientType string `json:"clientType"`
+	Username   string `json:"username" binding:"required"`
+	Password   string `json:"password" binding:"required"`
+	ClientType string `json:"clientType" binding:"required"`
 }
 
 type BatchCreateResult struct {

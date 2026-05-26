@@ -1,0 +1,1494 @@
+basePath: /
+definitions:
+  assignment.AssignmentHintSummary:
+    properties:
+      createdAt:
+        type: string
+      hintText:
+        type: string
+      providerName:
+        type: string
+    type: object
+  assignment.AssignmentProgressSummary:
+    properties:
+      currentRoleName:
+        type: string
+      currentTarget:
+        type: string
+      reportedAt:
+        type: string
+      stepSummary:
+        type: string
+    type: object
+  assignment.AssignmentStudentItem:
+    properties:
+      displayName:
+        type: string
+      id:
+        type: integer
+      status:
+        type: string
+      username:
+        type: string
+    type: object
+  assignment.StudentAssignmentDetail:
+    properties:
+      analysisStatus:
+        type: string
+      blockCounts:
+        additionalProperties:
+          type: integer
+        type: object
+      broadcastMessages:
+        items:
+          type: string
+        type: array
+      categoryCounts:
+        additionalProperties:
+          type: integer
+        type: object
+      description:
+        type: string
+      extensions:
+        items:
+          type: string
+        type: array
+      goal:
+        type: string
+      id:
+        type: integer
+      latestHint:
+        $ref: '#/definitions/assignment.AssignmentHintSummary'
+      latestProgress:
+        $ref: '#/definitions/assignment.AssignmentProgressSummary'
+      listNames:
+        items:
+          type: string
+        type: array
+      roleNames:
+        items:
+          type: string
+        type: array
+      scriptCounts:
+        additionalProperties:
+          type: integer
+        type: object
+      status:
+        type: string
+      teachingPoints:
+        items:
+          type: string
+        type: array
+      title:
+        type: string
+      variableNames:
+        items:
+          type: string
+        type: array
+    type: object
+  assignment.StudentAssignmentItem:
+    properties:
+      analysisStatus:
+        type: string
+      blockCounts:
+        additionalProperties:
+          type: integer
+        type: object
+      broadcastMessages:
+        items:
+          type: string
+        type: array
+      categoryCounts:
+        additionalProperties:
+          type: integer
+        type: object
+      description:
+        type: string
+      extensions:
+        items:
+          type: string
+        type: array
+      goal:
+        type: string
+      id:
+        type: integer
+      listNames:
+        items:
+          type: string
+        type: array
+      roleNames:
+        items:
+          type: string
+        type: array
+      scriptCounts:
+        additionalProperties:
+          type: integer
+        type: object
+      status:
+        type: string
+      teachingPoints:
+        items:
+          type: string
+        type: array
+      title:
+        type: string
+      variableNames:
+        items:
+          type: string
+        type: array
+    type: object
+  assignment.TeacherAssignmentDetail:
+    properties:
+      analysisStatus:
+        type: string
+      assignedStudents:
+        items:
+          $ref: '#/definitions/assignment.AssignmentStudentItem'
+        type: array
+      blockCounts:
+        additionalProperties:
+          type: integer
+        type: object
+      broadcastMessages:
+        items:
+          type: string
+        type: array
+      categoryCounts:
+        additionalProperties:
+          type: integer
+        type: object
+      description:
+        type: string
+      extensions:
+        items:
+          type: string
+        type: array
+      goal:
+        type: string
+      id:
+        type: integer
+      listNames:
+        items:
+          type: string
+        type: array
+      roleNames:
+        items:
+          type: string
+        type: array
+      scriptCounts:
+        additionalProperties:
+          type: integer
+        type: object
+      status:
+        type: string
+      teachingPoints:
+        items:
+          type: string
+        type: array
+      title:
+        type: string
+      updatedAt:
+        type: string
+      variableNames:
+        items:
+          type: string
+        type: array
+    type: object
+  assignment.TeacherAssignmentItem:
+    properties:
+      analysisStatus:
+        type: string
+      description:
+        type: string
+      goal:
+        type: string
+      id:
+        type: integer
+      status:
+        type: string
+      studentCount:
+        type: integer
+      title:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  auth.Session:
+    properties:
+      teacherName:
+        type: string
+      token:
+        type: string
+    type: object
+  dashboard.LiveAssignmentResponse:
+    properties:
+      assignmentId:
+        type: integer
+      assignmentTitle:
+        type: string
+      students:
+        items:
+          $ref: '#/definitions/dashboard.StudentLiveItem'
+        type: array
+      updatedAt:
+        type: string
+    type: object
+  dashboard.StudentHistoryItem:
+    properties:
+      assignmentId:
+        type: integer
+      assignmentStatus:
+        type: string
+      assignmentTitle:
+        type: string
+      currentRoleName:
+        type: string
+      currentTarget:
+        type: string
+      hintCreatedAt:
+        type: string
+      hintProvider:
+        type: string
+      hintText:
+        type: string
+      reportedAt:
+        type: string
+      stepSummary:
+        type: string
+    type: object
+  dashboard.StudentHistoryResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/dashboard.StudentHistoryItem'
+        type: array
+      studentId:
+        type: integer
+      studentName:
+        type: string
+    type: object
+  dashboard.StudentLiveItem:
+    properties:
+      currentRoleName:
+        type: string
+      currentTarget:
+        type: string
+      lastHintAt:
+        type: string
+      lastHintText:
+        type: string
+      lastReportedAt:
+        type: string
+      status:
+        type: string
+      stepSummary:
+        type: string
+      studentId:
+        type: integer
+      studentName:
+        type: string
+    type: object
+  http.AssignmentAnalysisResponse:
+    properties:
+      analysisErrorMessage:
+        example: ""
+        type: string
+      analysisStatus:
+        example: ready
+        type: string
+      assignmentId:
+        example: 1
+        type: integer
+      blockCounts:
+        additionalProperties:
+          type: integer
+        type: object
+      broadcastMessages:
+        items:
+          type: string
+        type: array
+      categoryCounts:
+        additionalProperties:
+          type: integer
+        type: object
+      extensions:
+        items:
+          type: string
+        type: array
+      listNames:
+        items:
+          type: string
+        type: array
+      roleNames:
+        items:
+          type: string
+        type: array
+      scriptCounts:
+        additionalProperties:
+          type: integer
+        type: object
+      teachingPoints:
+        items:
+          type: string
+        type: array
+      variableNames:
+        items:
+          type: string
+        type: array
+    type: object
+  http.AssignmentStatusResponse:
+    properties:
+      analysisStatus:
+        example: ready
+        type: string
+      id:
+        example: 1
+        type: integer
+      status:
+        example: published
+        type: string
+      title:
+        example: Space Game
+        type: string
+    type: object
+  http.AssignmentStudentsResponse:
+    properties:
+      assignedCount:
+        example: 2
+        type: integer
+      assignmentId:
+        example: 1
+        type: integer
+      studentIds:
+        items:
+          type: integer
+        type: array
+    type: object
+  http.AssignmentUploadResponse:
+    properties:
+      analysisStatus:
+        example: pending
+        type: string
+      description:
+        example: 第一阶段任务
+        type: string
+      goal:
+        example: 让角色移动起来
+        type: string
+      id:
+        example: 1
+        type: integer
+      status:
+        example: draft
+        type: string
+      title:
+        example: Space Game
+        type: string
+    type: object
+  http.ErrorResponse:
+    properties:
+      error:
+        example: invalid request body
+        type: string
+    type: object
+  http.HintCreatedResponse:
+    properties:
+      assignmentId:
+        example: 1
+        type: integer
+      hintText:
+        example: 先把 Cat 的事件和移动积木串起来。
+        type: string
+      id:
+        example: 1
+        type: integer
+      providerName:
+        example: deepseek
+        type: string
+    type: object
+  http.ProgressCreatedResponse:
+    properties:
+      assignmentId:
+        example: 1
+        type: integer
+      currentTarget:
+        example: 让角色左右移动
+        type: string
+      id:
+        example: 1
+        type: integer
+      reportedAt:
+        example: "2026-05-26T12:00:00Z"
+        type: string
+      stepSummary:
+        example: 已经接上方向键事件
+        type: string
+    type: object
+  http.ProgressReportRequestDoc:
+    properties:
+      currentTarget:
+        example: 让 Cat 角色移动起来
+        type: string
+      localProjectHash:
+        example: hash-1
+        type: string
+      reportedAt:
+        example: "2026-05-26T12:00:00Z"
+        type: string
+      snapshot:
+        $ref: '#/definitions/http.ProgressSnapshotDoc'
+      stepSummary:
+        example: 已经把事件积木接上了
+        type: string
+    required:
+    - currentTarget
+    - stepSummary
+    type: object
+  http.ProgressRoleSnapshotDoc:
+    properties:
+      blocks:
+        items:
+          type: string
+        type: array
+      roleName:
+        example: Cat
+        type: string
+      roleType:
+        example: sprite
+        type: string
+    type: object
+  http.ProgressSnapshotDoc:
+    properties:
+      currentRoleName:
+        example: Cat
+        type: string
+      roles:
+        items:
+          $ref: '#/definitions/http.ProgressRoleSnapshotDoc'
+        type: array
+    type: object
+  http.StatusResponse:
+    properties:
+      status:
+        example: ok
+        type: string
+    type: object
+  http.StudentAssignmentsResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/assignment.StudentAssignmentItem'
+        type: array
+    type: object
+  http.StudentLoginRequestDoc:
+    properties:
+      clientType:
+        example: desktop
+        type: string
+      password:
+        example: abc12345
+        type: string
+      username:
+        example: student01
+        type: string
+    required:
+    - clientType
+    - password
+    - username
+    type: object
+  http.StudentMeResponse:
+    properties:
+      studentId:
+        example: 1
+        type: integer
+      studentName:
+        example: 小明
+        type: string
+      username:
+        example: student01
+        type: string
+    type: object
+  http.TeacherAssignmentsResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/assignment.TeacherAssignmentItem'
+        type: array
+    type: object
+  http.TeacherCredentialsRequestDoc:
+    properties:
+      password:
+        example: secret123
+        type: string
+      username:
+        example: teacher01
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  http.TeacherMeResponse:
+    properties:
+      teacherId:
+        example: 1
+        type: integer
+      teacherName:
+        example: teacher01
+        type: string
+    type: object
+  http.TeacherStudentsResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/student.StudentItem'
+        type: array
+    type: object
+  http.assignStudentsRequest:
+    properties:
+      studentIds:
+        items:
+          type: integer
+        minItems: 1
+        type: array
+    required:
+    - studentIds
+    type: object
+  http.healthResponse:
+    properties:
+      status:
+        type: string
+    type: object
+  http.resetPasswordRequest:
+    properties:
+      newPassword:
+        type: string
+    required:
+    - newPassword
+    type: object
+  student.BatchCreateInput:
+    properties:
+      displayName:
+        type: string
+      initialPassword:
+        type: string
+      username:
+        type: string
+    required:
+    - displayName
+    - initialPassword
+    - username
+    type: object
+  student.BatchCreateRequest:
+    properties:
+      students:
+        items:
+          $ref: '#/definitions/student.BatchCreateInput'
+        minItems: 1
+        type: array
+    required:
+    - students
+    type: object
+  student.BatchCreateResult:
+    properties:
+      conflicts:
+        items:
+          type: string
+        type: array
+      created:
+        items:
+          $ref: '#/definitions/student.StudentItem'
+        type: array
+    type: object
+  student.StudentItem:
+    properties:
+      createdAt:
+        type: string
+      displayName:
+        type: string
+      id:
+        type: integer
+      status:
+        type: string
+      username:
+        type: string
+    type: object
+  student.StudentSession:
+    properties:
+      studentName:
+        type: string
+      token:
+        type: string
+    type: object
+info:
+  contact: {}
+  description: OpenAPI contract for the Scratch AI teaching server.
+  title: Scratch AI Server API
+  version: "1.0"
+paths:
+  /api/student/assignments:
+    get:
+      description: List the assignments currently published and assigned to the authenticated
+        student.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.StudentAssignmentsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List student assignments
+      tags:
+      - student-assignments
+  /api/student/assignments/{id}:
+    get:
+      description: Read the assignment detail plus latest progress and hint summaries
+        for the authenticated student.
+      parameters:
+      - description: Assignment ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/assignment.StudentAssignmentDetail'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get student assignment detail
+      tags:
+      - student-assignments
+  /api/student/assignments/{id}/hints:
+    post:
+      description: Generate the next hint from assignment analysis plus the student's
+        latest reported progress.
+      parameters:
+      - description: Assignment ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/http.HintCreatedResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Request the next student hint
+      tags:
+      - student-assignments
+  /api/student/assignments/{id}/progress:
+    post:
+      consumes:
+      - application/json
+      description: Upload the latest structured Scratch progress snapshot for one
+        assigned assignment.
+      parameters:
+      - description: Assignment ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Progress payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/http.ProgressReportRequestDoc'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/http.ProgressCreatedResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Report student progress
+      tags:
+      - student-assignments
+  /api/student/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate a student from the desktop client and return a bearer
+        token.
+      parameters:
+      - description: Student login payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/http.StudentLoginRequestDoc'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/student.StudentSession'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      summary: Login as student
+      tags:
+      - student-auth
+  /api/student/logout:
+    post:
+      description: Invalidate the current student bearer token immediately.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.StatusResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Logout student
+      tags:
+      - student-auth
+  /api/student/me:
+    get:
+      description: Read the current authenticated student session details.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.StudentMeResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get current student profile
+      tags:
+      - student-auth
+  /api/teacher/assignments:
+    get:
+      description: List all assignments created by the current teacher.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.TeacherAssignmentsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List teacher assignments
+      tags:
+      - assignments
+    post:
+      consumes:
+      - multipart/form-data
+      description: Create an assignment by uploading a reference Scratch project and
+        queue analysis.
+      parameters:
+      - description: Assignment title
+        in: formData
+        name: title
+        type: string
+      - description: Teaching goal
+        in: formData
+        name: goal
+        type: string
+      - description: Assignment description
+        in: formData
+        name: description
+        type: string
+      - description: Scratch project .sb3 file
+        in: formData
+        name: sb3
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/http.AssignmentUploadResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Upload a reference SB3 assignment
+      tags:
+      - assignments
+  /api/teacher/assignments/{id}:
+    get:
+      description: Read assignment metadata, analysis summary, and assigned students
+        for the current teacher.
+      parameters:
+      - description: Assignment ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/assignment.TeacherAssignmentDetail'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get teacher assignment detail
+      tags:
+      - assignments
+  /api/teacher/assignments/{id}/analysis:
+    get:
+      description: Read the parsed SB3 analysis for a teacher assignment.
+      parameters:
+      - description: Assignment ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.AssignmentAnalysisResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get assignment analysis summary
+      tags:
+      - assignments
+  /api/teacher/assignments/{id}/archive:
+    post:
+      description: Archive an existing assignment so students no longer see it in
+        active lists.
+      parameters:
+      - description: Assignment ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.AssignmentStatusResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Archive an assignment
+      tags:
+      - assignments
+  /api/teacher/assignments/{id}/assign-students:
+    post:
+      consumes:
+      - application/json
+      description: Bind one or more existing students to an assignment before publishing
+        it.
+      parameters:
+      - description: Assignment ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Student assignment payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/http.assignStudentsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.AssignmentStudentsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Assign students to an assignment
+      tags:
+      - assignments
+  /api/teacher/assignments/{id}/publish:
+    post:
+      description: Publish an analyzed assignment so students can access it.
+      parameters:
+      - description: Assignment ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.AssignmentStatusResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Publish an assignment
+      tags:
+      - assignments
+  /api/teacher/dashboard/assignments/{id}/live:
+    get:
+      description: Read the latest reported progress and hint state for all students
+        assigned to one assignment.
+      parameters:
+      - description: Assignment ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dashboard.LiveAssignmentResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get live assignment dashboard
+      tags:
+      - dashboard
+  /api/teacher/dashboard/students/{id}/history:
+    get:
+      description: Read the latest progress and hint state for every assignment assigned
+        to one student.
+      parameters:
+      - description: Student ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dashboard.StudentHistoryResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get teacher view of one student's assignment history
+      tags:
+      - dashboard
+  /api/teacher/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate a teacher and return a bearer token for teacher APIs.
+      parameters:
+      - description: Teacher credentials
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/http.TeacherCredentialsRequestDoc'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/auth.Session'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      summary: Login as teacher
+      tags:
+      - teacher-auth
+  /api/teacher/logout:
+    post:
+      description: Invalidate the current teacher bearer token immediately.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.StatusResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Logout teacher
+      tags:
+      - teacher-auth
+  /api/teacher/me:
+    get:
+      description: Read the current authenticated teacher session details.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.TeacherMeResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get current teacher profile
+      tags:
+      - teacher-auth
+  /api/teacher/register:
+    post:
+      consumes:
+      - application/json
+      description: Create a teacher session and return a bearer token for teacher
+        APIs.
+      parameters:
+      - description: Teacher credentials
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/http.TeacherCredentialsRequestDoc'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/auth.Session'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      summary: Register a teacher account
+      tags:
+      - teacher-auth
+  /api/teacher/students:
+    get:
+      description: List students for the current teacher.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.TeacherStudentsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List students
+      tags:
+      - students
+    post:
+      consumes:
+      - application/json
+      description: Create a single student for the current teacher, returning the
+        same shape as batch creation.
+      parameters:
+      - description: Single student create payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/student.BatchCreateInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/student.BatchCreateResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create one student
+      tags:
+      - students
+  /api/teacher/students/{id}/reset-password:
+    post:
+      consumes:
+      - application/json
+      description: Replace the initial or current password for one student owned by
+        the current teacher.
+      parameters:
+      - description: Student ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: New password payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/http.resetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/student.StudentItem'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Reset a student password
+      tags:
+      - students
+  /api/teacher/students/batch:
+    post:
+      consumes:
+      - application/json
+      description: Create multiple students for the current teacher and report conflicts
+        without failing the entire request.
+      parameters:
+      - description: Batch create payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/student.BatchCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/student.BatchCreateResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Batch create students
+      tags:
+      - students
+  /health:
+    get:
+      description: Read a basic process health status for uptime checks.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.healthResponse'
+      summary: Health check
+      tags:
+      - system
+schemes:
+- http
+- https
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

@@ -69,6 +69,15 @@ func TestTeacherCanResetStudentPassword(t *testing.T) {
 	require.Equal(t, http.StatusOK, newLoginRes.Code)
 }
 
+func TestTeacherResetStudentPasswordRejectsMissingRequiredFields(t *testing.T) {
+	handler := newTestHandler()
+	teacherToken := registerTeacher(t, handler, "teacher-reset-password-validate", "secret123")
+	studentID := createStudent(t, handler, teacherToken, "student-reset-password-validate", "小空", "old-pass-1")
+
+	resetRes := performAuthedJSONRequest(t, handler, teacherToken, http.MethodPost, fmt.Sprintf("/api/teacher/students/%d/reset-password", studentID), map[string]any{})
+	require.Equal(t, http.StatusBadRequest, resetRes.Code)
+}
+
 func TestTeacherAndStudentCanReadAssignmentDetailsAndTeacherCanArchive(t *testing.T) {
 	handler := newTestHandler()
 	teacherToken := registerTeacher(t, handler, "teacher-assignment-detail", "secret123")

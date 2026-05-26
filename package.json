@@ -25,10 +25,13 @@
     "server:build": "npm run server:web:build && npm run server:api:build",
     "server:api:dev": "cd apps/server-api && go run ./cmd/server-api",
     "server:api:build": "cd apps/server-api && go build ./cmd/server-api",
+    "server:api:docs": "cd apps/server-api && go run github.com/swaggo/swag/cmd/swag@v1.16.6 init -g main.go -d cmd/server-api,internal/http,internal/assignment,internal/auth,internal/student,internal/progress,internal/dashboard -o docs --parseInternal",
+    "server:api:docs:check": "npm run server:api:docs && git diff --exit-code -- apps/server-api/docs",
     "server:api:test": "cd apps/server-api && go test ./...",
     "server:web:dev": "npm run dev --workspace=@scratch-ai/server-web",
     "server:web:build": "npm run build --workspace=@scratch-ai/server-web",
     "server:web:test": "npm run test --workspace=@scratch-ai/server-web",
+    "server:web:smoke:mock": "npm run smoke:mock --workspace=@scratch-ai/server-web",
     "workspace:clean": "npm run clean",
     "workspace:clean:dry-run": "npm run clean:dry-run"
   }

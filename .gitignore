@@ -16,6 +16,9 @@ Thumbs.db
 node_modules/
 .npm/
 .venv/
+apps/server-api/.venv/
+apps/server-api/server-api
+apps/server-api/server-api.exe
 
 # Build and test output
 dist/
@@ -23,13 +26,17 @@ coverage/
 .nyc_output/
 out/
 .pytest_cache/
+apps/server-api/.pytest_cache/
 __pycache__/
+apps/server-api/**/__pycache__/
 .coverage
 *.egg-info/
+apps/server-api/*.egg-info/
 *.sqlite3
 .worktrees/
 *.tsbuildinfo
 *.log
+.playwright-cli/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

@@ -50,6 +50,17 @@ func TestStudentLoginRejectsNonDesktopClient(t *testing.T) {
 	require.Equal(t, http.StatusBadRequest, loginRes.Code)
 }
 
+func TestStudentLoginRejectsMissingRequiredFields(t *testing.T) {
+	handler := newTestHandler()
+
+	loginRes := performJSONRequest(t, handler, http.MethodPost, "/api/student/login", map[string]any{
+		"username": "student-missing-fields",
+		"password": "abc12345",
+	})
+
+	require.Equal(t, http.StatusBadRequest, loginRes.Code)
+}
+
 func TestStudentCannotReadUnassignedAssignment(t *testing.T) {
 	handler := newTestHandler()
 	teacherToken := registerTeacher(t, handler, "teacher-unassigned", "secret123")
@@ -118,6 +129,21 @@ func TestStudentCanReportProgressRequestHintAndTeacherSeeLiveDashboard(t *testin
 	dashboardRes := performAuthedJSONRequest(t, handler, teacherToken, http.MethodGet, fmt.Sprintf("/api/teacher/dashboard/assignments/%d/live", assignmentID), nil)
 	require.Equal(t, http.StatusOK, dashboardRes.Code)
 	requireJSONArrayLen(t, dashboardRes.Body.String(), "students", 1)
+}
+
+func TestStudentProgressRejectsMissingRequiredFields(t *testing.T) {
+	handler := newTestHandler()
+	teacherToken := registerTeacher(t, handler, "teacher-progress-validate", "secret123")
+	studentID := createStudent(t, handler, teacherToken, "student-progress-validate", "小验", "xyz98765")
+	assignmentID := uploadAssignmentAndWaitReady(t, handler, teacherToken, "Maze Validate Game")
+
+	assignStudentAndPublish(t, handler, teacherToken, assignmentID, studentID)
+	studentToken := loginStudent(t, handler, "student-progress-validate", "xyz98765")
+
+	progressRes := performAuthedJSONRequest(t, handler, studentToken, http.MethodPost, fmt.Sprintf("/api/student/assignments/%d/progress", assignmentID), map[string]any{
+		"stepSummary": "已经把事件积木接上了",
+	})
+	require.Equal(t, http.StatusBadRequest, progressRes.Code)
 }
 
 func TestStudentCannotRequestHintWithoutProgress(t *testing.T) {

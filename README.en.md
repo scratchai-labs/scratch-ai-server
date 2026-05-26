@@ -1,6 +1,6 @@
 # Scratch AI Coach
 
-`Scratch AI Coach` is the server-side repository for the classroom product line. The current mainline is now `Go API + Teacher Web`, while the existing `Python FastAPI` code stays only as a transition prototype.
+`Scratch AI Coach` is the server-side repository for the classroom product line. The current mainline is now a `Gin`-based `Go` backend plus the Teacher Web app, and the older `Python FastAPI` server prototype has been removed from this repository.
 
 Cross-repo docs, architecture notes, and planning live in [`scratch-ai-docs`](https://github.com/scratchai-labs/scratch-ai-docs/blob/main/README.en.md).
 
@@ -23,16 +23,33 @@ Cross-repo docs, architecture notes, and planning live in [`scratch-ai-docs`](ht
 
 ## Development Notes
 
-The root commands now target the Go API and the teacher web app directly:
+For backend work, use the Go commands directly:
 
 ```bash
 git clone git@github.com:scratchai-labs/scratch-ai-server.git
 cd scratch-ai-server
 npm ci
-npm run server:api:test
-npm run server:web:test
-npm run server:dev
+cd apps/server-api
+go test ./...
+go run ./cmd/server-api
 ```
+
+For the teacher web app on its own:
+
+```bash
+cd apps/server-web
+npm run test
+npm run dev
+```
+
+Use the root `npm run` commands only as monorepo shortcuts:
+
+- `npm run server:api:dev`
+- `npm run server:api:test`
+- `npm run server:web:dev`
+- `npm run server:web:test`
+- `npm run server:dev`
+- `npm run server:build`
 
 Current database behavior:
 

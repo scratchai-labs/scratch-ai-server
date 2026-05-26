@@ -1,6 +1,6 @@
 # Scratch AI 教练
 
-`Scratch AI 教练` 服务器端仓面向 Scratch 教学场景，当前主线已经落到“`Go API + 教师管理 Web`”。仓库里仍保留一版 `Python FastAPI` 原型代码，但不再作为正式服务端入口。
+`Scratch AI 教练` 服务器端仓面向 Scratch 教学场景，当前主线已经落到“基于 `Gin` 的 `Go` 服务端 + 教师管理 Web”。仓库内已经清理掉旧的 `Python FastAPI` 服务端原型。
 
 跨仓库文档、总体架构和路线图已迁到 [`scratch-ai-docs`](https://github.com/scratchai-labs/scratch-ai-docs) 统一维护。
 
@@ -11,7 +11,7 @@ Scratch 帮很多人第一次真正喜欢上电脑、理解程序和创作。这
 ## 当前支持范围
 
 - 当前仓库只维护 **服务器端教学版**
-- 目标技术栈为 `Go API + Web`
+- 目标技术栈为“基于 `Gin` 的 `Go` 服务端 + Web”
 - 包含 `server-api` 和 `server-web`
 - 中文是当前主语言
 
@@ -33,25 +33,38 @@ Scratch 帮很多人第一次真正喜欢上电脑、理解程序和创作。这
 - 学生只通过客户端登录和接收提示
 - 所有 AI 处理都放在服务端
 
-详细需求与接口草案见 [`docs/server-development.zh-CN.md`](docs/server-development.zh-CN.md)。
+机器可读 API 契约以 [`apps/server-api/docs/swagger.json`](apps/server-api/docs/swagger.json) 和 [`apps/server-api/docs/swagger.yaml`](apps/server-api/docs/swagger.yaml) 为准。
+客户端对接优先看 [`docs/server-api-contract.zh-CN.md`](docs/server-api-contract.zh-CN.md) 里的调用顺序和示例。
+详细开发背景再看 [`docs/server-development.zh-CN.md`](docs/server-development.zh-CN.md)。
 
 ## 本地开发
+
+后端优先直接用 `Go` 命令：
 
 ```bash
 git clone git@github.com:scratchai-labs/scratch-ai-server.git
 cd scratch-ai-server
 npm ci
-npm run server:api:test
-npm run server:web:test
-npm run server:dev
+cd apps/server-api
+go test ./...
+go run ./cmd/server-api
 ```
 
-常用命令：
+教师 Web 单独开发时：
+
+```bash
+cd apps/server-web
+npm run test
+npm run dev
+```
+
+如果需要从仓库根目录统一调度，再用这些 `npm run` 快捷命令：
 
 - `npm run server:api:dev`
 - `npm run server:api:test`
 - `npm run server:web:dev`
 - `npm run server:web:test`
+- `npm run server:dev`
 - `npm run server:build`
 
 当前数据库口径：
@@ -70,6 +83,8 @@ npm run server:dev
 
 - 仓库结构：[`docs/project-structure.zh-CN.md`](docs/project-structure.zh-CN.md)
 - 架构说明：[`docs/architecture.zh-CN.md`](docs/architecture.zh-CN.md)
+- API 契约真值源：[`apps/server-api/docs/swagger.json`](apps/server-api/docs/swagger.json) / [`apps/server-api/docs/swagger.yaml`](apps/server-api/docs/swagger.yaml)
+- 接入指南：[`docs/server-api-contract.zh-CN.md`](docs/server-api-contract.zh-CN.md)
 - 服务器端开发说明：[`docs/server-development.zh-CN.md`](docs/server-development.zh-CN.md)
 - 跨仓库文档与规划：[`scratch-ai-docs`](https://github.com/scratchai-labs/scratch-ai-docs)
 - 开发工作流：[`scratch-ai-docs/docs/development-workflow.zh-CN.md`](https://github.com/scratchai-labs/scratch-ai-docs/blob/main/docs/development-workflow.zh-CN.md)

@@ -1,7 +1,7 @@
 # Scratch AI 教练 / Scratch AI Coach
 
-面向 Scratch 教学场景的开源服务器端工作区。当前正式主线已经收口为 `Go API + Teacher Web`，仓库中的 `Python FastAPI` 代码只作为过渡原型保留。
-An open source server workspace for Scratch teaching. The current production track is `Go API + Teacher Web`, while the existing `Python FastAPI` code is kept only as a transition prototype.
+面向 Scratch 教学场景的开源服务器端工作区。当前正式主线已经收口为“基于 `Gin` 的 `Go` 服务端 + Teacher Web”，仓库内不再保留旧的 `Python FastAPI` 服务端原型。机器可读 API 契约以 `apps/server-api/docs/swagger.json` 为准，`docs/server-api-contract.zh-CN.md` 只保留接入指南和补充说明。
+An open source server workspace for Scratch teaching. The current production track is now a `Gin`-based `Go` backend plus the Teacher Web app, and the older `Python FastAPI` server prototype has been removed from this repository. The machine-readable API contract comes from `apps/server-api/docs/swagger.json`; `docs/server-api-contract.zh-CN.md` stays as a human-readable integration guide.
 
 ## Language / 语言
 
@@ -22,6 +22,8 @@ An open source server workspace for Scratch teaching. The current production tra
 - English overview: [`README.en.md`](README.en.md)
 - 仓库结构：[`docs/project-structure.zh-CN.md`](docs/project-structure.zh-CN.md)
 - 架构说明：[`docs/architecture.zh-CN.md`](docs/architecture.zh-CN.md)
+- API 契约真值源：[`apps/server-api/docs/swagger.json`](apps/server-api/docs/swagger.json) / [`apps/server-api/docs/swagger.yaml`](apps/server-api/docs/swagger.yaml)
+- 接入指南：[`docs/server-api-contract.zh-CN.md`](docs/server-api-contract.zh-CN.md)
 - 开发说明：[`docs/server-development.zh-CN.md`](docs/server-development.zh-CN.md)
 - 贡献指南：[`CONTRIBUTING.zh-CN.md`](CONTRIBUTING.zh-CN.md) / [`CONTRIBUTING.en.md`](CONTRIBUTING.en.md)
 - 行为准则：[`CODE_OF_CONDUCT.zh-CN.md`](CODE_OF_CONDUCT.zh-CN.md) / [`CODE_OF_CONDUCT.en.md`](CODE_OF_CONDUCT.en.md)
@@ -40,16 +42,33 @@ An open source server workspace for Scratch teaching. The current production tra
 
 ## Local Development
 
-当前根目录命令已经对齐到 Go 服务端与教师 Web：
+后端优先直接用 `Go` 命令：
 
 ```bash
 git clone git@github.com:scratchai-labs/scratch-ai-server.git
 cd scratch-ai-server
 npm ci
-npm run server:api:test
-npm run server:web:test
-npm run server:dev
+cd apps/server-api
+go test ./...
+go run ./cmd/server-api
 ```
+
+教师 Web 单独开发时：
+
+```bash
+cd apps/server-web
+npm run test
+npm run dev
+```
+
+如果需要从仓库根目录统一调度，再用这些 `npm run` 快捷命令：
+
+- `npm run server:api:dev`
+- `npm run server:api:test`
+- `npm run server:web:dev`
+- `npm run server:web:test`
+- `npm run server:dev`
+- `npm run server:build`
 
 当前数据库口径：
 

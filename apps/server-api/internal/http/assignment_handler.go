@@ -14,20 +14,48 @@ type assignmentHandler struct {
 }
 
 type assignStudentsRequest struct {
-	StudentIDs []int64 `json:"studentIds"`
+	StudentIDs []int64 `json:"studentIds" binding:"required,min=1"`
 }
 
+// handleTeacherAssignmentsList godoc
+//
+//	@Summary		List teacher assignments
+//	@Description	List all assignments created by the current teacher.
+//	@Tags			assignments
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Success		200	{object}	TeacherAssignmentsResponse
+//	@Failure		401	{object}	ErrorResponse
+//	@Failure		500	{object}	ErrorResponse
+//	@Router			/api/teacher/assignments [get]
 func (h *assignmentHandler) handleTeacherAssignmentsList(c *gin.Context) {
 	teacherRecord := mustTeacher(c)
 	if teacherRecord.ID == 0 {
 		return
 	}
 
-	writeJSON(c, 200, map[string]any{
-		"items": h.assignmentService.ListForTeacher(teacherRecord.ID),
+	writeJSON(c, 200, TeacherAssignmentsResponse{
+		Items: h.assignmentService.ListForTeacher(teacherRecord.ID),
 	})
 }
 
+// handleTeacherAssignments godoc
+//
+//	@Summary		Upload a reference SB3 assignment
+//	@Description	Create an assignment by uploading a reference Scratch project and queue analysis.
+//	@Tags			assignments
+//	@Accept			mpfd
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			title		formData	string	false	"Assignment title"
+//	@Param			goal		formData	string	false	"Teaching goal"
+//	@Param			description	formData	string	false	"Assignment description"
+//	@Param			sb3			formData	file	true	"Scratch project .sb3 file"
+//	@Success		201			{object}	AssignmentUploadResponse
+//	@Failure		400			{object}	ErrorResponse
+//	@Failure		401			{object}	ErrorResponse
+//	@Failure		500			{object}	ErrorResponse
+//	@Router			/api/teacher/assignments [post]
 func (h *assignmentHandler) handleTeacherAssignments(c *gin.Context) {
 	teacherRecord := mustTeacher(c)
 	if teacherRecord.ID == 0 {
@@ -70,16 +98,30 @@ func (h *assignmentHandler) handleTeacherAssignments(c *gin.Context) {
 		return
 	}
 
-	writeJSON(c, 201, map[string]any{
-		"id":             createdAssignment.ID,
-		"title":          createdAssignment.Title,
-		"goal":           createdAssignment.Goal,
-		"description":    createdAssignment.Description,
-		"status":         createdAssignment.Status,
-		"analysisStatus": createdAssignment.AnalysisStatus,
+	writeJSON(c, 201, AssignmentUploadResponse{
+		ID:             createdAssignment.ID,
+		Title:          createdAssignment.Title,
+		Goal:           createdAssignment.Goal,
+		Description:    createdAssignment.Description,
+		Status:         createdAssignment.Status,
+		AnalysisStatus: createdAssignment.AnalysisStatus,
 	})
 }
 
+// handleTeacherAssignmentDetail godoc
+//
+//	@Summary		Get teacher assignment detail
+//	@Description	Read assignment metadata, analysis summary, and assigned students for the current teacher.
+//	@Tags			assignments
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id	path		int64	true	"Assignment ID"
+//	@Success		200	{object}	assignment.TeacherAssignmentDetail
+//	@Failure		400	{object}	ErrorResponse
+//	@Failure		401	{object}	ErrorResponse
+//	@Failure		404	{object}	ErrorResponse
+//	@Failure		500	{object}	ErrorResponse
+//	@Router			/api/teacher/assignments/{id} [get]
 func (h *assignmentHandler) handleTeacherAssignmentDetail(c *gin.Context) {
 	teacherRecord := mustTeacher(c)
 	if teacherRecord.ID == 0 {
@@ -104,6 +146,20 @@ func (h *assignmentHandler) handleTeacherAssignmentDetail(c *gin.Context) {
 	writeJSON(c, 200, detail)
 }
 
+// handleTeacherAssignmentAnalysis godoc
+//
+//	@Summary		Get assignment analysis summary
+//	@Description	Read the parsed SB3 analysis for a teacher assignment.
+//	@Tags			assignments
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id	path		int64	true	"Assignment ID"
+//	@Success		200	{object}	AssignmentAnalysisResponse
+//	@Failure		400	{object}	ErrorResponse
+//	@Failure		401	{object}	ErrorResponse
+//	@Failure		404	{object}	ErrorResponse
+//	@Failure		500	{object}	ErrorResponse
+//	@Router			/api/teacher/assignments/{id}/analysis [get]
 func (h *assignmentHandler) handleTeacherAssignmentAnalysis(c *gin.Context) {
 	teacherRecord := mustTeacher(c)
 	if teacherRecord.ID == 0 {
@@ -125,22 +181,38 @@ func (h *assignmentHandler) handleTeacherAssignmentAnalysis(c *gin.Context) {
 		return
 	}
 
-	writeJSON(c, 200, map[string]any{
-		"assignmentId":         assignmentRecord.ID,
-		"analysisStatus":       assignmentRecord.AnalysisStatus,
-		"analysisErrorMessage": assignmentRecord.AnalysisErrorMessage,
-		"roleNames":            assignmentRecord.Analysis.RoleNames,
-		"scriptCounts":         assignmentRecord.Analysis.ScriptCounts,
-		"blockCounts":          assignmentRecord.Analysis.BlockCounts,
-		"categoryCounts":       assignmentRecord.Analysis.CategoryCounts,
-		"broadcastMessages":    assignmentRecord.Analysis.BroadcastMessages,
-		"variableNames":        assignmentRecord.Analysis.VariableNames,
-		"listNames":            assignmentRecord.Analysis.ListNames,
-		"extensions":           assignmentRecord.Analysis.Extensions,
-		"teachingPoints":       assignmentRecord.Analysis.TeachingPoints,
+	writeJSON(c, 200, AssignmentAnalysisResponse{
+		AssignmentID:         assignmentRecord.ID,
+		AnalysisStatus:       assignmentRecord.AnalysisStatus,
+		AnalysisErrorMessage: assignmentRecord.AnalysisErrorMessage,
+		RoleNames:            assignmentRecord.Analysis.RoleNames,
+		ScriptCounts:         assignmentRecord.Analysis.ScriptCounts,
+		BlockCounts:          assignmentRecord.Analysis.BlockCounts,
+		CategoryCounts:       assignmentRecord.Analysis.CategoryCounts,
+		BroadcastMessages:    assignmentRecord.Analysis.BroadcastMessages,
+		VariableNames:        assignmentRecord.Analysis.VariableNames,
+		ListNames:            assignmentRecord.Analysis.ListNames,
+		Extensions:           assignmentRecord.Analysis.Extensions,
+		TeachingPoints:       assignmentRecord.Analysis.TeachingPoints,
 	})
 }
 
+// handleTeacherAssignmentStudents godoc
+//
+//	@Summary		Assign students to an assignment
+//	@Description	Bind one or more existing students to an assignment before publishing it.
+//	@Tags			assignments
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id		path		int64					true	"Assignment ID"
+//	@Param			payload	body		assignStudentsRequest	true	"Student assignment payload"
+//	@Success		200		{object}	AssignmentStudentsResponse
+//	@Failure		400		{object}	ErrorResponse
+//	@Failure		401		{object}	ErrorResponse
+//	@Failure		404		{object}	ErrorResponse
+//	@Failure		500		{object}	ErrorResponse
+//	@Router			/api/teacher/assignments/{id}/assign-students [post]
 func (h *assignmentHandler) handleTeacherAssignmentStudents(c *gin.Context) {
 	teacherRecord := mustTeacher(c)
 	if teacherRecord.ID == 0 {
@@ -170,13 +242,28 @@ func (h *assignmentHandler) handleTeacherAssignmentStudents(c *gin.Context) {
 		return
 	}
 
-	writeJSON(c, 200, map[string]any{
-		"assignmentId":  assignmentID,
-		"studentIds":    request.StudentIDs,
-		"assignedCount": len(request.StudentIDs),
+	writeJSON(c, 200, AssignmentStudentsResponse{
+		AssignmentID:  assignmentID,
+		StudentIDs:    request.StudentIDs,
+		AssignedCount: len(request.StudentIDs),
 	})
 }
 
+// handleTeacherAssignmentPublish godoc
+//
+//	@Summary		Publish an assignment
+//	@Description	Publish an analyzed assignment so students can access it.
+//	@Tags			assignments
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id	path		int64	true	"Assignment ID"
+//	@Success		200	{object}	AssignmentStatusResponse
+//	@Failure		400	{object}	ErrorResponse
+//	@Failure		401	{object}	ErrorResponse
+//	@Failure		404	{object}	ErrorResponse
+//	@Failure		409	{object}	ErrorResponse
+//	@Failure		500	{object}	ErrorResponse
+//	@Router			/api/teacher/assignments/{id}/publish [post]
 func (h *assignmentHandler) handleTeacherAssignmentPublish(c *gin.Context) {
 	teacherRecord := mustTeacher(c)
 	if teacherRecord.ID == 0 {
@@ -201,14 +288,28 @@ func (h *assignmentHandler) handleTeacherAssignmentPublish(c *gin.Context) {
 		return
 	}
 
-	writeJSON(c, 200, map[string]any{
-		"id":             record.ID,
-		"title":          record.Title,
-		"status":         record.Status,
-		"analysisStatus": record.AnalysisStatus,
+	writeJSON(c, 200, AssignmentStatusResponse{
+		ID:             record.ID,
+		Title:          record.Title,
+		Status:         record.Status,
+		AnalysisStatus: record.AnalysisStatus,
 	})
 }
 
+// handleTeacherAssignmentArchive godoc
+//
+//	@Summary		Archive an assignment
+//	@Description	Archive an existing assignment so students no longer see it in active lists.
+//	@Tags			assignments
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id	path		int64	true	"Assignment ID"
+//	@Success		200	{object}	AssignmentStatusResponse
+//	@Failure		400	{object}	ErrorResponse
+//	@Failure		401	{object}	ErrorResponse
+//	@Failure		404	{object}	ErrorResponse
+//	@Failure		500	{object}	ErrorResponse
+//	@Router			/api/teacher/assignments/{id}/archive [post]
 func (h *assignmentHandler) handleTeacherAssignmentArchive(c *gin.Context) {
 	teacherRecord := mustTeacher(c)
 	if teacherRecord.ID == 0 {
@@ -230,9 +331,9 @@ func (h *assignmentHandler) handleTeacherAssignmentArchive(c *gin.Context) {
 		return
 	}
 
-	writeJSON(c, 200, map[string]any{
-		"id":     record.ID,
-		"title":  record.Title,
-		"status": record.Status,
+	writeJSON(c, 200, AssignmentStatusResponse{
+		ID:     record.ID,
+		Title:  record.Title,
+		Status: record.Status,
 	})
 }

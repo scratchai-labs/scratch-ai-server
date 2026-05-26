@@ -48,3 +48,19 @@ func TestTeacherCanBatchCreateStudents(t *testing.T) {
 	require.Equal(t, http.StatusOK, listRes.Code)
 	requireJSONArrayLen(t, listRes.Body.String(), "items", 2)
 }
+
+func TestTeacherStudentCreateRejectsMissingRequiredFields(t *testing.T) {
+	handler := newTestHandler()
+	teacherToken := registerTeacher(t, handler, "teacher-student-validate", "secret123")
+
+	createRes := performAuthedJSONRequest(t, handler, teacherToken, http.MethodPost, "/api/teacher/students", map[string]any{
+		"username":    "student-missing-password",
+		"displayName": "小缺口",
+	})
+	require.Equal(t, http.StatusBadRequest, createRes.Code)
+
+	batchRes := performAuthedJSONRequest(t, handler, teacherToken, http.MethodPost, "/api/teacher/students/batch", map[string]any{
+		"students": []map[string]any{},
+	})
+	require.Equal(t, http.StatusBadRequest, batchRes.Code)
+}

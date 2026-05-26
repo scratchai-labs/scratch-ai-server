@@ -1,26 +1,52 @@
 
 # Scratch AI Server API
 
-`apps/server-api` 是当前阶段的 Go 服务端，基于 `Gin` 实现老师/学生认证、任务上传与分配、学生进度、提示生成和教师实时看板接口。
+`apps/server-api` 是当前阶段基于 `Gin` 的 `Go` 服务端，负责老师/学生认证、任务上传与分配、学生进度、提示生成和教师实时看板接口。机器可读 API 契约以生成的 OpenAPI 为准。
 
-更完整的服务器端说明见 [`../../docs/server-development.zh-CN.md`](../../docs/server-development.zh-CN.md)。
+客户端接入指南见 [`../../docs/server-api-contract.zh-CN.md`](../../docs/server-api-contract.zh-CN.md)。
+更完整的服务器端开发说明见 [`../../docs/server-development.zh-CN.md`](../../docs/server-development.zh-CN.md)。
 
 ## 本地开发
 
-优先从仓库根目录运行：
-
-```bash
-npm run server:api:test
-npm run server:api:dev
-```
-
-如需单独进入目录，也可以使用：
+优先直接在当前目录使用 `Go` 命令：
 
 ```bash
 cd apps/server-api
 go test ./...
 go run ./cmd/server-api
 ```
+
+如果需要从仓库根目录统一调度，再用这些 `npm run` 快捷命令：
+
+```bash
+npm run server:api:test
+npm run server:api:dev
+npm run server:api:docs
+```
+
+## OpenAPI 文档
+
+当前 `Go` 主线直接从代码注释和类型定义生成 OpenAPI 规格，`docs/swagger.json`、`docs/swagger.yaml`、`docs/docs.go` 是机器可读契约真值源。手写的 `server-api-contract.zh-CN.md` 只保留接入指南和补充说明，不再作为字段定义的单一事实源。
+
+- 运行服务后可访问：
+  - `http://127.0.0.1:8000/swagger/index.html`
+  - `http://127.0.0.1:8000/swagger/doc.json`
+- 仓库内生成产物：
+  - `docs/swagger.json`
+  - `docs/swagger.yaml`
+  - `docs/docs.go`
+- 常用命令：
+
+```bash
+npm run server:api:docs
+npm run server:api:docs:check
+```
+
+约定：
+
+- 修改 `internal/http` 的路由、请求体或响应体后，要重新生成 OpenAPI
+- 客户端对接优先以生成出的 OpenAPI 为准
+- `server-api-contract.zh-CN.md` 只保留接入指南和补充说明，不再作为接口字段的单一事实源
 
 ## 关键接口
 
@@ -30,24 +56,25 @@ go run ./cmd/server-api
 - `GET /api/teacher/me`
 - `POST /api/teacher/logout`
 - `GET /api/teacher/students`
+- `POST /api/teacher/students`
 - `POST /api/teacher/students/batch`
-- `POST /api/teacher/students/{studentId}/reset-password`
+- `POST /api/teacher/students/{id}/reset-password`
 - `GET /api/teacher/assignments`
 - `POST /api/teacher/assignments`
-- `GET /api/teacher/assignments/{assignmentId}`
-- `GET /api/teacher/assignments/{assignmentId}/analysis`
-- `POST /api/teacher/assignments/{assignmentId}/assign-students`
-- `POST /api/teacher/assignments/{assignmentId}/publish`
-- `POST /api/teacher/assignments/{assignmentId}/archive`
-- `GET /api/teacher/dashboard/assignments/{assignmentId}/live`
-- `GET /api/teacher/dashboard/students/{studentId}/history`
+- `GET /api/teacher/assignments/{id}`
+- `GET /api/teacher/assignments/{id}/analysis`
+- `POST /api/teacher/assignments/{id}/assign-students`
+- `POST /api/teacher/assignments/{id}/publish`
+- `POST /api/teacher/assignments/{id}/archive`
+- `GET /api/teacher/dashboard/assignments/{id}/live`
+- `GET /api/teacher/dashboard/students/{id}/history`
 - `POST /api/student/login`
 - `GET /api/student/me`
 - `POST /api/student/logout`
 - `GET /api/student/assignments`
-- `GET /api/student/assignments/{assignmentId}`
-- `POST /api/student/assignments/{assignmentId}/progress`
-- `POST /api/student/assignments/{assignmentId}/hints`
+- `GET /api/student/assignments/{id}`
+- `POST /api/student/assignments/{id}/progress`
+- `POST /api/student/assignments/{id}/hints`
 
 ## 环境变量
 

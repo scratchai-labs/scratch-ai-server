@@ -1,6 +1,25 @@
 # 服务器端开发说明
 
-本文收口服务器端当前实现与后续维护口径。当前仓库里仍保留一版 `Python FastAPI` 原型，但正式 API 主线已经按 `Go` 实现，教师管理端继续保留 `Web` 形态。
+本文收口服务器端当前实现与后续维护口径。正式 API 主线已经收口为基于 `Gin` 的 `Go` 服务端，教师管理端继续保留 `Web` 形态；旧的 `Python FastAPI` 原型已经从仓库清理。
+
+如果只是为了对接客户端，可以先看 [`./server-api-contract.zh-CN.md`](./server-api-contract.zh-CN.md) 里的调用顺序和示例；字段、路径和响应的真值以 `apps/server-api/docs/swagger.json` 和 `apps/server-api/docs/swagger.yaml` 为准。
+
+当前接口契约的机器可读真值源是 `apps/server-api` 生成的 OpenAPI 产物，位于：
+
+- `apps/server-api/docs/swagger.json`
+- `apps/server-api/docs/swagger.yaml`
+- `apps/server-api/docs/docs.go`
+
+本地启动服务后，可直接打开：
+
+- `http://127.0.0.1:8000/swagger/index.html`
+- `http://127.0.0.1:8000/swagger/doc.json`
+
+更新接口后，需要同步执行：
+
+```bash
+npm run server:api:docs
+```
 
 ## 0. 当前实现状态
 
@@ -17,7 +36,7 @@
 已落地能力：
 
 - 教师注册、登录、退出、`me`
-- 教师创建学生、批量创建学生、重置学生密码
+- 教师单个创建学生、批量创建学生、重置学生密码
 - 学生客户端登录、退出、`me`
 - 教师上传参考 `sb3`
 - `sb3` 异步分析、失败记录、启动恢复、有限重试
@@ -27,7 +46,15 @@
 - 教师实时看板、学生历史查询
 - 教师 Web 真实 API 联调与浏览器点击验证
 
-常用命令：
+后端日常开发优先直接用 `Go` 命令：
+
+```bash
+cd apps/server-api
+go test ./...
+go run ./cmd/server-api
+```
+
+从仓库根目录统一调度时，再用这些 `npm run` 快捷命令：
 
 ```bash
 npm run server:api:test
@@ -46,10 +73,11 @@ npm run server:dev
 
 当前结论：
 
-- 核心是 `API`
+- 核心是基于 `Gin` 的 `Go API`
 - 教师需要一个 `Web` 管理端
 - 学生端只负责登录、读取本地 Scratch 状态、接收提示、上报进度
 - 所有 AI 调用都放在服务端，不放在学生客户端
+- OpenAPI 规格从 `Go` 代码生成；手写 `server-api-contract.zh-CN.md` 只保留接入指南和补充说明，避免与实现漂移
 
 ## 2. 产品目标
 
@@ -200,7 +228,7 @@ Student Client
 
 当前实现采用：
 
-- HTTP：`Gin`
+- HTTP 框架：`Gin`
 - JSON：Go 标准库
 - ZIP / `project.json` 解析：Go 标准库
 - SQLite 驱动：`modernc.org/sqlite`
@@ -325,7 +353,7 @@ Student Client
 - `GET /api/teacher/students`
 - `POST /api/teacher/students`
 - `POST /api/teacher/students/batch`
-- `POST /api/teacher/students/{studentId}/reset-password`
+- `POST /api/teacher/students/{id}/reset-password`
 
 `POST /api/teacher/students/batch` 输入建议为 JSON 对象，顶层使用 `students` 数组：
 
@@ -360,11 +388,11 @@ Student Client
 
 - `GET /api/teacher/assignments`
 - `POST /api/teacher/assignments`
-- `GET /api/teacher/assignments/{assignmentId}`
-- `GET /api/teacher/assignments/{assignmentId}/analysis`
-- `POST /api/teacher/assignments/{assignmentId}/assign-students`
-- `POST /api/teacher/assignments/{assignmentId}/publish`
-- `POST /api/teacher/assignments/{assignmentId}/archive`
+- `GET /api/teacher/assignments/{id}`
+- `GET /api/teacher/assignments/{id}/analysis`
+- `POST /api/teacher/assignments/{id}/assign-students`
+- `POST /api/teacher/assignments/{id}/publish`
+- `POST /api/teacher/assignments/{id}/archive`
 
 `POST /api/teacher/assignments` 采用 `multipart/form-data`：
 
@@ -373,7 +401,7 @@ Student Client
 - `description`
 - `sb3`
 
-上传成功后，接口直接返回已创建的任务基础信息，并把 `analysisStatus` 置为 `pending`。教师端后续通过 `GET /api/teacher/assignments/{assignmentId}/analysis` 轮询分析状态。
+上传成功后，接口直接返回已创建的任务基础信息，并把 `analysisStatus` 置为 `pending`。教师端后续通过 `GET /api/teacher/assignments/{id}/analysis` 轮询分析状态。
 
 ### 8.4 学生客户端
 
@@ -381,9 +409,9 @@ Student Client
 - `POST /api/student/logout`
 - `GET /api/student/me`
 - `GET /api/student/assignments`
-- `GET /api/student/assignments/{assignmentId}`
-- `POST /api/student/assignments/{assignmentId}/progress`
-- `POST /api/student/assignments/{assignmentId}/hints`
+- `GET /api/student/assignments/{id}`
+- `POST /api/student/assignments/{id}/progress`
+- `POST /api/student/assignments/{id}/hints`
 
 约束：
 
@@ -393,8 +421,8 @@ Student Client
 
 ### 8.5 教师看板
 
-- `GET /api/teacher/dashboard/assignments/{assignmentId}/live`
-- `GET /api/teacher/dashboard/students/{studentId}/history`
+- `GET /api/teacher/dashboard/assignments/{id}/live`
+- `GET /api/teacher/dashboard/students/{id}/history`
 
 第一阶段教师看板统一先用轮询：
 
@@ -505,7 +533,7 @@ Prompt 至少应包含：
 - 持续编辑过程中，每 `15` 秒补一个心跳快照
 - 切换角色、运行项目、保存项目时，立即触发一次上报
 
-`POST /api/student/assignments/{assignmentId}/progress` 建议至少上传：
+`POST /api/student/assignments/{id}/progress` 建议至少上传：
 
 - `currentTarget`
 - `stepSummary`

@@ -1,6 +1,6 @@
 # 项目结构
 
-当前仓库是拆分后的服务器端 monorepo。正式主线已经收口为 `Go API + 教师管理 Web`；仓库里现有的 `Python FastAPI` 代码只作为过渡原型看待。
+当前仓库是拆分后的服务器端 monorepo。正式主线已经收口为“基于 `Gin` 的 `Go` 服务端 + 教师管理 Web”；旧的 `Python FastAPI` 原型已经从仓库内清理。
 
 ## 顶层目录
 
@@ -16,9 +16,10 @@
 
 ## 当前实现补充
 
-- `apps/server-api` 当前基于 `Gin`
+- `apps/server-api` 当前是基于 `Gin` 的 `Go` 服务端
 - 默认数据库是 `SQLite`，配置 `DATABASE_URL` 后切到 `Postgres`
 - `apps/server-web` 既支持 mock API，也支持通过 `VITE_SERVER_WEB_API_MODE=real` 联调真实后端
+- `apps/server-api` 的机器可读 API 契约由 Go 主线生成，位于 `apps/server-api/docs/swagger.json`、`swagger.yaml` 和 `docs.go`；`docs/server-api-contract.zh-CN.md` 只保留接入指南
 
 ## 当前产品边界
 

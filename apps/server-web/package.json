@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "smoke:mock": "node scripts/mock-smoke-test.mjs"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",
@@ -16,6 +17,7 @@
     "@vue/test-utils": "^2.4.10",
     "jsdom": "^29.1.1",
     "pinia": "^3.0.4",
+    "playwright": "^1.60.0",
     "typescript": "^6.0.3",
     "vite": "^8.0.11",
     "vitest": "^4.1.5",

@@ -1,7 +1,0 @@
-{
-  "python": {
-    "entry": "app/main.py",
-    "package_manager": "uv",
-    "version": "3.11"
-  }
-}

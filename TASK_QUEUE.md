@@ -7,6 +7,7 @@
 
 ## 已完成
 
+- 2026-05-26：完成 `scratch-ai-server` 收尾 code review 并修复阻断项：补齐 `Go API` 多处必填字段校验，新增认证 / 学生创建 / 进度上报 / 密码重置回归测试；同步更新 `server-api/.env.example` 到当前 `DeepSeek + sb3` 配置口径，并忽略本地 `go build` 产物避免污染工作区；已通过 `server:api:docs:check`、根级 `npm run test` 和 `npm run server:build`。
 - 2026-05-26：补齐服务器端与教师 Web 的真实联调收口：新增 API 侧 `CORS` 预检支持，完成教师 Web 真实浏览器点击验证，走通登录、学生列表、发布单列表、实时看板和退出登录；同时引入 `@faker-js/faker`，补强教师 Web fake data 测试与后端认证/隔离回归测试；已通过 `server-api` 全量测试、`server-web` 全量测试，以及 `go test ./tests -count=1 -coverpkg=./internal/...` 覆盖验证。
 - 2026-05-24：完成从原始 workspace 拆出服务器端独立仓；保留 `server-api + server-web` 联机教学主线，收口根级 workspace、README、架构与部署文档，并完成独立 git 初始化、前后端测试与构建验证。
 - 2026-05-08：补齐服务器端预发布部署基线：`server-api` 新增 `DATABASE_URL`、`CORS_ALLOWED_ORIGINS`、Postgres 数据层兼容和 Zeabur `zbpack.json`；`server-web` 新增 Vercel SPA rewrite；同时补环境变量示例与部署文档，并新增配置 / CORS / Postgres 适配测试；已通过 `server-api` 全量测试、`server-web` 全量测试和前端构建验证。

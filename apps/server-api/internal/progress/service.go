@@ -9,8 +9,8 @@ import (
 var ErrAssignmentUnavailable = errors.New("assignment is not available to the student")
 
 type ReportInput struct {
-	CurrentTarget    string         `json:"currentTarget"`
-	StepSummary      string         `json:"stepSummary"`
+	CurrentTarget    string         `json:"currentTarget" binding:"required"`
+	StepSummary      string         `json:"stepSummary" binding:"required"`
 	LocalProjectHash string         `json:"localProjectHash"`
 	ReportedAt       string         `json:"reportedAt"`
 	Snapshot         map[string]any `json:"snapshot"`

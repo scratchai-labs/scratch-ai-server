@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Scratch Teacher Web">
+  <rect width="64" height="64" rx="16" fill="#ff8c1a" />
+  <path d="M18 19h28c5 0 9 4 9 9v8c0 5-4 9-9 9H31l-9 9v-9h-4c-5 0-9-4-9-9v-8c0-5 4-9 9-9Z" fill="#fff7ea"/>
+  <path d="M25 27h15" stroke="#ff8c1a" stroke-width="4" stroke-linecap="round"/>
+  <path d="M25 35h9" stroke="#ff8c1a" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="45" cy="23" r="7" fill="#1f6feb"/>
+  <path d="M45 20v6M42 23h6" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+</svg>
