@@ -80,9 +80,11 @@ export function useTeacherApiClient(): TeacherApiClient {
 export function createFetchTeacherApiClient(options: {
   baseUrl?: string
   fetchImpl?: FetchLike
+  getToken?: () => string
 } = {}): TeacherApiClient {
   const fetchImpl = options.fetchImpl ?? fetch
   const baseUrl = options.baseUrl
+  const getToken = options.getToken
 
   return {
     async login(input) {
@@ -101,31 +103,35 @@ export function createFetchTeacherApiClient(options: {
     async listStudents() {
       const payload = await requestJson<unknown>(
         fetchImpl,
-        buildApiUrl(baseUrl, '/api/students'),
+        buildApiUrl(baseUrl, '/api/teacher/students'),
         {
           method: 'GET',
+          headers: buildAuthHeaders(getToken),
         },
       )
-      return normalizeCollection<TeacherStudent>(payload)
+      return normalizeStudents(payload)
     },
     async listReleases() {
       const payload = await requestJson<unknown>(
         fetchImpl,
-        buildApiUrl(baseUrl, '/api/releases'),
+        buildApiUrl(baseUrl, '/api/teacher/assignments'),
         {
           method: 'GET',
+          headers: buildAuthHeaders(getToken),
         },
       )
-      return normalizeCollection<TeacherRelease>(payload)
+      return normalizeReleases(payload)
     },
     async getLiveDashboard(releaseId) {
-      return requestJson<LiveDashboardSnapshot>(
+      const payload = await requestJson<unknown>(
         fetchImpl,
-        buildApiUrl(baseUrl, `/api/dashboard/releases/${releaseId}/live`),
+        buildApiUrl(baseUrl, `/api/teacher/dashboard/assignments/${releaseId}/live`),
         {
           method: 'GET',
+          headers: buildAuthHeaders(getToken),
         },
       )
+      return normalizeLiveDashboard(payload)
     },
   }
 }
@@ -143,4 +149,68 @@ function normalizeCollection<T>(payload: unknown): T[] {
   }
 
   return []
+}
+
+function buildAuthHeaders(getToken: (() => string) | undefined): HeadersInit | undefined {
+  const token = getToken?.().trim()
+  if (!token) {
+    return undefined
+  }
+
+  return {
+    Authorization: `Bearer ${token}`,
+  }
+}
+
+function normalizeStudents(payload: unknown): TeacherStudent[] {
+  return normalizeCollection<Record<string, unknown>>(payload).map((item) => ({
+    id: String(item.id ?? ''),
+    name: String(item.displayName ?? item.name ?? ''),
+    className: '未分组',
+    progress: 0,
+    latestAiHint: '等待学生请求提示',
+    updatedAt: String(item.createdAt ?? item.updatedAt ?? '—'),
+  }))
+}
+
+function normalizeReleases(payload: unknown): TeacherRelease[] {
+  return normalizeCollection<Record<string, unknown>>(payload).map((item) => ({
+    id: String(item.id ?? ''),
+    title: String(item.title ?? ''),
+    className: '未分组',
+    status: normalizeReleaseStatus(item.status),
+    studentCount: Number(item.studentCount ?? 0),
+    updatedAt: String(item.updatedAt ?? '—'),
+  }))
+}
+
+function normalizeLiveDashboard(payload: unknown): LiveDashboardSnapshot {
+  const record = (payload ?? {}) as Record<string, unknown>
+  const students = Array.isArray(record.students) ? record.students : []
+
+  return {
+    releaseId: String(record.assignmentId ?? record.releaseId ?? ''),
+    releaseTitle: String(record.assignmentTitle ?? record.releaseTitle ?? '实时看板'),
+    updatedAt: String(record.updatedAt ?? '—'),
+    students: students.map((student) => normalizeLiveStudent(student)).filter(Boolean) as LiveStudentSnapshot[],
+  }
+}
+
+function normalizeLiveStudent(payload: unknown): LiveStudentSnapshot | null {
+  if (!payload || typeof payload !== 'object') {
+    return null
+  }
+
+  const record = payload as Record<string, unknown>
+  return {
+    id: String(record.studentId ?? record.id ?? ''),
+    name: String(record.studentName ?? record.name ?? ''),
+    progress: 0,
+    latestAiHint: String(record.lastHintText ?? record.latestAiHint ?? '等待学生请求提示'),
+    updatedAt: String(record.lastReportedAt ?? record.updatedAt ?? '—'),
+  }
+}
+
+function normalizeReleaseStatus(input: unknown): TeacherReleaseStatus {
+  return input === 'published' || input === 'archived' ? input : 'draft'
 }

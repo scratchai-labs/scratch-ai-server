@@ -3,13 +3,15 @@ import { spawn } from "node:child_process";
 const commands = [
   {
     label: "server-api",
-    command: "uv",
-    args: ["run", "--project", "apps/server-api", "uvicorn", "app.main:app", "--reload", "--app-dir", "apps/server-api"]
+    command: "go",
+    args: ["run", "./cmd/server-api"],
+    cwd: "apps/server-api"
   },
   {
     label: "server-web",
     command: "npm",
-    args: ["run", "dev", "--workspace=@scratch-ai/server-web"]
+    args: ["run", "dev", "--workspace=@scratch-ai/server-web"],
+    cwd: "."
   }
 ];
 
@@ -30,6 +32,7 @@ function stopChildren(exitCode = 0) {
 
 for (const entry of commands) {
   const child = spawn(entry.command, entry.args, {
+    cwd: entry.cwd,
     stdio: "inherit",
     shell: process.platform === "win32"
   });

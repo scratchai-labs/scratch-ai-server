@@ -1,86 +1,58 @@
 # Scratch AI Coach
 
-`Scratch AI Coach` server is the split-out classroom backend repo. It focuses on the teaching workflow built with `FastAPI + Vue`: teacher auth, student accounts, releases, progress reporting, and AI hint APIs.
-Cross-repo docs, architecture notes, and planning now live in [`scratch-ai-docs`](https://github.com/scratchai-labs/scratch-ai-docs/blob/main/README.en.md).
+`Scratch AI Coach` is the server-side repository for the classroom product line. The current mainline is now `Go API + Teacher Web`, while the existing `Python FastAPI` code stays only as a transition prototype.
 
-## Why This Project Exists
-
-Scratch helped many people fall in love with computers for the first time. Since Scratch itself is open source, this project is being organized as a long-term open source repository too, so teachers, learners, and contributors can use it, review it, and evolve it in public.
+Cross-repo docs, architecture notes, and planning live in [`scratch-ai-docs`](https://github.com/scratchai-labs/scratch-ai-docs/blob/main/README.en.md).
 
 ## Current Scope
 
 - This repository only maintains the **server teaching edition**
-- The stack is `Python FastAPI + Vue`
-- It contains `server-api` and `server-web`
-- Chinese is the primary product language today, while the core open source docs are bilingual
+- The core is the server API
+- Teachers manage students and assignments through a web console
+- Students log in from the client and only receive hints there
+- All AI processing stays on the server side
 
-## What It Does Today
+## Target Capabilities
 
-- Handles teacher register/login
-- Handles student account creation and login
-- Manages `sb3` release assignments
-- Stores student progress updates
-- Generates server-side AI hints
-- Exposes a live teacher dashboard
+- Teacher register and login
+- Batch creation of student accounts and passwords
+- Reference `sb3` upload and analysis
+- Student client login and progress reporting
+- Server-side DeepSeek hint generation
+- Live teacher progress dashboard
 
-## Deployment Focus
+## Development Notes
 
-This repository does not build desktop installers. Its release focus is:
-
-- deploying `apps/server-api`
-- building and deploying `apps/server-web`
-
-See [`docs/server-development.zh-CN.md`](docs/server-development.zh-CN.md) for the current deployment notes.
-
-## Local Development
+The root commands now target the Go API and the teacher web app directly:
 
 ```bash
 git clone git@github.com:scratchai-labs/scratch-ai-server.git
 cd scratch-ai-server
 npm ci
-npm run test
-```
-
-Common commands:
-
-```bash
-npm run build
-npm run test
-npm run server:web:test
 npm run server:api:test
+npm run server:web:test
 npm run server:dev
 ```
 
-Run the server stack locally:
+Current database behavior:
 
-```bash
-npm run server:dev
-```
+- local development uses `SQLite` by default
+- the server switches to `Postgres` when `DATABASE_URL` is provided
+- raw `sb3` files are stored under `SB3_STORAGE_DIR`
+
+Current integration status:
+
+- the teacher web app has been verified with a real browser click-through
+- the real API flow has been validated for login, students, assignments, live dashboard, and logout
+
+The detailed Chinese development spec for the next phase lives in [`docs/server-development.zh-CN.md`](docs/server-development.zh-CN.md).
 
 ## Documentation
 
-- Project structure: [`docs/project-structure.en.md`](docs/project-structure.en.md)
-- Server development doc (Chinese): [`docs/server-development.zh-CN.md`](docs/server-development.zh-CN.md)
-- Cross-repo docs and planning: [`scratch-ai-docs`](https://github.com/scratchai-labs/scratch-ai-docs/blob/main/README.en.md)
-- Development workflow: [`scratch-ai-docs/docs/development-workflow.zh-CN.md`](https://github.com/scratchai-labs/scratch-ai-docs/blob/main/docs/development-workflow.zh-CN.md)
-- Documentation guide: [`scratch-ai-docs/docs/documentation-guide.zh-CN.md`](https://github.com/scratchai-labs/scratch-ai-docs/blob/main/docs/documentation-guide.zh-CN.md)
-- Engineering docs index: [`docs/README.zh-CN.md`](docs/README.zh-CN.md)
-- Server API: `apps/server-api`
-- Teacher dashboard: `apps/server-web`
-
-## Contributing
-
-Contributions are welcome through issues, pull requests, docs improvements, and classroom feedback.
-
-- Read [`CONTRIBUTING.en.md`](CONTRIBUTING.en.md) before submitting code
-- Follow [`CODE_OF_CONDUCT.en.md`](CODE_OF_CONDUCT.en.md) in community spaces
-- Do not report security issues publicly; see [`SECURITY.en.md`](SECURITY.en.md)
-- Support and discussion guidance lives in [`SUPPORT.en.md`](SUPPORT.en.md)
-
-## Future Direction
-
-Cross-repo planning now lives in [`scratch-ai-docs`](https://github.com/scratchai-labs/scratch-ai-docs/blob/main/README.en.md).
-This repository stays focused on the server API, the teacher console, and the networked classroom flow.
+- Chinese overview: [`README.zh-CN.md`](README.zh-CN.md)
+- Project structure: [`docs/project-structure.zh-CN.md`](docs/project-structure.zh-CN.md)
+- Architecture: [`docs/architecture.zh-CN.md`](docs/architecture.zh-CN.md)
+- Server development spec: [`docs/server-development.zh-CN.md`](docs/server-development.zh-CN.md)
 
 ## License
 

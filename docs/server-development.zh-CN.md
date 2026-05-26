@@ -1,216 +1,679 @@
 # 服务器端开发说明
 
-本文是 `Scratch AI 教练` 服务器端第一阶段的专属文档，覆盖当前 `FastAPI + Vue` 教学链路的目录、启动方式、主要接口、数据模型和当前边界。
+本文收口服务器端当前实现与后续维护口径。当前仓库里仍保留一版 `Python FastAPI` 原型，但正式 API 主线已经按 `Go` 实现，教师管理端继续保留 `Web` 形态。
 
-## 1. 当前目标
+## 0. 当前实现状态
 
-服务器端当前只做第一阶段最小闭环：
+当前代码已经完成第一阶段主链路，真实实现口径如下：
 
-- 老师注册、登录
-- 老师创建学生账号
-- 老师发布 `sb3` 地址
-- 学生账号登录验证
-- 学生进度上报
-- 服务端生成 AI 提示
-- 教师后台实时查看学生最新进度与最新 AI 提示
+- 服务端语言：`Go`
+- HTTP 框架：`Gin`
+- 默认数据库：`SQLite`
+- 可选数据库：`Postgres`（配置 `DATABASE_URL` 后启用）
+- `sb3` 存储：本地目录 `SB3_STORAGE_DIR`
+- AI 上游：`DeepSeek API`
+- 教师端：`Vue 3 + Vite`
 
-当前不做：
+已落地能力：
 
-- 课程 / 班级多层模型
-- 学生自助注册
-- 文件上传式 `sb3`
-- WebSocket / SSE 推送
+- 教师注册、登录、退出、`me`
+- 教师创建学生、批量创建学生、重置学生密码
+- 学生客户端登录、退出、`me`
+- 教师上传参考 `sb3`
+- `sb3` 异步分析、失败记录、启动恢复、有限重试
+- 教学任务分配、发布、归档
+- 学生任务列表、任务详情、进度上报、提示请求
+- DeepSeek 提示生成与 fallback
+- 教师实时看板、学生历史查询
+- 教师 Web 真实 API 联调与浏览器点击验证
 
-## 2. 目录结构
-
-- `apps/server-api`
-  - Python `FastAPI` 后端
-  - 负责认证、发布单、进度、AI 提示、教师看板接口
-- `apps/server-web`
-  - Vue 3 + Vite 教师后台
-  - 负责老师登录、学生管理、发布单管理、实时看板
-
-## 3. 本地启动
-
-先安装根依赖：
-
-```bash
-npm ci
-```
-
-单独验证：
+常用命令：
 
 ```bash
 npm run server:api:test
 npm run server:web:test
-```
-
-单独启动后端：
-
-```bash
-uv run --project apps/server-api python -m app.main
-```
-
-单独启动前端：
-
-```bash
-npm run server:web:dev
-```
-
-前后端一起启动：
-
-```bash
 npm run server:dev
 ```
 
-## 4. API 约定
+## 1. 文档定位
 
-教师认证：
+这份文档解决 4 个问题：
+
+- 服务器端到底做什么，不做什么
+- 教师端、学生端、AI 处理分别放在哪里
+- 第一阶段 API 应该先做哪些接口
+- Go 服务端应该按什么模块拆
+
+当前结论：
+
+- 核心是 `API`
+- 教师需要一个 `Web` 管理端
+- 学生端只负责登录、读取本地 Scratch 状态、接收提示、上报进度
+- 所有 AI 调用都放在服务端，不放在学生客户端
+
+## 2. 产品目标
+
+服务器端第一阶段只做课堂教学主链路：
+
+1. 教师注册、登录
+2. 教师批量创建学生账号和初始密码
+3. 教师上传参考 `sb3` 文件
+4. 服务端解析并分析参考 `sb3`
+5. 学生客户端登录后读取自己的任务
+6. 学生客户端读取本地 Scratch 项目状态并持续上报
+7. 服务端结合“教师参考 `sb3` + 学生当前进度”调用 `DeepSeek API`
+8. 学生客户端接收下一步提示
+9. 教师在 Web 端查看学生最新进度与最新提示
+
+## 3. 明确边界
+
+第一阶段明确不做：
+
+- 学生自助注册
+- 班级 / 课程 / 学期多层模型
+- `CSV` / Excel 批量导入学生
+- 浏览器端直接调用 DeepSeek
+- 学生客户端直接持有 DeepSeek API Key
+- WebSocket / SSE 强推送
+- 在线编辑 Scratch 项目
+- 学生频繁上传完整 `sb3` 原文件
+
+第一阶段默认这样收口：
+
+- 教师上传一次“参考 `sb3`”
+- 学生客户端本地解析当前 Scratch 项目，上传结构化进度快照
+- 服务端只做比对、编排、提示生成和日志沉淀
+
+## 4. 角色与权限
+
+### 4.1 教师
+
+教师可以：
+
+- 注册、登录
+- 创建和管理学生账号
+- 批量导入学生账号与初始密码
+- 上传和管理参考 `sb3`
+- 查看 `sb3` 分析结果
+- 查看学生实时进度
+- 查看服务端生成的提示记录
+
+教师不应该：
+
+- 直接拿学生 token 调用学生接口
+- 在浏览器里直接暴露 DeepSeek Key
+
+### 4.2 学生
+
+学生只能通过客户端登录。
+
+学生可以：
+
+- 在客户端输入账号密码登录
+- 查看自己被分配的任务
+- 上报当前进度
+- 主动请求下一步提示
+- 接收服务端返回的提示
+
+学生不可以：
+
+- 注册老师账号
+- 创建其他学生
+- 上传参考 `sb3`
+- 访问教师管理接口
+
+### 4.3 服务端
+
+服务端负责：
+
+- 鉴权
+- 权限校验
+- `sb3` 文件存储
+- `sb3` 解析与分析
+- 学生进度存储
+- DeepSeek 调用
+- 提示生成日志
+- 教师看板聚合
+
+## 5. 主链路
+
+```text
+Teacher Web
+    |
+    v
+Go API  <----> SQLite / Postgres
+  |  \
+  |   \----> Local File Storage (sb3)
+  |
+  +----> DeepSeek API
+  ^
+  |
+Student Client
+```
+
+主流程：
+
+1. 教师在 `Teacher Web` 注册或登录。
+2. 教师批量创建学生账号。
+3. 教师上传参考 `sb3`，并填写任务标题、教学目标、说明。
+4. `Go API` 保存原始 `sb3`，创建任务记录，并异步分析 `project.json`。
+5. 教师等待分析状态变成 `ready`，再把任务分配给一个或多个学生。
+6. 学生在客户端登录，只能看到分配给自己的任务。
+7. 学生客户端读取本地 Scratch 项目，生成结构化快照并上报。
+8. 学生请求提示时，服务端把“参考 `sb3` 分析结果 + 学生最新快照 + 最近提示历史”发给 `DeepSeek API`。
+9. 服务端保存提示结果，并把下一步提示返回给学生客户端。
+10. 教师 Web 轮询看板接口，查看每个学生的最新进度和最新提示。
+
+## 6. 推荐工程结构
+
+当前仓库建议继续保持 monorepo：
+
+- `apps/server-api`
+  - Go 服务端主工程
+- `apps/server-web`
+  - 教师管理 Web
+- `docs`
+  - 架构、开发、维护文档
+
+`apps/server-api` 推荐目录：
+
+- `cmd/server-api`
+  - 服务启动入口
+- `internal/auth`
+  - 教师 / 学生登录、会话、权限
+- `internal/student`
+  - 学生账号、批量创建、查询
+- `internal/assignment`
+  - 教学任务、分配关系、状态
+- `internal/sb3`
+  - `sb3` 上传、解包、解析、分析
+- `internal/progress`
+  - 学生进度快照上报与查询
+- `internal/hint`
+  - DeepSeek 调用、提示生成、提示日志
+- `internal/dashboard`
+  - 教师实时看板聚合
+- `internal/store`
+  - 数据库与存储适配
+- `internal/http`
+  - 路由、handler、中间件、请求响应结构
+
+当前实现采用：
+
+- HTTP：`Gin`
+- JSON：Go 标准库
+- ZIP / `project.json` 解析：Go 标准库
+- SQLite 驱动：`modernc.org/sqlite`
+- Postgres 驱动：`pgx`
+
+当前没有额外依赖 `sb3` 专用三方解析库，仍然按 ZIP 包直接读取 `project.json`。
+
+## 7. 核心数据对象
+
+第一阶段建议收口为 8 组核心对象：
+
+### 7.1 teachers
+
+- `id`
+- `username`
+- `password_hash`
+- `display_name`
+- `created_at`
+
+### 7.2 teacher_sessions
+
+- `id`
+- `teacher_id`
+- `token`
+- `expires_at`
+- `created_at`
+
+### 7.3 students
+
+- `id`
+- `teacher_id`
+- `username`
+- `password_hash`
+- `display_name`
+- `status`
+- `created_at`
+
+### 7.4 student_sessions
+
+- `id`
+- `student_id`
+- `token`
+- `client_type`
+- `expires_at`
+- `created_at`
+
+`client_type` 第一阶段固定为 `desktop`，用于明确学生只能从客户端登录。
+
+### 7.5 assignments
+
+- `id`
+- `teacher_id`
+- `title`
+- `goal`
+- `description`
+- `status`
+- `sb3_file_path`
+- `analysis_status`
+- `analysis_error_message`
+- `created_at`
+- `updated_at`
+
+这里建议把原先偏发布语义的 `release` 收口为更直接的 `assignment`。
+
+### 7.6 assignment_students
+
+- `assignment_id`
+- `student_id`
+- `assigned_at`
+
+### 7.7 assignment_analysis
+
+- `assignment_id`
+- `role_names_json`
+- `script_counts_json`
+- `block_counts_json`
+- `category_counts_json`
+- `broadcast_messages_json`
+- `variable_names_json`
+- `list_names_json`
+- `extensions_json`
+- `teaching_points_json`
+- `created_at`
+- `updated_at`
+
+### 7.8 progress_reports / hint_records
+
+`progress_reports`：
+
+- `id`
+- `assignment_id`
+- `student_id`
+- `current_target`
+- `step_summary`
+- `snapshot_json`
+- `reported_at`
+
+`hint_records`：
+
+- `id`
+- `assignment_id`
+- `student_id`
+- `progress_report_id`
+- `prompt_input_json`
+- `hint_text`
+- `provider_name`
+- `created_at`
+
+## 8. API 范围
+
+第一阶段正式接口统一使用 `/api/...`。
+
+### 8.1 教师认证
 
 - `POST /api/teacher/register`
 - `POST /api/teacher/login`
+- `POST /api/teacher/logout`
+- `GET /api/teacher/me`
 
-学生端：
+### 8.2 学生管理
 
-- `POST /api/student/login`
-- `POST /api/student/releases/{releaseId}/progress`
-- `POST /api/student/releases/{releaseId}/hints`
+- `GET /api/teacher/students`
+- `POST /api/teacher/students`
+- `POST /api/teacher/students/batch`
+- `POST /api/teacher/students/{studentId}/reset-password`
 
-教师后台：
+`POST /api/teacher/students/batch` 输入建议为 JSON 对象，顶层使用 `students` 数组：
 
-- `GET /api/students`
-- `POST /api/students`
-- `GET /api/releases`
-- `POST /api/releases`
-- `GET /api/dashboard/releases/{releaseId}/live`
-
-兼容接口：
-
-- 后端目前也保留了第一版无 `/api` 前缀的内部接口，方便继续演进；新客户端与教师后台统一优先使用 `/api/...`。
-
-## 5. 数据模型
-
-当前主要表：
-
-- `teachers`
-- `students`
-- `auth_tokens`
-- `releases`
-- `release_assignments`
-- `progress_updates`
-- `ai_prompts`
-
-关系收口为：
-
-- 一个老师可以拥有多个学生
-- 一个老师可以创建多个发布单
-- 一个发布单可以分配多个学生
-- 一个学生可以在多个发布单下产生进度和 AI 提示日志
-
-## 6. 前端联调口径
-
-教师后台默认走 mock client，方便页面独立开发。
-
-切换真实后端时使用：
-
-```bash
-VITE_SERVER_WEB_API_MODE=real
-VITE_SERVER_WEB_API_BASE_URL=http://localhost:8000
+```json
+{
+  "students": [
+    {
+      "username": "student01",
+      "displayName": "小明",
+      "initialPassword": "abc12345"
+    },
+    {
+      "username": "student02",
+      "displayName": "小红",
+      "initialPassword": "xyz98765"
+    }
+  ]
+}
 ```
 
-当前教师后台主要页面：
+第一阶段不做 `CSV` 或 Excel 导入。教师 Web 只对接这个 JSON 批量接口。
 
-- `/login`
-- `/dashboard`
-- `/students`
-- `/releases`
-- `/releases/:id/live`
+返回建议包含：
 
-## 7. AI 配置
+- 成功创建列表
+- 冲突列表
+- 失败原因
 
-后端默认走本地 fallback provider。
+这样教师一次提交后，不需要手工回查哪几个账号创建成功。
 
-如需切真实上游，可配置：
+### 8.3 教学任务与参考 sb3
+
+- `GET /api/teacher/assignments`
+- `POST /api/teacher/assignments`
+- `GET /api/teacher/assignments/{assignmentId}`
+- `GET /api/teacher/assignments/{assignmentId}/analysis`
+- `POST /api/teacher/assignments/{assignmentId}/assign-students`
+- `POST /api/teacher/assignments/{assignmentId}/publish`
+- `POST /api/teacher/assignments/{assignmentId}/archive`
+
+`POST /api/teacher/assignments` 采用 `multipart/form-data`：
+
+- `title`
+- `goal`
+- `description`
+- `sb3`
+
+上传成功后，接口直接返回已创建的任务基础信息，并把 `analysisStatus` 置为 `pending`。教师端后续通过 `GET /api/teacher/assignments/{assignmentId}/analysis` 轮询分析状态。
+
+### 8.4 学生客户端
+
+- `POST /api/student/login`
+- `POST /api/student/logout`
+- `GET /api/student/me`
+- `GET /api/student/assignments`
+- `GET /api/student/assignments/{assignmentId}`
+- `POST /api/student/assignments/{assignmentId}/progress`
+- `POST /api/student/assignments/{assignmentId}/hints`
+
+约束：
+
+- 学生接口只接受学生 token
+- 学生只能访问分配给自己的任务
+- `student/login` 要求客户端带上固定的 `clientType=desktop`
+
+### 8.5 教师看板
+
+- `GET /api/teacher/dashboard/assignments/{assignmentId}/live`
+- `GET /api/teacher/dashboard/students/{studentId}/history`
+
+第一阶段教师看板统一先用轮询：
+
+- 列表页轮询建议 `10` 秒
+- 详情看板轮询建议 `3-5` 秒
+
+## 9. sb3 上传与分析
+
+教师上传 `sb3` 后，服务端需要完成 5 件事：
+
+1. 校验文件扩展名、MIME 和大小限制
+2. 保存原始文件
+3. 创建任务记录，并把 `analysisStatus` 记为 `pending`
+4. 异步解压并读取 `project.json`
+5. 生成可用于 AI 提示的结构化分析结果
+
+当前实现已经采用异步分析，不在上传接口里同步等待结果。当前收口方式：
+
+1. 上传接口保存文件和任务记录后立即返回
+2. 服务端后台 worker 领取 `pending` 任务
+3. worker 把状态改成 `processing`
+4. 解析成功后改成 `ready`
+5. 解析失败后改成 `failed`，并记录错误信息
+6. 服务重启后会恢复 `pending / processing` 任务
+
+`analysisStatus` 建议只有 4 个值：
+
+- `pending`
+- `processing`
+- `ready`
+- `failed`
+
+约束也要写死：
+
+- 任务分析结果未 `ready` 前，教师不能发布任务
+- 学生端如果拿到未分析完成的任务详情，可以看到状态，但不能请求提示
+- 学生在 `analysisStatus != ready` 时请求提示，服务端返回 `409 Conflict`
+
+第一阶段至少解析这些内容：
+
+- 舞台与角色列表
+- 每个角色的脚本数量
+- 事件积木分布
+- 运动、外观、声音、控制、侦测、变量、画笔等积木使用情况
+- 广播消息
+- 变量 / 列表
+- 扩展使用情况
+- 参考作品的关键教学点
+
+建议把分析结果做成结构化 JSON，而不是只存一段文本。原因很直接：后面不管是做 AI 提示、看板摘要，还是做规则兜底，都需要结构化字段。
+
+## 10. DeepSeek 提示链路
+
+学生客户端不直接调用 DeepSeek。
+
+正式链路应当是：
+
+1. 学生客户端请求提示
+2. 服务端读取该学生该任务最近一次进度
+3. 服务端读取教师参考 `sb3` 的分析结果
+4. 服务端拼装 Prompt
+5. 服务端调用 `DeepSeek API`
+6. 服务端保存提示日志
+7. 服务端把提示文本返回给学生客户端
+
+Prompt 至少应包含：
+
+- 教学任务标题与目标
+- 教师上传的参考 `sb3` 分析摘要
+- 学生当前角色 / 当前目标
+- 学生最近一步进度说明
+- 学生项目快照摘要
+  - 当前有哪些角色
+  - 每个角色有哪些积木
+- 提示风格约束
+
+提示风格建议固定为：
+
+- 短
+- 具体
+- 只给下一步
+- 不直接替学生写完整作品
+
+服务端需要保存这些 DeepSeek 相关配置：
+
+- `DEEPSEEK_BASE_URL`
+- `DEEPSEEK_API_KEY`
+- `DEEPSEEK_MODEL`
+
+可选的存储配置：
 
 - `DATABASE_URL`
 - `SERVER_API_DB_PATH`
-- `CORS_ALLOWED_ORIGINS`
-- `AI_PROVIDER`
-- `AI_BASE_URL`
-- `AI_API_KEY`
-- `AI_MODEL`
+- `SB3_STORAGE_DIR`
 
-当前策略：
+为了避免上游偶发失败直接卡住学生端，第一阶段建议保留一层规则兜底：
 
-- 如果没配 AI 上游，仍然返回可用的基础提示
-- 教师看板始终读取已保存的最新进度与最新提示日志
+- 如果 DeepSeek 超时或报错，服务端返回“基于当前目标和最近快照的最小下一步提示”
 
-## 8. 预发布部署（Zeabur + Vercel）
+这样学生端体验不会因为第三方波动完全中断。
 
-当前推荐的预发布拓扑：
+## 11. 学生进度上报
 
-- `apps/server-api` 部署到 `Zeabur`
-- 远程 `Postgres` 也放在 `Zeabur`
-- `apps/server-web` 部署到 `Vercel`
+“及时上传”不等于“每秒上传一次”。第一阶段建议这样收口：
 
-### 8.1 后端部署
+- 本地 Scratch 项目发生变化后，`3` 秒 debounce 后上报一次
+- 学生主动请求提示前，先补传一次最新进度
+- 持续编辑过程中，每 `15` 秒补一个心跳快照
+- 切换角色、运行项目、保存项目时，立即触发一次上报
 
-- 服务根目录：`apps/server-api`
-- 仓库已提供 `apps/server-api/zbpack.json`
-  - 使用 `uv`
-  - Python 版本固定到 `3.11`
-  - 入口固定为 `app/main.py`
-- 生产环境变量：
-  - `DATABASE_URL`
-  - `CORS_ALLOWED_ORIGINS`
-  - `AI_PROVIDER`
-  - `AI_BASE_URL`
-  - `AI_API_KEY`
-  - `AI_MODEL`
+`POST /api/student/assignments/{assignmentId}/progress` 建议至少上传：
 
-后端配置规则：
+- `currentTarget`
+- `stepSummary`
+- `snapshot`
+- `localProjectHash`
+- `reportedAt`
 
-- 配了 `DATABASE_URL` 时，后端直接使用远程 `Postgres`
-- 没配 `DATABASE_URL` 时，回退到 `SERVER_API_DB_PATH` 指向的本地 SQLite
-- `CORS_ALLOWED_ORIGINS` 必须至少包含教师后台的 `Vercel` 域名
+`snapshot` 第一阶段建议包含：
 
-### 8.2 前端部署
+- `currentRoleName`
+- `roles`
 
-- 服务根目录：`apps/server-web`
-- 构建命令：`npm run build`
-- 输出目录：`dist`
-- 生产环境变量：
+`roles` 里每一项建议包含：
 
-```bash
-VITE_SERVER_WEB_API_MODE=real
-VITE_SERVER_WEB_API_BASE_URL=https://<your-zeabur-api-domain>
+- `roleName`
+- `roleType`
+  - `stage` 或 `sprite`
+- `blocks`
+  - 按当前脚本遍历顺序上传该角色下的积木列表
+
+第一阶段先不要扩到变量状态、进度百分比、脚本坐标、运行时值。先把“当前有哪些角色、每个角色有哪些积木”这层快照稳定下来。
+
+建议的最小 JSON 形状：
+
+```json
+{
+  "currentRoleName": "Cat",
+  "roles": [
+    {
+      "roleName": "Stage",
+      "roleType": "stage",
+      "blocks": [
+        "当绿旗被点击",
+        "广播 开始"
+      ]
+    },
+    {
+      "roleName": "Cat",
+      "roleType": "sprite",
+      "blocks": [
+        "当接收到 开始",
+        "移动 10 步",
+        "如果碰到边缘就反弹"
+      ]
+    }
+  ]
+}
 ```
 
-- 仓库已提供 `apps/server-web/vercel.json`
-  - 统一把 history 路由回写到 `index.html`
-  - 避免直接刷新 `/dashboard`、`/students`、`/releases/:id/live` 时返回 404
+如果后面需要更强的比对能力，再在不破坏现有结构的前提下，为每个积木补 `opcode`、字段值和脚本分组信息。
 
-### 8.3 上线后最小验证
+教师 Web 不必直接消费原始 `snapshot`，而是消费服务端聚合后的看板数据。
 
-1. 访问 `GET /health`
-2. 老师注册 / 登录
-3. 创建学生账号
-4. 创建发布单
-5. 学生登录
-6. 上报一次进度
-7. 生成一次提示
-8. 教师后台打开实时看板确认数据已更新
+## 12. 教师管理 Web
 
-## 9. 当前限制与下一步
+教师 Web 第一阶段只做管理和查看，不做 AI 运算。
 
-当前限制：
+最小页面：
 
-- 本地开发默认 SQLite，预发布可切远程 Postgres，但还没有正式迁移工具
-- 教师后台的学生列表与发布单列表仍是第一阶段字段
-- 实时看板使用轮询，不是推送
+- `/login`
+- `/students`
+- `/assignments`
+- `/assignments/:id`
+- `/assignments/:id/live`
 
-下一步建议：
+每个页面职责：
 
-1. 做完全走服务器的学生客户端接入
-2. 收口发布单详情与学生“我的任务”读取接口
-3. 再决定是否引入课程 / 班级模型
+- `/login`
+  - 教师登录
+- `/students`
+  - 单个创建、批量创建、重置密码、查看状态
+  - 第一阶段不做 `CSV` 导入
+- `/assignments`
+  - 上传 `sb3`、创建任务、分配学生、发布/归档
+- `/assignments/:id`
+  - 查看参考 `sb3` 分析结果与已分配学生
+- `/assignments/:id/live`
+  - 查看学生最新进度、最新提示、更新时间
+
+## 13. 存储与部署
+
+第一阶段推荐依赖：
+
+- `Go API`
+  - 核心服务进程
+- `SQLite` / `Postgres`
+  - 结构化数据
+- 本地文件目录或对象存储
+  - 保存原始 `sb3`
+- `DeepSeek API`
+  - 提示生成
+- `Teacher Web`
+  - 教师管理界面
+
+本地开发可以先这样起步：
+
+- 数据库：本地 `SQLite`
+- 文件存储：本地目录
+- 教师 Web：Vite 开发模式
+- Go API：单进程
+
+教师 Web 联调真实 API 时，当前实现已经支持浏览器侧 `CORS` 预检请求。
+
+预发布时建议：
+
+- API 单独部署
+- Web 单独部署
+- `sb3` 文件不要混在临时容器文件系统里
+
+## 14. 验收路径
+
+Happy path：
+
+1. 教师注册并登录
+2. 教师批量创建 30 个学生
+3. 教师上传 1 个参考 `sb3`
+4. 服务端成功生成分析结果
+5. 教师把任务分配给学生
+6. 学生在客户端成功登录
+7. 学生能看到自己的任务
+8. 学生编辑本地 Scratch 项目后成功上报进度
+9. 学生请求提示后收到 DeepSeek 返回的下一步建议
+10. 教师看板看到该学生的最新进度与最新提示
+
+错误路径：
+
+- 重复创建学生账号
+- 非教师 token 调教师接口
+- 学生访问未分配给自己的任务
+- `sb3` 文件损坏或不是合法 ZIP
+- 参考 `sb3` 尚未分析完成时，教师尝试发布任务
+- 参考 `sb3` 尚未分析完成时，学生请求提示
+- DeepSeek 超时或返回异常
+
+边界路径：
+
+- 批量创建时部分成功、部分失败
+- 学生离线后恢复联网再补传进度
+- 同一个学生短时间多次请求提示
+- 教师归档任务后学生端的可见性规则
+
+## 15. 分阶段开发建议
+
+### 阶段 A：鉴权与学生管理
+
+- 教师注册、登录、退出
+- 学生单个创建
+- 学生批量创建
+- 学生客户端登录
+
+### 阶段 B：任务与 sb3 分析
+
+- 教师上传 `sb3`
+- 任务创建、分配、发布
+- `sb3` 异步解压与 `project.json` 分析
+- 分析状态轮询与失败重试
+
+### 阶段 C：学生进度与提示
+
+- 学生任务列表
+- 进度上报
+- DeepSeek 提示生成
+- 提示日志保存
+
+### 阶段 D：教师看板
+
+- 任务实时看板
+- 学生历史进度查看
+- 错误态与延迟态展示
+
+当前建议先按 `A -> B -> C -> D` 的顺序推进，不要一开始就同时做“课程模型、推送、对象存储抽象、复杂权限中心”。

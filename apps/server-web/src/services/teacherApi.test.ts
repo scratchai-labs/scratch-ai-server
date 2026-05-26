@@ -53,8 +53,9 @@ describe('createFetchTeacherApiClient', () => {
         createFetchResponse({
           items: [
             {
-              id: 'stu-1',
-              name: 'Ada',
+              id: 1,
+              displayName: 'Ada',
+              createdAt: '2026-05-25T12:00:00Z',
             },
           ],
         }),
@@ -63,47 +64,99 @@ describe('createFetchTeacherApiClient', () => {
         createFetchResponse({
           items: [
             {
-              id: 'rel-1',
+              id: 7,
               title: '第一期发布单',
+              status: 'published',
+              studentCount: 3,
+              updatedAt: '2026-05-25T12:10:00Z',
             },
           ],
         }),
       )
       .mockResolvedValueOnce(
         createFetchResponse({
-          releaseId: 'rel-1',
-          releaseTitle: '第一期发布单',
-          students: [],
+          assignmentId: 7,
+          assignmentTitle: '第一期发布单',
+          updatedAt: '2026-05-25T12:12:00Z',
+          students: [
+            {
+              studentId: 1,
+              studentName: 'Ada',
+              lastHintText: '先把事件积木连起来',
+              lastReportedAt: '2026-05-25T12:11:00Z',
+            },
+          ],
         }),
       )
     const api = createFetchTeacherApiClient({
       baseUrl: 'https://teacher.example',
       fetchImpl,
+      getToken: () => 'teacher-token',
     })
 
-    await api.listStudents()
-    await api.listReleases()
-    await api.getLiveDashboard('rel-1')
+    await expect(api.listStudents()).resolves.toEqual([
+      {
+        id: '1',
+        name: 'Ada',
+        className: '未分组',
+        progress: 0,
+        latestAiHint: '等待学生请求提示',
+        updatedAt: '2026-05-25T12:00:00Z',
+      },
+    ])
+    await expect(api.listReleases()).resolves.toEqual([
+      {
+        id: '7',
+        title: '第一期发布单',
+        className: '未分组',
+        status: 'published',
+        studentCount: 3,
+        updatedAt: '2026-05-25T12:10:00Z',
+      },
+    ])
+    await expect(api.getLiveDashboard('7')).resolves.toEqual({
+      releaseId: '7',
+      releaseTitle: '第一期发布单',
+      updatedAt: '2026-05-25T12:12:00Z',
+      students: [
+        {
+          id: '1',
+          name: 'Ada',
+          progress: 0,
+          latestAiHint: '先把事件积木连起来',
+          updatedAt: '2026-05-25T12:11:00Z',
+        },
+      ],
+    })
 
     expect(fetchImpl).toHaveBeenNthCalledWith(
       1,
-      'https://teacher.example/api/students',
+      'https://teacher.example/api/teacher/students',
       expect.objectContaining({
         method: 'GET',
+        headers: {
+          Authorization: 'Bearer teacher-token',
+        },
       }),
     )
     expect(fetchImpl).toHaveBeenNthCalledWith(
       2,
-      'https://teacher.example/api/releases',
+      'https://teacher.example/api/teacher/assignments',
       expect.objectContaining({
         method: 'GET',
+        headers: {
+          Authorization: 'Bearer teacher-token',
+        },
       }),
     )
     expect(fetchImpl).toHaveBeenNthCalledWith(
       3,
-      'https://teacher.example/api/dashboard/releases/rel-1/live',
+      'https://teacher.example/api/teacher/dashboard/assignments/7/live',
       expect.objectContaining({
         method: 'GET',
+        headers: {
+          Authorization: 'Bearer teacher-token',
+        },
       }),
     )
   })

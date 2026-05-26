@@ -2,10 +2,12 @@
 
 ## 待确认
 
+- 2026-05-25：按 `Go API + 教师管理 Web` 方向重写服务器端开发文档；细化教师注册登录、批量建学生、`sb3` 上传分析、DeepSeek 服务端提示、学生客户端登录与提示接收、以及进度实时上报主链路；本轮先收口需求、权限边界、API 范围与阶段划分。
 - 2026-05-07：为桌面伴随程序整理 GitHub CI 与跨平台出包链路；目标是让 Windows / macOS runner 能稳定构建、测试、打包并上传产物；本轮先在独立 worktree 里核实现状、补测试与 workflow。
 
 ## 已完成
 
+- 2026-05-26：补齐服务器端与教师 Web 的真实联调收口：新增 API 侧 `CORS` 预检支持，完成教师 Web 真实浏览器点击验证，走通登录、学生列表、发布单列表、实时看板和退出登录；同时引入 `@faker-js/faker`，补强教师 Web fake data 测试与后端认证/隔离回归测试；已通过 `server-api` 全量测试、`server-web` 全量测试，以及 `go test ./tests -count=1 -coverpkg=./internal/...` 覆盖验证。
 - 2026-05-24：完成从原始 workspace 拆出服务器端独立仓；保留 `server-api + server-web` 联机教学主线，收口根级 workspace、README、架构与部署文档，并完成独立 git 初始化、前后端测试与构建验证。
 - 2026-05-08：补齐服务器端预发布部署基线：`server-api` 新增 `DATABASE_URL`、`CORS_ALLOWED_ORIGINS`、Postgres 数据层兼容和 Zeabur `zbpack.json`；`server-web` 新增 Vercel SPA rewrite；同时补环境变量示例与部署文档，并新增配置 / CORS / Postgres 适配测试；已通过 `server-api` 全量测试、`server-web` 全量测试和前端构建验证。
 - 2026-05-08：完成服务器端第一阶段与文档收口：新增 `FastAPI + Vue` 服务器端最小闭环，覆盖老师注册登录、学生账号、`sb3` 发布单、学生进度上报、AI 提示与教师实时看板；同时补充服务器端专属文档 `docs/server-development.zh-CN.md`，并更新 README、文档索引、整体架构与子工程 README；已通过 verification 定向测试、server-api 测试、server-web 测试以及根级构建验证。
