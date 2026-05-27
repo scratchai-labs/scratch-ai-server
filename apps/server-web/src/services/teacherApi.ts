@@ -16,6 +16,9 @@ export interface TeacherStudent {
   name: string
   className: string
   progress: number
+  status?: string
+  currentTarget?: string
+  stepSummary?: string
   latestAiHint: string
   updatedAt: string
 }
@@ -54,6 +57,15 @@ export interface TeacherApiClient {
   listStudents(): Promise<TeacherStudent[]>
   listReleases(): Promise<TeacherRelease[]>
   getLiveDashboard(releaseId: string): Promise<LiveDashboardSnapshot>
+}
+
+interface TeacherStudentHistoryItem {
+  assignmentStatus?: string
+  currentTarget?: string
+  stepSummary?: string
+  reportedAt?: string
+  hintText?: string
+  hintCreatedAt?: string
 }
 
 export const teacherApiKey: InjectionKey<TeacherApiClient> = Symbol(
@@ -112,7 +124,32 @@ export function createFetchTeacherApiClient(options: {
           headers: buildAuthHeaders(getToken),
         },
       )
-      return normalizeStudents(payload)
+      const students = normalizeStudents(payload)
+      if (!students.length) {
+        return students
+      }
+
+      const histories = await Promise.all(
+        students.map(async (student) => {
+          try {
+            const historyPayload = await requestJson<unknown>(
+              fetchImpl,
+              buildApiUrl(baseUrl, `/api/teacher/dashboard/students/${student.id}/history`),
+              {
+                method: 'GET',
+                headers: buildAuthHeaders(getToken),
+              },
+            )
+            return normalizeStudentHistoryItems(historyPayload)
+          } catch {
+            return []
+          }
+        }),
+      )
+
+      return students
+        .map((student, index) => applyStudentHistory(student, histories[index] ?? []))
+        .sort(compareStudentsByUpdatedAt)
     },
     async listReleases() {
       const payload = await requestJson<unknown>(
@@ -171,9 +208,72 @@ function normalizeStudents(payload: unknown): TeacherStudent[] {
     name: String(item.displayName ?? item.name ?? ''),
     className: '未分组',
     progress: 0,
+    status: '',
+    currentTarget: '',
+    stepSummary: '',
     latestAiHint: '等待学生请求提示',
     updatedAt: String(item.createdAt ?? item.updatedAt ?? '—'),
   }))
+}
+
+function normalizeStudentHistoryItems(payload: unknown): TeacherStudentHistoryItem[] {
+  const record = payload && typeof payload === 'object' ? (payload as Record<string, unknown>) : {}
+  const items = Array.isArray(record.items) ? record.items : []
+
+  return items
+    .map((item) => normalizeStudentHistoryItem(item))
+    .filter(Boolean) as TeacherStudentHistoryItem[]
+}
+
+function normalizeStudentHistoryItem(payload: unknown): TeacherStudentHistoryItem | null {
+  if (!payload || typeof payload !== 'object') {
+    return null
+  }
+
+  const record = payload as Record<string, unknown>
+  return {
+    assignmentStatus: pickFirstNonEmpty(record.assignmentStatus),
+    currentTarget: pickFirstNonEmpty(record.currentTarget),
+    stepSummary: pickFirstNonEmpty(record.stepSummary),
+    reportedAt: pickFirstNonEmpty(record.reportedAt),
+    hintText: pickFirstNonEmpty(record.hintText),
+    hintCreatedAt: pickFirstNonEmpty(record.hintCreatedAt),
+  }
+}
+
+function applyStudentHistory(student: TeacherStudent, historyItems: TeacherStudentHistoryItem[]): TeacherStudent {
+  const latestItem = pickLatestStudentHistory(historyItems)
+  if (!latestItem) {
+    return student
+  }
+
+  const hasProgressUpdate = Boolean(
+    latestItem.currentTarget || latestItem.stepSummary || latestItem.reportedAt,
+  )
+
+  return {
+    ...student,
+    status: hasProgressUpdate ? 'active' : latestItem.assignmentStatus === 'published' ? 'assigned' : '',
+    currentTarget: latestItem.currentTarget || '',
+    stepSummary: latestItem.stepSummary || '',
+    latestAiHint: latestItem.hintText || student.latestAiHint,
+    updatedAt:
+      pickFirstNonEmpty(latestItem.hintCreatedAt, latestItem.reportedAt, student.updatedAt) ||
+      student.updatedAt,
+  }
+}
+
+function pickLatestStudentHistory(historyItems: TeacherStudentHistoryItem[]): TeacherStudentHistoryItem | null {
+  if (!historyItems.length) {
+    return null
+  }
+
+  return [...historyItems].sort((left, right) => {
+    return compareTimestampText(
+      pickFirstNonEmpty(right.hintCreatedAt, right.reportedAt),
+      pickFirstNonEmpty(left.hintCreatedAt, left.reportedAt),
+    )
+  })[0] ?? null
 }
 
 function normalizeReleases(payload: unknown): TeacherRelease[] {
@@ -219,6 +319,29 @@ function normalizeLiveStudent(payload: unknown): LiveStudentSnapshot | null {
 
 function normalizeReleaseStatus(input: unknown): TeacherReleaseStatus {
   return input === 'published' || input === 'archived' ? input : 'draft'
+}
+
+function compareStudentsByUpdatedAt(left: TeacherStudent, right: TeacherStudent) {
+  return compareTimestampText(right.updatedAt, left.updatedAt)
+}
+
+function compareTimestampText(left: string, right: string) {
+  const leftTime = Date.parse(left)
+  const rightTime = Date.parse(right)
+
+  if (Number.isFinite(leftTime) && Number.isFinite(rightTime)) {
+    return leftTime - rightTime
+  }
+
+  if (Number.isFinite(leftTime)) {
+    return 1
+  }
+
+  if (Number.isFinite(rightTime)) {
+    return -1
+  }
+
+  return left.localeCompare(right)
 }
 
 function pickFirstNonEmpty(...values: unknown[]): string {

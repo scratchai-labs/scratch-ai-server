@@ -2,6 +2,7 @@
 import { computed, onMounted } from 'vue'
 import AppShell from '@/components/AppShell.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
+import { studentStatusLabel, studentStatusTone } from '@/presenters/studentStatus'
 import { useTeacherApiClient } from '@/services/teacherApi'
 import { useTeacherDirectoryStore } from '@/stores/teacherDirectory'
 
@@ -37,7 +38,7 @@ onMounted(() => {
       <div class="panel__head">
         <div>
           <h2 class="panel__title">学生列表</h2>
-          <p class="panel__meta">后续只要后端保持 `/api/students` 输出一致，就可以直接接上。</p>
+          <p class="panel__meta">列表会结合学生基础档案和最近一次学习历史，显示每名学生当前状态。</p>
         </div>
       </div>
 
@@ -65,10 +66,23 @@ onMounted(() => {
               <td>{{ student.name }}</td>
               <td>{{ student.className }}</td>
               <td>
-                <div class="progress-track" :aria-label="`${student.name} 进度 ${student.progress}%`">
-                  <div class="progress-bar" :style="{ width: `${student.progress}%` }" />
+                <template v-if="student.progress > 0">
+                  <div class="progress-track" :aria-label="`${student.name} 进度 ${student.progress}%`">
+                    <div class="progress-bar" :style="{ width: `${student.progress}%` }" />
+                  </div>
+                  <span class="cell-subtle">{{ student.progress }}%</span>
+                </template>
+                <template v-else>
+                  <StatusBadge :tone="studentStatusTone(student.status)">
+                    {{ studentStatusLabel(student) }}
+                  </StatusBadge>
+                </template>
+                <div v-if="student.currentTarget" class="cell-subtle">
+                  当前目标：{{ student.currentTarget }}
                 </div>
-                <span class="cell-subtle">{{ student.progress }}%</span>
+                <div v-if="student.stepSummary" class="cell-subtle">
+                  当前步骤：{{ student.stepSummary }}
+                </div>
               </td>
               <td>{{ student.latestAiHint }}</td>
               <td>{{ student.updatedAt }}</td>

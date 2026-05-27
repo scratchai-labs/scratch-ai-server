@@ -45,6 +45,8 @@ VITE_SERVER_WEB_API_BASE_URL=http://localhost:8000
 
 仓库里也提供了 [`./.env.example`](./.env.example) 作为最小示例。
 
+当前真实 API 模式下，教师总览和学生管理会先请求 `GET /api/teacher/students`，再按学生补拉 `GET /api/teacher/dashboard/students/:id/history`，用最近一条学习历史渲染真实的 `status / currentTarget / stepSummary / latestAiHint / updatedAt`。
+
 如果只想在子目录里单独调试，也可以：
 
 ```bash
@@ -57,6 +59,7 @@ npm run dev
 - `POST /api/teacher/login`
 - `GET /api/teacher/students`
 - `GET /api/teacher/assignments`
+- `GET /api/teacher/dashboard/students/:id/history`
 - `GET /api/teacher/dashboard/assignments/:id/live`
 
 ## Vercel 预发布部署

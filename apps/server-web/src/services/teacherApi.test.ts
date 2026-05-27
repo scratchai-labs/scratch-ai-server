@@ -62,6 +62,24 @@ describe('createFetchTeacherApiClient', () => {
       )
       .mockResolvedValueOnce(
         createFetchResponse({
+          studentId: 1,
+          studentName: 'Ada',
+          items: [
+            {
+              assignmentId: 7,
+              assignmentTitle: '第一期发布单',
+              assignmentStatus: 'published',
+              currentTarget: '让 Cat 角色移动起来',
+              stepSummary: '已经接上方向键事件',
+              hintText: '先把事件积木连起来',
+              reportedAt: '2026-05-25T12:09:00Z',
+              hintCreatedAt: '2026-05-25T12:11:00Z',
+            },
+          ],
+        }),
+      )
+      .mockResolvedValueOnce(
+        createFetchResponse({
           items: [
             {
               id: 7,
@@ -104,8 +122,11 @@ describe('createFetchTeacherApiClient', () => {
         name: 'Ada',
         className: '未分组',
         progress: 0,
-        latestAiHint: '等待学生请求提示',
-        updatedAt: '2026-05-25T12:00:00Z',
+        status: 'active',
+        currentTarget: '让 Cat 角色移动起来',
+        stepSummary: '已经接上方向键事件',
+        latestAiHint: '先把事件积木连起来',
+        updatedAt: '2026-05-25T12:11:00Z',
       },
     ])
     await expect(api.listReleases()).resolves.toEqual([
@@ -148,7 +169,7 @@ describe('createFetchTeacherApiClient', () => {
     )
     expect(fetchImpl).toHaveBeenNthCalledWith(
       2,
-      'https://teacher.example/api/teacher/assignments',
+      'https://teacher.example/api/teacher/dashboard/students/1/history',
       expect.objectContaining({
         method: 'GET',
         headers: {
@@ -158,6 +179,16 @@ describe('createFetchTeacherApiClient', () => {
     )
     expect(fetchImpl).toHaveBeenNthCalledWith(
       3,
+      'https://teacher.example/api/teacher/assignments',
+      expect.objectContaining({
+        method: 'GET',
+        headers: {
+          Authorization: 'Bearer teacher-token',
+        },
+      }),
+    )
+    expect(fetchImpl).toHaveBeenNthCalledWith(
+      4,
       'https://teacher.example/api/teacher/dashboard/assignments/7/live',
       expect.objectContaining({
         method: 'GET',
@@ -166,5 +197,41 @@ describe('createFetchTeacherApiClient', () => {
         },
       }),
     )
+  })
+
+  it('keeps the student list usable when one history request fails', async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(
+        createFetchResponse({
+          items: [
+            {
+              id: 1,
+              displayName: 'Ada',
+              createdAt: '2026-05-25T12:00:00Z',
+            },
+          ],
+        }),
+      )
+      .mockRejectedValueOnce(new Error('history unavailable'))
+    const api = createFetchTeacherApiClient({
+      baseUrl: 'https://teacher.example',
+      fetchImpl,
+      getToken: () => 'teacher-token',
+    })
+
+    await expect(api.listStudents()).resolves.toEqual([
+      {
+        id: '1',
+        name: 'Ada',
+        className: '未分组',
+        progress: 0,
+        status: '',
+        currentTarget: '',
+        stepSummary: '',
+        latestAiHint: '等待学生请求提示',
+        updatedAt: '2026-05-25T12:00:00Z',
+      },
+    ])
   })
 })

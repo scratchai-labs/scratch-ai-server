@@ -3,6 +3,7 @@ import { computed, onMounted } from 'vue'
 import AppShell from '@/components/AppShell.vue'
 import MetricCard from '@/components/MetricCard.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
+import { studentStatusLabel, studentStatusTone } from '@/presenters/studentStatus'
 import { useTeacherApiClient } from '@/services/teacherApi'
 import { useSessionStore } from '@/stores/session'
 import { useTeacherDirectoryStore } from '@/stores/teacherDirectory'
@@ -11,13 +12,13 @@ const apiClient = useTeacherApiClient()
 const sessionStore = useSessionStore()
 const directoryStore = useTeacherDirectoryStore()
 
-const averageProgress = computed(() => {
+const activeStudentSummary = computed(() => {
   if (!directoryStore.students.length) {
-    return '0%'
+    return '0 / 0'
   }
 
-  const sum = directoryStore.students.reduce((total, student) => total + student.progress, 0)
-  return `${Math.round(sum / directoryStore.students.length)}%`
+  const activeStudents = directoryStore.students.filter((student) => student.status === 'active').length
+  return `${activeStudents} / ${directoryStore.students.length}`
 })
 
 const latestStudent = computed(() => directoryStore.students[0] ?? null)
@@ -58,9 +59,9 @@ onMounted(() => {
         note="已发布 / 总发布单"
       />
       <MetricCard
-        label="平均进度"
-        :value="averageProgress"
-        note="按当前学生进度计算"
+        label="已上报学生"
+        :value="activeStudentSummary"
+        note="已提交最近一次进度 / 在册学生"
       />
     </section>
 
@@ -76,15 +77,23 @@ onMounted(() => {
         <article class="release-card">
           <div class="release-card__head">
             <div>
-              <h2>最新学生进度</h2>
+              <h2>最新学生状态</h2>
               <p>{{ latestStudent?.name || '暂无学生数据' }}</p>
             </div>
-            <StatusBadge :tone="latestStudent ? 'info' : 'muted'">
-              {{ latestStudent ? `${latestStudent.progress}%` : '空' }}
+            <StatusBadge :tone="latestStudent ? studentStatusTone(latestStudent.status) : 'muted'">
+              {{ latestStudent ? studentStatusLabel(latestStudent) : '空' }}
             </StatusBadge>
           </div>
 
           <dl class="release-card__meta">
+            <div v-if="latestStudent?.currentTarget">
+              <dt>当前目标</dt>
+              <dd>{{ latestStudent.currentTarget }}</dd>
+            </div>
+            <div v-if="latestStudent?.stepSummary">
+              <dt>当前步骤</dt>
+              <dd>{{ latestStudent.stepSummary }}</dd>
+            </div>
             <div>
               <dt>最新 AI 提示</dt>
               <dd>{{ latestStudent?.latestAiHint || '等待接口返回' }}</dd>

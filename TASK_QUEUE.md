@@ -7,6 +7,7 @@
 
 ## 已完成
 
+- 2026-05-27：收口老师端多学生状态展示与差异化提示验证；`server-web` 的总览 / 学生管理现已基于 `GET /api/teacher/students` + `GET /api/teacher/dashboard/students/{id}/history` 汇总真实 `status / currentTarget / stepSummary / latestAiHint / updatedAt`，不再把真实课堂状态渲染成假 `0%`；同时新增后端回归测试，验证同一 assignment 下两名学生会因不同进度拿到不同提示，并可在老师实时看板同时看到。已通过 `server:test`，也已在真实老师/学生联调里复核。
 - 2026-05-27：收口教师实时看板显示层与进度时间口径；为 `server-api` 的进度记录补 `reportedAt` 缺省兜底，避免学生端未显式上传时间时老师看板长期显示 `—`；同时让 `server-web` 的实时看板消费真实 API 已提供的 `status / currentTarget / stepSummary / lastHintAt`，不再把未提供百分比的真实课堂状态误渲染成假 `0%`。已补 `teacherApi` / `LiveReleaseView` 回归测试，并用 `/Users/tesths/Downloads/Cat and a Mouse.sb3` 实际跑通老师端与学生端多角色联调；`npm run server:test` 也已在本机通过。
 - 2026-05-26：完成 `scratch-ai-server` 收尾 code review 并修复阻断项：补齐 `Go API` 多处必填字段校验，新增认证 / 学生创建 / 进度上报 / 密码重置回归测试；同步更新 `server-api/.env.example` 到当前 `DeepSeek + sb3` 配置口径，并忽略本地 `go build` 产物避免污染工作区；已通过 `server:api:docs:check`、根级 `npm run test` 和 `npm run server:build`。
 - 2026-05-26：补齐服务器端与教师 Web 的真实联调收口：新增 API 侧 `CORS` 预检支持，完成教师 Web 真实浏览器点击验证，走通登录、学生列表、发布单列表、实时看板和退出登录；同时引入 `@faker-js/faker`，补强教师 Web fake data 测试与后端认证/隔离回归测试；已通过 `server-api` 全量测试、`server-web` 全量测试，以及 `go test ./tests -count=1 -coverpkg=./internal/...` 覆盖验证。

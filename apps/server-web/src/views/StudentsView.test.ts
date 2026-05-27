@@ -28,8 +28,11 @@ describe('StudentsView', () => {
           id: 'stu-2',
           name: 'Alan',
           className: '四年级二班',
-          progress: 38,
-          latestAiHint: '先把重复积木整理成三个步骤',
+          progress: 0,
+          status: 'active',
+          currentTarget: '让 Alan 的角色先说一句话',
+          stepSummary: '已经放上开始事件，但还没接外观积木',
+          latestAiHint: '先补一个“说 2 秒”测试当前流程',
           updatedAt: '2026-05-07 09:24',
         },
       ]),
@@ -55,6 +58,9 @@ describe('StudentsView', () => {
     expect(wrapper.text()).toContain('Ada')
     expect(wrapper.text()).toContain('Alan')
     expect(wrapper.text()).toContain('补上广播消息后再测试一次')
-    expect(wrapper.text()).toContain('先把重复积木整理成三个步骤')
+    expect(wrapper.text()).toContain('先补一个“说 2 秒”测试当前流程')
+    expect(wrapper.text()).toContain('已上报')
+    expect(wrapper.text()).toContain('让 Alan 的角色先说一句话')
+    expect(wrapper.text()).toContain('已经放上开始事件，但还没接外观积木')
   })
 })

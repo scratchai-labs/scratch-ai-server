@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
+import { studentStatusLabel, studentStatusTone } from '@/presenters/studentStatus'
 import { useTeacherApiClient } from '@/services/teacherApi'
 import { useLiveDashboardStore } from '@/stores/liveDashboard'
 
@@ -11,34 +12,6 @@ const apiClient = useTeacherApiClient()
 const liveStore = useLiveDashboardStore()
 
 const releaseId = computed(() => String(route.params.id ?? ''))
-
-function studentStatusTone(status?: string) {
-  if (status === 'active') {
-    return 'info'
-  }
-
-  if (status === 'assigned') {
-    return 'warning'
-  }
-
-  return 'muted'
-}
-
-function studentStatusLabel(student: { progress: number; status?: string }) {
-  if (student.progress > 0) {
-    return `${student.progress}%`
-  }
-
-  if (student.status === 'active') {
-    return '已上报'
-  }
-
-  if (student.status === 'assigned') {
-    return '已分配'
-  }
-
-  return '等待中'
-}
 
 watch(
   releaseId,

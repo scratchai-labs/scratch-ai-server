@@ -424,6 +424,12 @@ Student Client
 - `GET /api/teacher/dashboard/assignments/{id}/live`
 - `GET /api/teacher/dashboard/students/{id}/history`
 
+当前教师 Web 的展示口径：
+
+- 总览页和学生管理页先请求 `GET /api/teacher/students`
+- 再按学生补拉 `GET /api/teacher/dashboard/students/{id}/history`
+- 前端使用最近一条历史记录渲染 `status / currentTarget / stepSummary / latestAiHint / updatedAt`
+
 第一阶段教师看板统一先用轮询：
 
 - 列表页轮询建议 `10` 秒

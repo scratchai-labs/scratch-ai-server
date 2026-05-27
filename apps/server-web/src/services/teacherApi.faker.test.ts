@@ -32,19 +32,56 @@ describe('teacherApi normalization with fake data', () => {
       lastHintText: faker.lorem.sentence(),
       lastReportedAt: faker.date.recent().toISOString(),
     }))
+    const studentHistoryById = new Map(
+      studentPayload.map((student, index) => [
+        String(student.id),
+        {
+          studentId: student.id,
+          studentName: student.displayName,
+          items: [
+            {
+              assignmentId: 100 + index,
+              assignmentTitle: `Fake Assignment ${index + 1}`,
+              assignmentStatus: index % 2 === 0 ? 'published' : 'draft',
+              currentTarget: `Fake Target ${index + 1}`,
+              stepSummary: `Fake Step ${index + 1}`,
+              hintText: `Fake Hint ${index + 1}`,
+              reportedAt: new Date(Date.UTC(2026, 4, 27, 12, 0, index)).toISOString(),
+              hintCreatedAt: new Date(Date.UTC(2026, 4, 27, 12, 1, index)).toISOString(),
+            },
+          ],
+        },
+      ]),
+    )
 
     const fetchImpl = vi
       .fn()
-      .mockResolvedValueOnce(createFetchResponse({ items: studentPayload }))
-      .mockResolvedValueOnce(createFetchResponse({ items: releasePayload }))
-      .mockResolvedValueOnce(
-        createFetchResponse({
-          assignmentId: 88,
-          assignmentTitle: 'Batch Fake Dashboard',
-          updatedAt: faker.date.recent().toISOString(),
-          students: dashboardPayload,
-        }),
-      )
+      .mockImplementation(async (url: string) => {
+        if (url.endsWith('/api/teacher/students')) {
+          return createFetchResponse({ items: studentPayload })
+        }
+
+        if (url.endsWith('/api/teacher/assignments')) {
+          return createFetchResponse({ items: releasePayload })
+        }
+
+        if (url.endsWith('/api/teacher/dashboard/assignments/88/live')) {
+          return createFetchResponse({
+            assignmentId: 88,
+            assignmentTitle: 'Batch Fake Dashboard',
+            updatedAt: faker.date.recent().toISOString(),
+            students: dashboardPayload,
+          })
+        }
+
+        const historyMatch = url.match(/\/api\/teacher\/dashboard\/students\/([^/]+)\/history$/)
+        if (historyMatch) {
+          const historyPayload = studentHistoryById.get(historyMatch[1] ?? '')
+          return createFetchResponse(historyPayload ?? { items: [] })
+        }
+
+        throw new Error(`unexpected fetch url: ${url}`)
+      })
 
     const api = createFetchTeacherApiClient({
       baseUrl: 'https://teacher.example',
@@ -57,10 +94,15 @@ describe('teacherApi normalization with fake data', () => {
     const dashboard = await api.getLiveDashboard('88')
 
     expect(students).toHaveLength(studentPayload.length)
-    expect(students[0]).toMatchObject({
+
+    const matchedStudent = students.find((student) => student.id === String(studentPayload[0]?.id))
+    expect(matchedStudent).toMatchObject({
       id: String(studentPayload[0]?.id),
       name: String(studentPayload[0]?.displayName),
       className: '未分组',
+      currentTarget: 'Fake Target 1',
+      stepSummary: 'Fake Step 1',
+      latestAiHint: 'Fake Hint 1',
     })
 
     expect(releases).toHaveLength(releasePayload.length)
