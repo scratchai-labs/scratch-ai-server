@@ -474,6 +474,10 @@ func (b *sqlBackend) ListAssignedAssignmentsByStudent(studentID int64) []Assignm
 
 func (b *sqlBackend) CreateProgress(input CreateProgressInput) ProgressReport {
 	now := nowUTC()
+	reportedAt := input.ReportedAt
+	if reportedAt == "" {
+		reportedAt = now
+	}
 	id, err := b.insertReturningID(
 		"INSERT INTO progress_reports (assignment_id, student_id, current_target, step_summary, local_project_hash, reported_at, snapshot_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
 		input.AssignmentID,
@@ -481,7 +485,7 @@ func (b *sqlBackend) CreateProgress(input CreateProgressInput) ProgressReport {
 		input.CurrentTarget,
 		input.StepSummary,
 		input.LocalProjectHash,
-		input.ReportedAt,
+		reportedAt,
 		mustJSON(input.Snapshot),
 		now,
 	)

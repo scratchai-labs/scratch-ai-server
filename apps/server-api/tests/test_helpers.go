@@ -11,6 +11,7 @@ import (
 	"net/http/httptest"
 	"net/textproto"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -116,8 +117,7 @@ func registerTeacher(t *testing.T, handler http.Handler, username string, passwo
 func requireStringField(t *testing.T, raw string, field string) string {
 	t.Helper()
 
-	record := parseObject(t, raw)
-	value, ok := record[field].(string)
+	value, ok := lookupField(t, raw, field).(string)
 	require.True(t, ok, "field %s should be a string", field)
 	return value
 }
@@ -130,8 +130,7 @@ func requireBodyField(t *testing.T, raw string, field string, expected string) {
 func requireJSONArrayLen(t *testing.T, raw string, field string, expected int) {
 	t.Helper()
 
-	record := parseObject(t, raw)
-	items, ok := record[field].([]any)
+	items, ok := lookupField(t, raw, field).([]any)
 	require.True(t, ok, "field %s should be an array", field)
 	require.Len(t, items, expected)
 }
@@ -139,8 +138,7 @@ func requireJSONArrayLen(t *testing.T, raw string, field string, expected int) {
 func requireInt64Field(t *testing.T, raw string, field string) int64 {
 	t.Helper()
 
-	record := parseObject(t, raw)
-	value, ok := record[field].(float64)
+	value, ok := lookupField(t, raw, field).(float64)
 	require.True(t, ok, "field %s should be a number", field)
 	return int64(value)
 }
@@ -151,6 +149,29 @@ func parseObject(t *testing.T, raw string) map[string]any {
 	var decoded map[string]any
 	require.NoError(t, json.Unmarshal([]byte(raw), &decoded))
 	return decoded
+}
+
+func lookupField(t *testing.T, raw string, field string) any {
+	t.Helper()
+
+	var current any = parseObject(t, raw)
+	for _, segment := range strings.Split(field, ".") {
+		if index, err := strconv.Atoi(segment); err == nil {
+			items, ok := current.([]any)
+			require.True(t, ok, "field %s should contain an array before index %s", field, segment)
+			require.Greater(t, len(items), index, "field %s index %d out of range", field, index)
+			current = items[index]
+			continue
+		}
+
+		record, ok := current.(map[string]any)
+		require.True(t, ok, "field %s should contain an object before key %s", field, segment)
+		value, exists := record[segment]
+		require.True(t, exists, "field %s should include key %s", field, segment)
+		current = value
+	}
+
+	return current
 }
 
 func createSampleSB3(t *testing.T) []byte {

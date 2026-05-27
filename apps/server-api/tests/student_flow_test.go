@@ -129,6 +129,9 @@ func TestStudentCanReportProgressRequestHintAndTeacherSeeLiveDashboard(t *testin
 	dashboardRes := performAuthedJSONRequest(t, handler, teacherToken, http.MethodGet, fmt.Sprintf("/api/teacher/dashboard/assignments/%d/live", assignmentID), nil)
 	require.Equal(t, http.StatusOK, dashboardRes.Code)
 	requireJSONArrayLen(t, dashboardRes.Body.String(), "students", 1)
+	requireBodyField(t, dashboardRes.Body.String(), "students.0.currentTarget", "让 Cat 角色移动起来")
+	requireBodyField(t, dashboardRes.Body.String(), "students.0.stepSummary", "已经把事件积木接上了")
+	requireStringField(t, dashboardRes.Body.String(), "students.0.lastReportedAt")
 }
 
 func TestStudentProgressRejectsMissingRequiredFields(t *testing.T) {

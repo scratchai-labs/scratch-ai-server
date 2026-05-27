@@ -12,6 +12,34 @@ const liveStore = useLiveDashboardStore()
 
 const releaseId = computed(() => String(route.params.id ?? ''))
 
+function studentStatusTone(status?: string) {
+  if (status === 'active') {
+    return 'info'
+  }
+
+  if (status === 'assigned') {
+    return 'warning'
+  }
+
+  return 'muted'
+}
+
+function studentStatusLabel(student: { progress: number; status?: string }) {
+  if (student.progress > 0) {
+    return `${student.progress}%`
+  }
+
+  if (student.status === 'active') {
+    return '已上报'
+  }
+
+  if (student.status === 'assigned') {
+    return '已分配'
+  }
+
+  return '等待中'
+}
+
 watch(
   releaseId,
   (nextReleaseId) => {
@@ -84,10 +112,23 @@ onBeforeUnmount(() => {
             <tr v-for="student in liveStore.snapshot.students" :key="student.id">
               <td>{{ student.name }}</td>
               <td>
-                <div class="progress-track" :aria-label="`${student.name} 进度 ${student.progress}%`">
-                  <div class="progress-bar" :style="{ width: `${student.progress}%` }" />
+                <template v-if="student.progress > 0">
+                  <div class="progress-track" :aria-label="`${student.name} 进度 ${student.progress}%`">
+                    <div class="progress-bar" :style="{ width: `${student.progress}%` }" />
+                  </div>
+                  <span class="cell-subtle">{{ student.progress }}%</span>
+                </template>
+                <template v-else>
+                  <StatusBadge :tone="studentStatusTone(student.status)">
+                    {{ studentStatusLabel(student) }}
+                  </StatusBadge>
+                </template>
+                <div v-if="student.currentTarget" class="cell-subtle">
+                  当前目标：{{ student.currentTarget }}
                 </div>
-                <span class="cell-subtle">{{ student.progress }}%</span>
+                <div v-if="student.stepSummary" class="cell-subtle">
+                  当前步骤：{{ student.stepSummary }}
+                </div>
               </td>
               <td>{{ student.latestAiHint }}</td>
               <td>{{ student.updatedAt }}</td>

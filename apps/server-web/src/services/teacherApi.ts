@@ -35,6 +35,9 @@ export interface LiveStudentSnapshot {
   id: string
   name: string
   progress: number
+  status?: string
+  currentTarget?: string
+  stepSummary?: string
   latestAiHint: string
   updatedAt: string
 }
@@ -205,12 +208,36 @@ function normalizeLiveStudent(payload: unknown): LiveStudentSnapshot | null {
   return {
     id: String(record.studentId ?? record.id ?? ''),
     name: String(record.studentName ?? record.name ?? ''),
-    progress: 0,
+    progress: normalizeProgressValue(record.progress),
+    status: pickFirstNonEmpty(record.status),
+    currentTarget: pickFirstNonEmpty(record.currentTarget),
+    stepSummary: pickFirstNonEmpty(record.stepSummary),
     latestAiHint: String(record.lastHintText ?? record.latestAiHint ?? '等待学生请求提示'),
-    updatedAt: String(record.lastReportedAt ?? record.updatedAt ?? '—'),
+    updatedAt: pickFirstNonEmpty(record.lastReportedAt, record.lastHintAt, record.updatedAt) || '—',
   }
 }
 
 function normalizeReleaseStatus(input: unknown): TeacherReleaseStatus {
   return input === 'published' || input === 'archived' ? input : 'draft'
+}
+
+function pickFirstNonEmpty(...values: unknown[]): string {
+  for (const value of values) {
+    if (typeof value !== 'string') {
+      continue
+    }
+    const trimmed = value.trim()
+    if (trimmed) {
+      return trimmed
+    }
+  }
+  return ''
+}
+
+function normalizeProgressValue(value: unknown): number {
+  const parsed = Number(value)
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return 0
+  }
+  return Math.round(parsed)
 }

@@ -686,6 +686,11 @@ func (s *Store) CreateProgress(input CreateProgressInput) ProgressReport {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	reportedAt := input.ReportedAt
+	if reportedAt == "" {
+		reportedAt = time.Now().UTC().Format(time.RFC3339)
+	}
+
 	report := ProgressReport{
 		ID:               s.nextProgressID,
 		AssignmentID:     input.AssignmentID,
@@ -693,7 +698,7 @@ func (s *Store) CreateProgress(input CreateProgressInput) ProgressReport {
 		CurrentTarget:    input.CurrentTarget,
 		StepSummary:      input.StepSummary,
 		LocalProjectHash: input.LocalProjectHash,
-		ReportedAt:       input.ReportedAt,
+		ReportedAt:       reportedAt,
 		Snapshot:         cloneMap(input.Snapshot),
 		CreatedAt:        time.Now().UTC(),
 	}
