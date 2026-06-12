@@ -36,6 +36,7 @@ Scratch 帮很多人第一次真正喜欢上电脑、理解程序和创作。这
 机器可读 API 契约以 [`apps/server-api/docs/swagger.json`](apps/server-api/docs/swagger.json) 和 [`apps/server-api/docs/swagger.yaml`](apps/server-api/docs/swagger.yaml) 为准。
 客户端对接优先看 [`docs/server-api-contract.zh-CN.md`](docs/server-api-contract.zh-CN.md) 里的调用顺序和示例。
 详细开发背景再看 [`docs/server-development.zh-CN.md`](docs/server-development.zh-CN.md)。
+部署落地优先看 [`docs/deployment.zh-CN.md`](docs/deployment.zh-CN.md)。
 
 ## 本地开发
 
@@ -73,6 +74,14 @@ npm run dev
 - 配置 `DATABASE_URL` 后切到 `Postgres`
 - `sb3` 原文件默认落到本地目录 `SB3_STORAGE_DIR`
 
+当前部署口径：
+
+- 线上测试环境和正式环境分开
+- `server-api` 部署在 `Zeabur`
+- `server-web` 部署在 `Vercel`
+- `staging` 和 `production` 各自使用独立 `DATABASE_URL`
+- `staging` 和 `production` 各自使用独立 `SB3_STORAGE_DIR`
+
 当前联调状态：
 
 - 教师 Web 已完成一次真实浏览器点击验证
@@ -83,6 +92,7 @@ npm run dev
 
 - 仓库结构：[`docs/project-structure.zh-CN.md`](docs/project-structure.zh-CN.md)
 - 架构说明：[`docs/architecture.zh-CN.md`](docs/architecture.zh-CN.md)
+- 部署指南：[`docs/deployment.zh-CN.md`](docs/deployment.zh-CN.md)
 - API 契约真值源：[`apps/server-api/docs/swagger.json`](apps/server-api/docs/swagger.json) / [`apps/server-api/docs/swagger.yaml`](apps/server-api/docs/swagger.yaml)
 - 接入指南：[`docs/server-api-contract.zh-CN.md`](docs/server-api-contract.zh-CN.md)
 - 服务器端开发说明：[`docs/server-development.zh-CN.md`](docs/server-development.zh-CN.md)

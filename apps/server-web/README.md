@@ -3,6 +3,7 @@
 `apps/server-web` 是服务器端第一阶段的 Vue 3 + Vite 教师后台 SPA。
 
 更完整的服务器端说明见 [`../../docs/server-development.zh-CN.md`](../../docs/server-development.zh-CN.md)。
+实际部署时的环境拆分、变量矩阵和上线顺序见 [`../../docs/deployment.zh-CN.md`](../../docs/deployment.zh-CN.md)。
 
 ## 运行
 
@@ -73,8 +74,11 @@ npm run dev
 - 推荐把项目根目录指向 `apps/server-web`
 - 构建命令使用 `npm run build`
 - 输出目录使用 `dist`
+- `Preview` 建议指向 `staging API`
+- `Production` 指向正式 API
 - 需要注入：
   - `VITE_SERVER_WEB_API_MODE=real`
   - `VITE_SERVER_WEB_API_BASE_URL=https://<your-zeabur-api-domain>`
+- 如果要用真实 API 做 staging 联调，建议给 Web 绑定固定 staging 域名，不要依赖每次变化的 Preview URL
 - 生产环境不再自动展示 mock 登录提示，也不会回退到 mock client
 - 仓库已提供 `vercel.json`，用于把 Vue Router history 路由统一回写到 `index.html`

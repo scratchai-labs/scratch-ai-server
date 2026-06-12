@@ -5,6 +5,7 @@
 
 客户端接入指南见 [`../../docs/server-api-contract.zh-CN.md`](../../docs/server-api-contract.zh-CN.md)。
 更完整的服务器端开发说明见 [`../../docs/server-development.zh-CN.md`](../../docs/server-development.zh-CN.md)。
+实际部署时的环境拆分、变量矩阵和上线顺序见 [`../../docs/deployment.zh-CN.md`](../../docs/deployment.zh-CN.md)。
 
 ## 本地开发
 
@@ -102,6 +103,7 @@ npm run server:api:docs:check
 ## Zeabur 预发布部署
 
 - 推荐把服务根目录指向 `apps/server-api`
+- 推荐把 `staging` 和 `production` 拆成两个 Zeabur 项目，分别接自己的数据库和持久卷
 - 需要在 Zeabur 注入：
   - `GIN_MODE=release`
   - `PORT`
@@ -114,6 +116,8 @@ npm run server:api:docs:check
   - `DEEPSEEK_TIMEOUT_SECONDS`
 - 若使用 `Neon Postgres`，把 `DATABASE_URL` 指向 `Neon` 提供的连接串；不要在 `release` 模式下回退到临时 `SQLite`
 - `SB3_STORAGE_DIR` 应该指向 Zeabur 持久卷目录，避免重启后丢失上传的原始 `sb3`
+- 不要让 `staging` 和 `production` 共用同一条 `DATABASE_URL` 或同一个 `SB3_STORAGE_DIR`
+- 如果教师 Web 要联调真实 staging API，建议使用固定 staging Web 域名，并把这个精确域名写入 `CORS_ALLOWED_ORIGINS`
 - 部署后先验证：
 
 ```bash

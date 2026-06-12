@@ -648,6 +648,13 @@ Prompt 至少应包含：
 - API 单独部署
 - Web 单独部署
 - `sb3` 文件不要混在临时容器文件系统里
+- 线上测试环境和正式环境分开数据库、分开持久目录
+
+如果要直接按当前仓库落地部署，后续以 [`./deployment.zh-CN.md`](./deployment.zh-CN.md) 为准。那份文档已经明确了：
+
+- `Vercel Preview / 固定 staging Web 域名 -> Zeabur staging -> Neon staging`
+- `Vercel Production -> Zeabur production -> Neon production`
+- `staging` 和 `production` 各自独立 `DATABASE_URL`、`SB3_STORAGE_DIR` 和 `CORS_ALLOWED_ORIGINS`
 
 ## 14. 验收路径
 

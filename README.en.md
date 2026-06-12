@@ -63,12 +63,14 @@ Current integration status:
 - the real API flow has been validated for login, students, assignments, live dashboard, and logout
 
 The detailed Chinese development spec for the next phase lives in [`docs/server-development.zh-CN.md`](docs/server-development.zh-CN.md).
+The current deployment guide lives in [`docs/deployment.zh-CN.md`](docs/deployment.zh-CN.md).
 
 ## Documentation
 
 - Chinese overview: [`README.zh-CN.md`](README.zh-CN.md)
 - Project structure: [`docs/project-structure.zh-CN.md`](docs/project-structure.zh-CN.md)
 - Architecture: [`docs/architecture.zh-CN.md`](docs/architecture.zh-CN.md)
+- Deployment guide: [`docs/deployment.zh-CN.md`](docs/deployment.zh-CN.md)
 - Server development spec: [`docs/server-development.zh-CN.md`](docs/server-development.zh-CN.md)
 
 ## License

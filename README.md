@@ -22,6 +22,7 @@ An open source server workspace for Scratch teaching. The current production tra
 - English overview: [`README.en.md`](README.en.md)
 - 仓库结构：[`docs/project-structure.zh-CN.md`](docs/project-structure.zh-CN.md)
 - 架构说明：[`docs/architecture.zh-CN.md`](docs/architecture.zh-CN.md)
+- 部署指南：[`docs/deployment.zh-CN.md`](docs/deployment.zh-CN.md)
 - API 契约真值源：[`apps/server-api/docs/swagger.json`](apps/server-api/docs/swagger.json) / [`apps/server-api/docs/swagger.yaml`](apps/server-api/docs/swagger.yaml)
 - 接入指南：[`docs/server-api-contract.zh-CN.md`](docs/server-api-contract.zh-CN.md)
 - 开发说明：[`docs/server-development.zh-CN.md`](docs/server-development.zh-CN.md)
@@ -75,6 +76,13 @@ npm run dev
 - 默认本地开发使用 `SQLite`
 - 配置 `DATABASE_URL` 后切到 `Postgres`
 - `sb3` 原文件默认保存在 `SB3_STORAGE_DIR`
+
+当前部署口径：
+
+- `server-api` 部署在 `Zeabur`
+- `server-web` 部署在 `Vercel`
+- `staging` 和 `production` 各自使用独立 `DATABASE_URL`
+- `staging` 和 `production` 各自使用独立 `SB3_STORAGE_DIR`
 
 当前联调状态：
 
