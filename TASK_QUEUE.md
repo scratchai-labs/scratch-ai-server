@@ -6,6 +6,7 @@
 
 ## 已完成
 
+- 2026-06-12：完成部署前加固与上线准备：为 `server-api` 补上 `release` 配置校验、`CORS` 白名单、readiness 健康检查、`sb3` 上传限流和数据库写错误透传；为 `server-web` 收口真实环境 fail-fast、教师退出登录和 `401` 未授权处理；同步根级 `.env.example`、Zeabur / Vercel README 与 GitHub Actions 的 `Go` 工具链配置，并已通过根级 `npm run test` 与 `npm run build`。
 - 2026-06-12：为独立部署前清理服务器端仓库历史与本地生成物：裁掉 `TASK_QUEUE.md` 中和当前仓边界无关的旧桌面端记录，删除本地 `node_modules`、`apps/server-web/node_modules` 与遗留 `server-api.sqlite3`，保持仓库对外只呈现 `server-api + server-web` 主线。
 - 2026-06-12：收口仓库边界到 `apps/server-api` + `apps/server-web`，清理支持文档、维护文档、清理脚本、忽略规则、issue 模板和锁文件里残留的 `apps/desktop-companion` / `tools/verification` / `packages/shared` / `installers` 旧引用；当前仓库只保留服务器端 monorepo 入口。
 - 2026-05-27：收口老师端多学生状态展示与差异化提示验证；`server-web` 的总览 / 学生管理现已基于 `GET /api/teacher/students` + `GET /api/teacher/dashboard/students/{id}/history` 汇总真实 `status / currentTarget / stepSummary / latestAiHint / updatedAt`，不再把真实课堂状态渲染成假 `0%`；同时新增后端回归测试，验证同一 assignment 下两名学生会因不同进度拿到不同提示，并可在老师实时看板同时看到。已通过 `server:test`，也已在真实老师/学生联调里复核。

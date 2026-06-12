@@ -26,6 +26,10 @@ jobs:
           node-version: 22
           cache: npm
 
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: apps/server-api/go.mod
+
       - run: npm ci
 
       - run: npm run build
