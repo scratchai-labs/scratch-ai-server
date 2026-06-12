@@ -121,7 +121,9 @@ func (s *Service) Login(input LoginInput) (StudentSession, error) {
 		return StudentSession{}, err
 	}
 
-	s.store.SaveStudentToken(token, studentRecord.ID)
+	if err := s.store.SaveStudentToken(token, studentRecord.ID); err != nil {
+		return StudentSession{}, err
+	}
 	return StudentSession{
 		Token:       token,
 		StudentName: studentRecord.DisplayName,
@@ -152,8 +154,7 @@ func (s *Service) Logout(authorizationHeader string) error {
 		return ErrUnauthorized
 	}
 
-	s.store.DeleteStudentToken(token)
-	return nil
+	return s.store.DeleteStudentToken(token)
 }
 
 func (s *Service) ResetPassword(teacherID int64, studentID int64, newPassword string) (StudentItem, error) {

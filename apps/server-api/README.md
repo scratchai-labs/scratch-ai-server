@@ -79,8 +79,10 @@ npm run server:api:docs:check
 ## 环境变量
 
 - `PORT`
+- `GIN_MODE`
 - `DATABASE_URL`
 - `SERVER_API_DB_PATH`
+- `CORS_ALLOWED_ORIGINS`
 - `SB3_STORAGE_DIR`
 - `DEEPSEEK_API_KEY`
 - `DEEPSEEK_BASE_URL`
@@ -92,21 +94,26 @@ npm run server:api:docs:check
 - 默认监听 `:8000`
 - 未配置 `DATABASE_URL` 时，默认使用本地 `SQLite`
 - 配置 `DATABASE_URL` 后，自动切到 `Postgres`
+- `CORS_ALLOWED_ORIGINS` 配置后，会按白名单回写 `Access-Control-Allow-Origin`
 - 默认把原始 `sb3` 保存到 `SB3_STORAGE_DIR`，未配置时使用系统临时目录下的 `scratch-ai-server-sb3`
 - 配置了 `DEEPSEEK_API_KEY` 后，学生提示链路会优先走真实 `DeepSeek`，失败时自动回退到本地 fallback
-- 当前实现支持教师 Web 本地真实联调所需的 `CORS` 预检请求
+- 当 `GIN_MODE=release` 时，必须显式提供 `DATABASE_URL`、`SB3_STORAGE_DIR` 和 `CORS_ALLOWED_ORIGINS`
 
 ## Zeabur 预发布部署
 
 - 推荐把服务根目录指向 `apps/server-api`
 - 需要在 Zeabur 注入：
+  - `GIN_MODE=release`
   - `PORT`
-  - `DATABASE_URL` 或 `SERVER_API_DB_PATH`
+  - `DATABASE_URL`
+  - `CORS_ALLOWED_ORIGINS=https://<your-vercel-domain>`
   - `SB3_STORAGE_DIR`
   - `DEEPSEEK_API_KEY`
   - `DEEPSEEK_BASE_URL`
   - `DEEPSEEK_MODEL`
   - `DEEPSEEK_TIMEOUT_SECONDS`
+- 若使用 `Neon Postgres`，把 `DATABASE_URL` 指向 `Neon` 提供的连接串；不要在 `release` 模式下回退到临时 `SQLite`
+- `SB3_STORAGE_DIR` 应该指向 Zeabur 持久卷目录，避免重启后丢失上传的原始 `sb3`
 - 部署后先验证：
 
 ```bash

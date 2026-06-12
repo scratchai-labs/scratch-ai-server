@@ -2156,6 +2156,9 @@ const docTemplate = `{
         "http.healthResponse": {
             "type": "object",
             "properties": {
+                "message": {
+                    "type": "string"
+                },
                 "status": {
                     "type": "string"
                 }

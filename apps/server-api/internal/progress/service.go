@@ -38,7 +38,7 @@ func (s *Service) Report(studentID int64, assignmentID int64, input ReportInput)
 		LocalProjectHash: input.LocalProjectHash,
 		ReportedAt:       input.ReportedAt,
 		Snapshot:         input.Snapshot,
-	}), nil
+	})
 }
 
 func (s *Service) Latest(studentID int64, assignmentID int64) (memory.ProgressReport, bool) {

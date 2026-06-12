@@ -20,7 +20,7 @@ var ErrInvalidSB3File = errors.New("invalid sb3 file")
 var ErrInvalidSB3MIME = errors.New("unsupported sb3 mime type")
 var ErrSB3TooLarge = errors.New("sb3 file is too large")
 
-const maxSB3Bytes = 16 << 20
+const MaxSB3Bytes = 16 << 20
 const maxAnalysisAttempts = 3
 
 type UploadInput struct {
@@ -147,7 +147,7 @@ func (s *Service) Upload(ctx context.Context, teacherID int64, input UploadInput
 		return memory.Assignment{}, err
 	}
 
-	assignment := s.store.CreateAssignment(teacherID, memory.CreateAssignmentInput{
+	assignment, err := s.store.CreateAssignment(teacherID, memory.CreateAssignmentInput{
 		Title:       input.Title,
 		Goal:        input.Goal,
 		Description: input.Description,
@@ -155,6 +155,9 @@ func (s *Service) Upload(ctx context.Context, teacherID int64, input UploadInput
 		SB3FilePath: sb3FilePath,
 		SB3Data:     input.SB3Data,
 	})
+	if err != nil {
+		return memory.Assignment{}, err
+	}
 
 	go s.runAnalysisWithRetry(assignment.ID, func(context.Context) ([]byte, error) {
 		return input.SB3Data, nil
@@ -334,7 +337,9 @@ func (s *Service) resumePendingAnalyses(ctx context.Context) {
 }
 
 func (s *Service) runAnalysisWithRetry(assignmentID int64, loadSB3 func(context.Context) ([]byte, error)) {
-	s.store.SetAssignmentAnalysisProcessing(assignmentID)
+	if err := s.store.SetAssignmentAnalysisProcessing(assignmentID); err != nil {
+		return
+	}
 
 	var lastErr error
 	for attempt := 1; attempt <= maxAnalysisAttempts; attempt++ {
@@ -342,10 +347,14 @@ func (s *Service) runAnalysisWithRetry(assignmentID int64, loadSB3 func(context.
 		if err == nil {
 			analysis, analyzeErr := s.analyzer.Analyze(rawSB3)
 			if analyzeErr == nil {
-				s.store.SetAssignmentAnalysisReady(assignmentID, analysis)
-				return
+				if readyErr := s.store.SetAssignmentAnalysisReady(assignmentID, analysis); readyErr == nil {
+					return
+				} else {
+					lastErr = readyErr
+				}
+			} else {
+				lastErr = analyzeErr
 			}
-			lastErr = analyzeErr
 		} else {
 			lastErr = err
 		}
@@ -356,7 +365,7 @@ func (s *Service) runAnalysisWithRetry(assignmentID int64, loadSB3 func(context.
 	}
 
 	if lastErr != nil {
-		s.store.SetAssignmentAnalysisFailed(assignmentID, lastErr.Error())
+		_ = s.store.SetAssignmentAnalysisFailed(assignmentID, lastErr.Error())
 	}
 }
 
@@ -398,7 +407,7 @@ func validateUpload(input UploadInput) error {
 	if len(input.SB3Data) == 0 {
 		return ErrInvalidSB3File
 	}
-	if len(input.SB3Data) > maxSB3Bytes {
+	if len(input.SB3Data) > MaxSB3Bytes {
 		return ErrSB3TooLarge
 	}
 	return nil

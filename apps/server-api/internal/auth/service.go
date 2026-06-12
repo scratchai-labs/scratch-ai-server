@@ -84,8 +84,7 @@ func (s *Service) Logout(authorizationHeader string) error {
 		return ErrUnauthorized
 	}
 
-	s.store.DeleteTeacherToken(token)
-	return nil
+	return s.store.DeleteTeacherToken(token)
 }
 
 func (s *Service) issueSession(teacherID int64, teacherName string) (Session, error) {
@@ -94,7 +93,9 @@ func (s *Service) issueSession(teacherID int64, teacherName string) (Session, er
 		return Session{}, err
 	}
 
-	s.store.SaveTeacherToken(token, teacherID)
+	if err := s.store.SaveTeacherToken(token, teacherID); err != nil {
+		return Session{}, err
+	}
 	return Session{
 		Token:       token,
 		TeacherName: teacherName,

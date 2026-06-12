@@ -1,6 +1,7 @@
 package memory
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -106,18 +107,20 @@ func (b *sqlBackend) FindTeacherByUsername(username string) (Teacher, bool) {
 	return record, err == nil
 }
 
-func (b *sqlBackend) SaveTeacherToken(token string, teacherID int64) {
-	_, _ = b.db.Exec(
+func (b *sqlBackend) SaveTeacherToken(token string, teacherID int64) error {
+	_, err := b.db.Exec(
 		b.rebind("INSERT INTO teacher_sessions (teacher_id, token, expires_at, created_at) VALUES (?, ?, ?, ?)"),
 		teacherID,
 		token,
 		nil,
 		nowUTC(),
 	)
+	return err
 }
 
-func (b *sqlBackend) DeleteTeacherToken(token string) {
-	_, _ = b.db.Exec(b.rebind("DELETE FROM teacher_sessions WHERE token = ?"), token)
+func (b *sqlBackend) DeleteTeacherToken(token string) error {
+	_, err := b.db.Exec(b.rebind("DELETE FROM teacher_sessions WHERE token = ?"), token)
+	return err
 }
 
 func (b *sqlBackend) FindTeacherByToken(token string) (Teacher, bool) {
@@ -199,8 +202,8 @@ func (b *sqlBackend) FindStudentByUsername(username string) (Student, bool) {
 	return record, err == nil
 }
 
-func (b *sqlBackend) SaveStudentToken(token string, studentID int64) {
-	_, _ = b.db.Exec(
+func (b *sqlBackend) SaveStudentToken(token string, studentID int64) error {
+	_, err := b.db.Exec(
 		b.rebind("INSERT INTO student_sessions (student_id, token, client_type, expires_at, created_at) VALUES (?, ?, ?, ?, ?)"),
 		studentID,
 		token,
@@ -208,10 +211,12 @@ func (b *sqlBackend) SaveStudentToken(token string, studentID int64) {
 		nil,
 		nowUTC(),
 	)
+	return err
 }
 
-func (b *sqlBackend) DeleteStudentToken(token string) {
-	_, _ = b.db.Exec(b.rebind("DELETE FROM student_sessions WHERE token = ?"), token)
+func (b *sqlBackend) DeleteStudentToken(token string) error {
+	_, err := b.db.Exec(b.rebind("DELETE FROM student_sessions WHERE token = ?"), token)
+	return err
 }
 
 func (b *sqlBackend) FindStudentByToken(token string) (Student, bool) {
@@ -266,7 +271,7 @@ func (b *sqlBackend) UpdateStudentPassword(teacherID int64, studentID int64, pas
 	return record, nil
 }
 
-func (b *sqlBackend) CreateAssignment(teacherID int64, input CreateAssignmentInput) Assignment {
+func (b *sqlBackend) CreateAssignment(teacherID int64, input CreateAssignmentInput) (Assignment, error) {
 	now := nowUTC()
 	id, err := b.insertReturningID(
 		"INSERT INTO assignments (teacher_id, title, goal, description, status, file_name, sb3_file_path, analysis_status, analysis_error_message, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -283,14 +288,14 @@ func (b *sqlBackend) CreateAssignment(teacherID int64, input CreateAssignmentInp
 		now,
 	)
 	if err != nil {
-		return Assignment{}
+		return Assignment{}, err
 	}
 
 	record, ok := b.getAssignmentByFilters("a.teacher_id = ? AND a.id = ?", teacherID, id)
 	if !ok {
-		return Assignment{}
+		return Assignment{}, sql.ErrNoRows
 	}
-	return record
+	return record, nil
 }
 
 func (b *sqlBackend) GetAssignmentByTeacher(teacherID int64, assignmentID int64) (Assignment, bool) {
@@ -305,20 +310,21 @@ func (b *sqlBackend) ListAssignmentsPendingAnalysis() []Assignment {
 	return b.listAssignmentsByFilters("a.analysis_status IN (?, ?)", "pending", "processing")
 }
 
-func (b *sqlBackend) SetAssignmentAnalysisProcessing(assignmentID int64) {
-	_, _ = b.db.Exec(
+func (b *sqlBackend) SetAssignmentAnalysisProcessing(assignmentID int64) error {
+	_, err := b.db.Exec(
 		b.rebind("UPDATE assignments SET analysis_status = ?, updated_at = ? WHERE id = ?"),
 		"processing",
 		nowUTC(),
 		assignmentID,
 	)
+	return err
 }
 
-func (b *sqlBackend) SetAssignmentAnalysisReady(assignmentID int64, analysis AssignmentAnalysis) {
+func (b *sqlBackend) SetAssignmentAnalysisReady(assignmentID int64, analysis AssignmentAnalysis) error {
 	now := nowUTC()
 	tx, err := b.db.Begin()
 	if err != nil {
-		return
+		return err
 	}
 	defer tx.Rollback()
 
@@ -363,7 +369,7 @@ func (b *sqlBackend) SetAssignmentAnalysisReady(assignmentID int64, analysis Ass
 		now,
 		now,
 	); err != nil {
-		return
+		return err
 	}
 
 	if _, err := tx.Exec(
@@ -373,20 +379,21 @@ func (b *sqlBackend) SetAssignmentAnalysisReady(assignmentID int64, analysis Ass
 		now,
 		assignmentID,
 	); err != nil {
-		return
+		return err
 	}
 
-	_ = tx.Commit()
+	return tx.Commit()
 }
 
-func (b *sqlBackend) SetAssignmentAnalysisFailed(assignmentID int64, message string) {
-	_, _ = b.db.Exec(
+func (b *sqlBackend) SetAssignmentAnalysisFailed(assignmentID int64, message string) error {
+	_, err := b.db.Exec(
 		b.rebind("UPDATE assignments SET analysis_status = ?, analysis_error_message = ?, updated_at = ? WHERE id = ?"),
 		"failed",
 		message,
 		nowUTC(),
 		assignmentID,
 	)
+	return err
 }
 
 func (b *sqlBackend) AssignStudents(teacherID int64, assignmentID int64, studentIDs []int64) error {
@@ -472,7 +479,7 @@ func (b *sqlBackend) ListAssignedAssignmentsByStudent(studentID int64) []Assignm
 	return b.listAssignmentsByFilters("EXISTS (SELECT 1 FROM assignment_students rel WHERE rel.assignment_id = a.id AND rel.student_id = ?)", studentID)
 }
 
-func (b *sqlBackend) CreateProgress(input CreateProgressInput) ProgressReport {
+func (b *sqlBackend) CreateProgress(input CreateProgressInput) (ProgressReport, error) {
 	now := nowUTC()
 	reportedAt := input.ReportedAt
 	if reportedAt == "" {
@@ -490,21 +497,21 @@ func (b *sqlBackend) CreateProgress(input CreateProgressInput) ProgressReport {
 		now,
 	)
 	if err != nil {
-		return ProgressReport{}
+		return ProgressReport{}, err
 	}
 
 	record, ok := b.getLatestProgressBy("id = ?", id)
 	if !ok {
-		return ProgressReport{}
+		return ProgressReport{}, sql.ErrNoRows
 	}
-	return record
+	return record, nil
 }
 
 func (b *sqlBackend) LatestProgress(studentID int64, assignmentID int64) (ProgressReport, bool) {
 	return b.getLatestProgressBy("student_id = ? AND assignment_id = ?", studentID, assignmentID)
 }
 
-func (b *sqlBackend) CreateHint(input CreateHintInput) HintRecord {
+func (b *sqlBackend) CreateHint(input CreateHintInput) (HintRecord, error) {
 	now := nowUTC()
 	id, err := b.insertReturningID(
 		"INSERT INTO hint_records (assignment_id, student_id, progress_report_id, prompt_input_json, hint_text, provider_name, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
@@ -517,14 +524,18 @@ func (b *sqlBackend) CreateHint(input CreateHintInput) HintRecord {
 		now,
 	)
 	if err != nil {
-		return HintRecord{}
+		return HintRecord{}, err
 	}
 
 	record, ok := b.getLatestHintBy("id = ?", id)
 	if !ok {
-		return HintRecord{}
+		return HintRecord{}, sql.ErrNoRows
 	}
-	return record
+	return record, nil
+}
+
+func (b *sqlBackend) Ping(ctx context.Context) error {
+	return b.db.PingContext(ctx)
 }
 
 func (b *sqlBackend) LatestHint(studentID int64, assignmentID int64) (HintRecord, bool) {

@@ -1,6 +1,7 @@
 package memory
 
 import (
+	"context"
 	"errors"
 	"slices"
 	"strconv"
@@ -225,26 +226,26 @@ func (s *Store) FindTeacherByUsername(username string) (Teacher, bool) {
 	return teacher, ok
 }
 
-func (s *Store) SaveTeacherToken(token string, teacherID int64) {
+func (s *Store) SaveTeacherToken(token string, teacherID int64) error {
 	if s.sql != nil {
-		s.sql.SaveTeacherToken(token, teacherID)
-		return
+		return s.sql.SaveTeacherToken(token, teacherID)
 	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.teacherTokens[token] = teacherID
+	return nil
 }
 
-func (s *Store) DeleteTeacherToken(token string) {
+func (s *Store) DeleteTeacherToken(token string) error {
 	if s.sql != nil {
-		s.sql.DeleteTeacherToken(token)
-		return
+		return s.sql.DeleteTeacherToken(token)
 	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	delete(s.teacherTokens, token)
+	return nil
 }
 
 func (s *Store) FindTeacherByToken(token string) (Teacher, bool) {
@@ -328,26 +329,26 @@ func (s *Store) FindStudentByUsername(username string) (Student, bool) {
 	return student, ok
 }
 
-func (s *Store) SaveStudentToken(token string, studentID int64) {
+func (s *Store) SaveStudentToken(token string, studentID int64) error {
 	if s.sql != nil {
-		s.sql.SaveStudentToken(token, studentID)
-		return
+		return s.sql.SaveStudentToken(token, studentID)
 	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.studentTokens[token] = studentID
+	return nil
 }
 
-func (s *Store) DeleteStudentToken(token string) {
+func (s *Store) DeleteStudentToken(token string) error {
 	if s.sql != nil {
-		s.sql.DeleteStudentToken(token)
-		return
+		return s.sql.DeleteStudentToken(token)
 	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	delete(s.studentTokens, token)
+	return nil
 }
 
 func (s *Store) FindStudentByToken(token string) (Student, bool) {
@@ -400,7 +401,7 @@ func (s *Store) UpdateStudentPassword(teacherID int64, studentID int64, password
 	return student, nil
 }
 
-func (s *Store) CreateAssignment(teacherID int64, input CreateAssignmentInput) Assignment {
+func (s *Store) CreateAssignment(teacherID int64, input CreateAssignmentInput) (Assignment, error) {
 	if s.sql != nil {
 		return s.sql.CreateAssignment(teacherID, input)
 	}
@@ -427,7 +428,7 @@ func (s *Store) CreateAssignment(teacherID int64, input CreateAssignmentInput) A
 
 	s.assignmentsByID[assignment.ID] = assignment
 	s.assignmentsByTeacher[teacherID] = append(s.assignmentsByTeacher[teacherID], assignment.ID)
-	return assignment
+	return assignment, nil
 }
 
 func (s *Store) GetAssignmentByTeacher(teacherID int64, assignmentID int64) (Assignment, bool) {
@@ -490,10 +491,9 @@ func (s *Store) ListAssignmentsPendingAnalysis() []Assignment {
 	return assignments
 }
 
-func (s *Store) SetAssignmentAnalysisProcessing(assignmentID int64) {
+func (s *Store) SetAssignmentAnalysisProcessing(assignmentID int64) error {
 	if s.sql != nil {
-		s.sql.SetAssignmentAnalysisProcessing(assignmentID)
-		return
+		return s.sql.SetAssignmentAnalysisProcessing(assignmentID)
 	}
 
 	s.mu.Lock()
@@ -501,18 +501,18 @@ func (s *Store) SetAssignmentAnalysisProcessing(assignmentID int64) {
 
 	assignment, ok := s.assignmentsByID[assignmentID]
 	if !ok {
-		return
+		return nil
 	}
 
 	assignment.AnalysisStatus = "processing"
 	assignment.UpdatedAt = time.Now().UTC()
 	s.assignmentsByID[assignmentID] = assignment
+	return nil
 }
 
-func (s *Store) SetAssignmentAnalysisReady(assignmentID int64, analysis AssignmentAnalysis) {
+func (s *Store) SetAssignmentAnalysisReady(assignmentID int64, analysis AssignmentAnalysis) error {
 	if s.sql != nil {
-		s.sql.SetAssignmentAnalysisReady(assignmentID, analysis)
-		return
+		return s.sql.SetAssignmentAnalysisReady(assignmentID, analysis)
 	}
 
 	s.mu.Lock()
@@ -520,7 +520,7 @@ func (s *Store) SetAssignmentAnalysisReady(assignmentID int64, analysis Assignme
 
 	assignment, ok := s.assignmentsByID[assignmentID]
 	if !ok {
-		return
+		return nil
 	}
 
 	assignment.AnalysisStatus = "ready"
@@ -528,12 +528,12 @@ func (s *Store) SetAssignmentAnalysisReady(assignmentID int64, analysis Assignme
 	assignment.AnalysisErrorMessage = ""
 	assignment.UpdatedAt = time.Now().UTC()
 	s.assignmentsByID[assignmentID] = assignment
+	return nil
 }
 
-func (s *Store) SetAssignmentAnalysisFailed(assignmentID int64, message string) {
+func (s *Store) SetAssignmentAnalysisFailed(assignmentID int64, message string) error {
 	if s.sql != nil {
-		s.sql.SetAssignmentAnalysisFailed(assignmentID, message)
-		return
+		return s.sql.SetAssignmentAnalysisFailed(assignmentID, message)
 	}
 
 	s.mu.Lock()
@@ -541,13 +541,14 @@ func (s *Store) SetAssignmentAnalysisFailed(assignmentID int64, message string) 
 
 	assignment, ok := s.assignmentsByID[assignmentID]
 	if !ok {
-		return
+		return nil
 	}
 
 	assignment.AnalysisStatus = "failed"
 	assignment.AnalysisErrorMessage = message
 	assignment.UpdatedAt = time.Now().UTC()
 	s.assignmentsByID[assignmentID] = assignment
+	return nil
 }
 
 func (s *Store) AssignStudents(teacherID int64, assignmentID int64, studentIDs []int64) error {
@@ -678,7 +679,7 @@ func (s *Store) ListAssignedAssignmentsByStudent(studentID int64) []Assignment {
 	return assignments
 }
 
-func (s *Store) CreateProgress(input CreateProgressInput) ProgressReport {
+func (s *Store) CreateProgress(input CreateProgressInput) (ProgressReport, error) {
 	if s.sql != nil {
 		return s.sql.CreateProgress(input)
 	}
@@ -707,7 +708,7 @@ func (s *Store) CreateProgress(input CreateProgressInput) ProgressReport {
 	s.progressByID[report.ID] = report
 	key := relationKey(input.StudentID, input.AssignmentID)
 	s.progressByStudentAssignment[key] = append(s.progressByStudentAssignment[key], report.ID)
-	return report
+	return report, nil
 }
 
 func (s *Store) LatestProgress(studentID int64, assignmentID int64) (ProgressReport, bool) {
@@ -727,7 +728,7 @@ func (s *Store) LatestProgress(studentID int64, assignmentID int64) (ProgressRep
 	return report, ok
 }
 
-func (s *Store) CreateHint(input CreateHintInput) HintRecord {
+func (s *Store) CreateHint(input CreateHintInput) (HintRecord, error) {
 	if s.sql != nil {
 		return s.sql.CreateHint(input)
 	}
@@ -750,7 +751,14 @@ func (s *Store) CreateHint(input CreateHintInput) HintRecord {
 	s.hintsByID[record.ID] = record
 	key := relationKey(input.StudentID, input.AssignmentID)
 	s.hintsByStudentAssignment[key] = append(s.hintsByStudentAssignment[key], record.ID)
-	return record
+	return record, nil
+}
+
+func (s *Store) Ping(ctx context.Context) error {
+	if s.sql != nil {
+		return s.sql.Ping(ctx)
+	}
+	return nil
 }
 
 func (s *Store) LatestHint(studentID int64, assignmentID int64) (HintRecord, bool) {

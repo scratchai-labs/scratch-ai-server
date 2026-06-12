@@ -66,9 +66,9 @@ func TestPendingAssignmentAnalysisResumesOnAppStartup(t *testing.T) {
 	require.NoError(t, err)
 
 	const teacherToken = "resume-analysis-token"
-	store.SaveTeacherToken(teacherToken, teacher.ID)
+	require.NoError(t, store.SaveTeacherToken(teacherToken, teacher.ID))
 
-	assignment := store.CreateAssignment(teacher.ID, memory.CreateAssignmentInput{
+	assignment, err := store.CreateAssignment(teacher.ID, memory.CreateAssignmentInput{
 		Title:       "Resume Analysis",
 		Goal:        "重启后恢复分析",
 		Description: "待分析任务",
@@ -76,6 +76,7 @@ func TestPendingAssignmentAnalysisResumesOnAppStartup(t *testing.T) {
 		SB3FilePath: sb3Path,
 		SB3Data:     createAdvancedSB3(t),
 	})
+	require.NoError(t, err)
 
 	handler := newTestHandler()
 

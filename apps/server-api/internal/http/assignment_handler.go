@@ -3,6 +3,7 @@ package http
 import (
 	"errors"
 	"io"
+	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -16,6 +17,8 @@ type assignmentHandler struct {
 type assignStudentsRequest struct {
 	StudentIDs []int64 `json:"studentIds" binding:"required,min=1"`
 }
+
+const maxSB3MultipartBodyBytes = assignment.MaxSB3Bytes + (1 << 20)
 
 // handleTeacherAssignmentsList godoc
 //
@@ -62,7 +65,8 @@ func (h *assignmentHandler) handleTeacherAssignments(c *gin.Context) {
 		return
 	}
 
-	if err := c.Request.ParseMultipartForm(16 << 20); err != nil {
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxSB3MultipartBodyBytes)
+	if err := c.Request.ParseMultipartForm(assignment.MaxSB3Bytes); err != nil {
 		writeJSONError(c, 400, "invalid multipart form")
 		return
 	}
@@ -74,8 +78,12 @@ func (h *assignmentHandler) handleTeacherAssignments(c *gin.Context) {
 	}
 	defer file.Close()
 
-	rawSB3, err := io.ReadAll(file)
+	rawSB3, err := readSB3Upload(file, assignment.MaxSB3Bytes)
 	if err != nil {
+		if errors.Is(err, assignment.ErrSB3TooLarge) {
+			writeJSONError(c, 400, err.Error())
+			return
+		}
 		writeJSONError(c, 500, "failed to read sb3 file")
 		return
 	}
@@ -106,6 +114,18 @@ func (h *assignmentHandler) handleTeacherAssignments(c *gin.Context) {
 		Status:         createdAssignment.Status,
 		AnalysisStatus: createdAssignment.AnalysisStatus,
 	})
+}
+
+func readSB3Upload(reader io.Reader, maxBytes int64) ([]byte, error) {
+	limitedReader := &io.LimitedReader{R: reader, N: maxBytes + 1}
+	rawSB3, err := io.ReadAll(limitedReader)
+	if err != nil {
+		return nil, err
+	}
+	if int64(len(rawSB3)) > maxBytes {
+		return nil, assignment.ErrSB3TooLarge
+	}
+	return rawSB3, nil
 }
 
 // handleTeacherAssignmentDetail godoc

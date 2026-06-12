@@ -52,7 +52,7 @@ func (s *Service) Request(ctx context.Context, studentID int64, assignmentID int
 				PromptInput:      promptInput,
 				HintText:         generatedHint.Text,
 				ProviderName:     generatedHint.ProviderName,
-			}), nil
+			})
 		}
 	}
 
@@ -64,7 +64,7 @@ func (s *Service) Request(ctx context.Context, studentID int64, assignmentID int
 		PromptInput:      promptInput,
 		HintText:         hintText,
 		ProviderName:     "fallback",
-	}), nil
+	})
 }
 
 func buildPromptInput(assignmentRecord memory.Assignment, progressRecord memory.ProgressReport, latestHint memory.HintRecord, hasLatestHint bool) map[string]any {

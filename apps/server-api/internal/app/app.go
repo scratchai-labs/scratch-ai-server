@@ -16,5 +16,8 @@ func New() http.Handler {
 }
 
 func NewWithConfig(cfg config.Config) (http.Handler, error) {
+	if err := cfg.ValidateForRuntime(); err != nil {
+		return nil, err
+	}
 	return httpapp.NewRouter(cfg)
 }

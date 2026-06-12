@@ -49,11 +49,11 @@ func NewRouter(cfg config.Config) (http.Handler, error) {
 
 	engine := gin.New()
 	engine.Use(gin.Recovery())
-	engine.Use(allowCORS())
+	engine.Use(allowCORS(cfg))
 
 	serverapidocs.SwaggerInfo.BasePath = "/"
 
-	engine.GET("/health", handleHealth)
+	engine.GET("/health", newHealthHandler(store.Ping))
 	engine.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 	engine.POST("/api/teacher/register", authRoutes.handleTeacherRegister)
 	engine.POST("/api/teacher/login", authRoutes.handleTeacherLogin)

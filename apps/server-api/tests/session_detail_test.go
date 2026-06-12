@@ -164,7 +164,7 @@ func TestStudentCanReadPendingAssignmentDetailButCannotRequestHint(t *testing.T)
 	sb3Path, err := storage.Save(t.Context(), "pending-detail.sb3", createSampleSB3(t))
 	require.NoError(t, err)
 
-	assignment := store.CreateAssignment(teacher.ID, memory.CreateAssignmentInput{
+	assignment, err := store.CreateAssignment(teacher.ID, memory.CreateAssignmentInput{
 		Title:       "Pending Detail Maze",
 		Goal:        "查看未完成分析状态",
 		Description: "测试任务",
@@ -172,6 +172,7 @@ func TestStudentCanReadPendingAssignmentDetailButCannotRequestHint(t *testing.T)
 		SB3FilePath: sb3Path,
 		SB3Data:     createSampleSB3(t),
 	})
+	require.NoError(t, err)
 
 	require.NoError(t, store.AssignStudents(teacher.ID, assignment.ID, []int64{studentID}))
 
