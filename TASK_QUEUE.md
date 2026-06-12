@@ -2,10 +2,11 @@
 
 ## 待确认
 
-- 2026-05-25：按 `Go API + 教师管理 Web` 方向重写服务器端开发文档；细化教师注册登录、批量建学生、`sb3` 上传分析、DeepSeek 服务端提示、学生客户端登录与提示接收、以及进度实时上报主链路；本轮先收口需求、权限边界、API 范围与阶段划分。
-- 2026-05-07：为桌面伴随程序整理 GitHub CI 与跨平台出包链路；目标是让 Windows / macOS runner 能稳定构建、测试、打包并上传产物；本轮先在独立 worktree 里核实现状、补测试与 workflow。
+- 当前无待确认任务。
 
 ## 已完成
+
+- 2026-06-12：收口仓库边界到 `apps/server-api` + `apps/server-web`，清理支持文档、维护文档、清理脚本、忽略规则、issue 模板和锁文件里残留的 `apps/desktop-companion` / `tools/verification` / `packages/shared` / `installers` 旧引用；当前仓库只保留服务器端 monorepo 入口。
 
 - 2026-05-27：收口老师端多学生状态展示与差异化提示验证；`server-web` 的总览 / 学生管理现已基于 `GET /api/teacher/students` + `GET /api/teacher/dashboard/students/{id}/history` 汇总真实 `status / currentTarget / stepSummary / latestAiHint / updatedAt`，不再把真实课堂状态渲染成假 `0%`；同时新增后端回归测试，验证同一 assignment 下两名学生会因不同进度拿到不同提示，并可在老师实时看板同时看到。已通过 `server:test`，也已在真实老师/学生联调里复核。
 - 2026-05-27：收口教师实时看板显示层与进度时间口径；为 `server-api` 的进度记录补 `reportedAt` 缺省兜底，避免学生端未显式上传时间时老师看板长期显示 `—`；同时让 `server-web` 的实时看板消费真实 API 已提供的 `status / currentTarget / stepSummary / lastHintAt`，不再把未提供百分比的真实课堂状态误渲染成假 `0%`。已补 `teacherApi` / `LiveReleaseView` 回归测试，并用 `/Users/tesths/Downloads/Cat and a Mouse.sb3` 实际跑通老师端与学生端多角色联调；`npm run server:test` 也已在本机通过。

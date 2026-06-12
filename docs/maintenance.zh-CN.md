@@ -12,9 +12,6 @@
 - `docs/*.md`
 - `apps/server-api/*.md`
 - `apps/server-web/*.md`
-- `apps/desktop-companion/*.md`
-- `tools/verification/*.md`
-- `tools/verification/workflows/deepseek-teaching/*.md`
 
 ## 1. 文档层级
 
@@ -24,12 +21,11 @@
 2. `README.zh-CN.md` / `README.en.md`
 3. `CONTRIBUTING*` / `CODE_OF_CONDUCT*` / `SECURITY*` / `SUPPORT*`
 4. `docs/README.zh-CN.md`
-5. `docs/project-structure*` / `docs/releasing*` / `docs/roadmap*`
+5. `docs/project-structure*` / `docs/roadmap*`
 6. `docs/architecture.zh-CN.md`
 7. `docs/maintenance.zh-CN.md`
-8. `apps/server-api` / `apps/server-web` 下的服务端开发文档
-9. `apps/desktop-companion` 下的 README / 状态文档 / SOP
-10. `tools/verification` 下的验证说明与工作流文档
+8. `apps/server-api` 下的服务端开发和接口文档
+9. `apps/server-web` 下的教师 Web 说明和测试文档
 
 ## 2. 每份文档负责什么
 
@@ -53,13 +49,13 @@
 负责：
 
 - 中文 / 英文项目总览
-- 下载与发布入口
+- 开发与联调入口
 - 对外文档导航
 
 这些变化后必须更新：
 
 - 产品定位变化
-- 发布口径变化
+- 入口命令变化
 - 对外贡献入口变化
 
 ### `CONTRIBUTING*` / `CODE_OF_CONDUCT*` / `SECURITY*` / `SUPPORT*`
@@ -89,7 +85,7 @@
 
 - 文档路径变化
 - 清理脚本覆盖范围变化
-- 安装包或截图收口位置变化
+- API 文档或服务器端说明入口变化
 
 ### `docs/architecture.zh-CN.md`
 
@@ -101,17 +97,15 @@
 
 这些变化后必须更新：
 
-- `desktop-companion` 内部分层变化
 - `server-api` / `server-web` 结构变化
-- `packages/shared` 职责变化
-- `tools/verification` 目录或定位变化
+- API 契约或数据流变化
 - AI 调用链路变化
 
 ### `apps/server-api/*.md` / `apps/server-web/*.md`
 
 负责：
 
-- 服务器 API、教师后台的开发、联调和部署说明
+- 服务器 API、教师 Web 的开发、联调和部署说明
 
 这些变化后必须更新：
 
@@ -119,39 +113,12 @@
 - 本地启动命令变化
 - 前后端目录结构变化
 
-### `apps/desktop-companion/*.md`
-
-负责：
-
-- 桌面端开发、打包、部署、交接和现场排查
-
-这些变化后必须更新：
-
-- 真机验证入口变化
-- 打包命令变化
-- `src/main` / `src/renderer` / `src/common` 结构变化
-
-### `tools/verification/*.md`
-
-负责：
-
-- 真机验证怎么跑
-- 教学工作流怎么跑
-- fixtures 和可再生产物怎么管理
-
-这些变化后必须更新：
-
-- `scripts/` 入口变化
-- `workflows/deepseek-teaching/` 路径变化
-- 临时目录、产物目录或 fixtures 位置变化
-
 ## 3. 维护检查清单
 
 改完代码后，至少检查下面几项：
 
 - 根 README 与中英文 README 的入口都可用
 - 文档里的路径与真实目录一致
-- 文档里的 artifact 名称、workflow 名称与当前配置一致
-- 验证脚本示例是否已经带上 `tools/verification/scripts/`
-- 文档是否还提到 `apps/server`、`Windows-Test` 这类过时路径
+- 文档里的接口契约、脚本入口和本地启动命令与当前配置一致
+- 文档是否还提到旧 workspace 路径、已删除目录或其他过时命名
 - `npm run clean:dry-run` 的描述是否和脚本输出一致

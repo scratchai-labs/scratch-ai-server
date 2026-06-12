@@ -7,39 +7,19 @@ const defaultRepoRoot = path.resolve(__dirname, "..");
 
 const EXACT_PATHS = [
   "node_modules",
-  "packages/shared/node_modules",
-  "tools/verification/node_modules",
-  "apps/desktop-companion/node_modules",
-  "apps/desktop-companion/dist",
-  "apps/desktop-companion/release-single",
-  "apps/desktop-companion/release-installer",
-  "apps/desktop-companion/release-bundles",
   "apps/server-web/node_modules",
   "apps/server-web/dist",
   "apps/server-web/coverage",
   "apps/server-api/.venv",
   "apps/server-api/.pytest_cache",
   "apps/server-api/.coverage",
-  "tools/verification/artifacts",
-  "tools/verification/generated"
+  "apps/server-api/.data"
 ];
 
 const PREFIX_MATCHES = [
   {
-    relativeDir: "apps/desktop-companion",
-    prefix: "release-mac"
-  },
-  {
-    relativeDir: "apps/desktop-companion",
-    prefix: "release-dmg"
-  },
-  {
-    relativeDir: "tools/verification",
+    relativeDir: ".",
     prefix: "tmp-"
-  },
-  {
-    relativeDir: "tools/verification",
-    prefix: "last-"
   }
 ];
 
@@ -87,19 +67,6 @@ async function collectPngScreenshots(repoRoot) {
   }
 }
 
-async function collectInstallerArtifacts(repoRoot) {
-  const installersDir = path.join(repoRoot, "installers");
-
-  try {
-    const entries = await readdir(installersDir, { withFileTypes: true });
-    return entries
-      .filter(entry => entry.name !== ".gitkeep")
-      .map(entry => path.join(installersDir, entry.name));
-  } catch {
-    return [];
-  }
-}
-
 async function removePathWithRetry(absolutePath) {
   let lastError = null;
 
@@ -137,11 +104,6 @@ async function collectRemovalCandidates(repoRoot) {
 
   const screenshots = await collectPngScreenshots(repoRoot);
   for (const absolutePath of screenshots) {
-    candidates.set(absolutePath, getRelativePath(repoRoot, absolutePath));
-  }
-
-  const installers = await collectInstallerArtifacts(repoRoot);
-  for (const absolutePath of installers) {
     candidates.set(absolutePath, getRelativePath(repoRoot, absolutePath));
   }
 

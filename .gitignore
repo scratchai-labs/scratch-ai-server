@@ -42,13 +42,7 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# Electron packaging artifacts
-ScratchDesktopCompanion*-setup.exe
-ScratchDesktopCompanion*-portable.exe
-installers/*
-!installers/.gitkeep
-apps/desktop-companion/release*/
-apps/desktop-companion/release-bundles/
+# Build artifacts
 apps/server-web/dist/
 apps/server-api/.data/
 
@@ -56,7 +50,3 @@ apps/server-api/.data/
 current-ui-*.png
 docs/assets/screenshots/*.png
 tmp-*/
-tools/verification/generated/
-tools/verification/artifacts/
-tools/verification/tmp-*/
-tools/verification/last-*.json

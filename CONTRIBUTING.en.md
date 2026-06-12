@@ -2,20 +2,21 @@
 
 Thanks for your interest in `Scratch AI Coach`.
 
-This repository currently focuses on one clear goal: maintaining an open source companion app for `Scratch Desktop`, while organizing the repo for long-term public collaboration. Please align with the following rules before opening a pull request.
+This repository now only maintains one clear goal: the `apps/server-api` + `apps/server-web` server-side monorepo. Please align with the following rules before opening a pull request.
 
 ## Before You Start
 
 - Read [`README.en.md`](README.en.md)
 - Review the repo layout in [`docs/project-structure.en.md`](docs/project-structure.en.md)
-- Check packaging and artifact policy in [`docs/releasing.en.md`](docs/releasing.en.md)
+- Review the server development notes in [`docs/server-development.zh-CN.md`](docs/server-development.zh-CN.md)
 - Open an issue first for large changes, new features, or roadmap shifts
 
 ## Environment
 
 - Node.js `22`
+- Go `1.26`
 - npm workspaces
-- Windows or macOS for development
+- Windows, macOS, or Linux for development
 
 Bootstrap:
 
@@ -27,8 +28,8 @@ npm run test
 ## Good Contribution Targets
 
 - Documentation improvements
-- Bug fixes with reproduction steps, platform details, and logs
-- Regression tests for packaging, workflows, and read-only rendering
+- Bug fixes with reproduction steps, API details, and logs
+- Regression tests for API contracts, front-end/back-end integration, and the `server-web` smoke test
 - Feature proposals grounded in real classroom scenarios and success criteria
 
 ## Before You Submit
@@ -36,7 +37,7 @@ npm run test
 - Prefer test-first changes whenever practical
 - Update docs when commands, layout, or release behavior changes
 - Run the tests that match your change scope; when unsure, run `npm run test`
-- Do not commit `installers/` artifacts, temporary screenshots, or local debug output
+- Do not commit `node_modules/`, `dist/`, `.venv/`, `.pytest_cache/`, temporary screenshots, or local debug output
 
 ## Commit Messages
 
@@ -49,9 +50,9 @@ The repository currently prefers concise Chinese commit logs with a simple type 
 Suggested format:
 
 ```text
-improve: organize the open source repository baseline
-Problem: README and governance files were incomplete
-Approach: add README, license, contributing docs, and issue templates
+improve: organize the server-side repository baseline
+Problem: the repo still had old workspace references
+Approach: align README, support docs, cleanup scripts, and ignore rules
 ```
 
 ## Pull Request Expectations
@@ -59,15 +60,15 @@ Approach: add README, license, contributing docs, and issue templates
 - explain the motivation
 - explain the impact scope
 - list the verification commands you ran
-- include screenshots or navigation notes when UI/docs entrypoints changed
+- include notes or screenshots when API or Web entrypoints changed
 - clearly separate “implemented now” from “future roadmap” when touching strategy docs
 
 ## Changes We Usually Do Not Want in One Shot
 
 - adding a new runtime, backend language, or heavy infrastructure without discussion
 - combining product refactors, doc rewrites, and release overhauls in one PR
-- changing Windows/macOS packaging flows without verification
-- merging the future server edition into the current mainline prematurely
+- changing API contracts or local startup flows without verification
+- merging unimplemented desktop or single-machine ideas into the current mainline
 
 ## Conduct and Security
 

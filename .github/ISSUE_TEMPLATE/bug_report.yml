@@ -7,7 +7,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        感谢反馈。请尽量提供可复现信息，便于 Windows / macOS 双平台排查。
+        感谢反馈。请尽量提供可复现信息，便于不同平台和运行方式排查。
   - type: dropdown
     id: platform
     attributes:
@@ -15,19 +15,19 @@ body:
       options:
         - Windows
         - macOS
-        - Both
+        - Linux
+        - Other
     validations:
       required: true
   - type: dropdown
-    id: install_method
+    id: affected_area
     attributes:
-      label: 安装方式 / Install Method
+      label: 受影响区域 / Affected Area
       options:
-        - Source build
-        - Windows portable exe
-        - Windows installer exe
-        - macOS zip
-        - macOS dmg
+        - server-api
+        - server-web
+        - root workspace scripts
+        - Both
         - Other
     validations:
       required: true
@@ -42,11 +42,11 @@ body:
     id: steps
     attributes:
       label: 复现步骤 / Reproduction Steps
-      description: 按顺序写清楚触发过程。
+      description: 按顺序写清楚触发过程，例如先启动哪个服务、访问哪个页面或接口。
       placeholder: |
-        1. 打开伴随程序
-        2. 选择 Scratch 路径
-        3. 点击“打开已选 Scratch”
+        1. 运行 `npm run server:dev`
+        2. 打开对应的 Web 页面或调用对应的 API
+        3. 触发问题
         4. ...
     validations:
       required: true

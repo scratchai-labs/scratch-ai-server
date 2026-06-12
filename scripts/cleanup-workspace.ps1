@@ -95,33 +95,15 @@ function Remove-GlobIfExists {
 }
 
 Remove-PathIfExists -RelativePath "node_modules"
-Remove-PathIfExists -RelativePath "packages/shared/node_modules"
-Remove-PathIfExists -RelativePath "tools/verification/node_modules"
-Remove-PathIfExists -RelativePath "apps/desktop-companion/node_modules"
-Remove-PathIfExists -RelativePath "apps/desktop-companion/dist"
-Remove-PathIfExists -RelativePath "apps/desktop-companion/release-single"
-Remove-PathIfExists -RelativePath "apps/desktop-companion/release-installer"
-Remove-PathIfExists -RelativePath "apps/desktop-companion/release-bundles"
-Remove-GlobIfExists -RelativePattern "apps/desktop-companion/release-mac*"
-Remove-GlobIfExists -RelativePattern "apps/desktop-companion/release-dmg*"
-Remove-PathIfExists -RelativePath "tools/verification/artifacts"
-Remove-PathIfExists -RelativePath "tools/verification/generated"
-
-Remove-GlobIfExists -RelativePattern "tools/verification/tmp-*"
-Remove-GlobIfExists -RelativePattern "tools/verification/last-*.json"
+Remove-PathIfExists -RelativePath "apps/server-web/node_modules"
+Remove-PathIfExists -RelativePath "apps/server-web/dist"
+Remove-PathIfExists -RelativePath "apps/server-web/coverage"
+Remove-PathIfExists -RelativePath "apps/server-api/.venv"
+Remove-PathIfExists -RelativePath "apps/server-api/.pytest_cache"
+Remove-PathIfExists -RelativePath "apps/server-api/.coverage"
+Remove-PathIfExists -RelativePath "apps/server-api/.data"
+Remove-GlobIfExists -RelativePattern "tmp-*"
 Remove-GlobIfExists -RelativePattern "docs/assets/screenshots/*.png"
-
-$installerRoot = Join-Path $repoRoot "installers"
-if (Test-Path -LiteralPath $installerRoot) {
-    $installerItems = @(
-        Get-ChildItem -Force -LiteralPath $installerRoot |
-            Where-Object { $_.Name -ne ".gitkeep" }
-    )
-
-    if ($installerItems.Count -gt 0) {
-        Remove-Matches -Items $installerItems
-    }
-}
 
 if ($DryRun) {
     Write-Host "Dry run finished."

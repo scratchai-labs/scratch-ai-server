@@ -6,8 +6,10 @@
 
 - 项目总览：[`README.zh-CN.md`](README.zh-CN.md)
 - 仓库结构：[`docs/project-structure.zh-CN.md`](docs/project-structure.zh-CN.md)
-- 发布与下载：[`docs/releasing.zh-CN.md`](docs/releasing.zh-CN.md)
-- 桌面端说明：[`apps/desktop-companion/README.md`](apps/desktop-companion/README.md)
+- 服务器端开发说明：[`docs/server-development.zh-CN.md`](docs/server-development.zh-CN.md)
+- API 接入说明：[`docs/server-api-contract.zh-CN.md`](docs/server-api-contract.zh-CN.md)
+- API 服务端说明：[`apps/server-api/README.md`](apps/server-api/README.md)
+- 教师 Web 说明：[`apps/server-web/README.md`](apps/server-web/README.md)
 
 ## 什么时候提 issue
 
@@ -17,8 +19,8 @@
 
 ## 提问时最好附上
 
-- 平台：Windows / macOS
-- 安装方式：源码运行、portable、installer、zip、dmg
+- 平台：Windows / macOS / Linux / 其他
+- 运行方式：`npm run server:dev`、`npm run server:api:dev`、`npm run server:web:dev` 或其他
 - 是否配置了 DeepSeek Key
 - 复现步骤
 - 日志或截图
