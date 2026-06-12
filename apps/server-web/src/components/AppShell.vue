@@ -38,9 +38,12 @@ function isActive(path: string) {
 }
 
 async function handleLogout() {
-  await apiClient.logout?.()
-  session.logout()
-  await router.push('/login')
+  try {
+    await apiClient.logout?.()
+  } finally {
+    session.logout()
+    await router.push('/login')
+  }
 }
 </script>
 

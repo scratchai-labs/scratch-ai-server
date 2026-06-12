@@ -73,7 +73,7 @@ async function handleSubmit() {
       <ul class="auth-hero__points">
         <li>登录后进入总览、学生和发布单页面。</li>
         <li>实时看板当前采用轮询模型，便于后端替换。</li>
-        <li>默认可直接使用 mock client 开发与联调。</li>
+        <li>{{ runtime.showMockLoginHint ? '默认可直接使用 mock client 开发与联调。' : '当前页面已连接真实教师 API。' }}</li>
       </ul>
     </section>
 
@@ -81,7 +81,7 @@ async function handleSubmit() {
       <div class="stack">
         <h2>登录教师后台</h2>
         <p class="auth-card__description">
-          这里先接 mock client，等后端就绪后再切到真实 `/api/teacher/login`。
+          {{ runtime.showMockLoginHint ? '这里先接 mock client，等后端就绪后再切到真实 `/api/teacher/login`。' : '当前会直接调用真实 `/api/teacher/login`。' }}
         </p>
       </div>
 

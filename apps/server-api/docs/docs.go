@@ -1326,6 +1326,12 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/http.healthResponse"
                         }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/http.healthResponse"
+                        }
                     }
                 }
             }

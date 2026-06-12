@@ -18,6 +18,7 @@ type healthResponse struct {
 //	@Tags			system
 //	@Produce		json
 //	@Success		200	{object}	healthResponse
+//	@Failure		503	{object}	healthResponse
 //	@Router			/health [get]
 func handleHealth(c *gin.Context) {
 	newHealthHandler(nil)(c)

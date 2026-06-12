@@ -1482,6 +1482,10 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/http.healthResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/http.healthResponse'
       summary: Health check
       tags:
       - system
