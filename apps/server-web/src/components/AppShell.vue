@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useTeacherApiClient } from '@/services/teacherApi'
 import { useSessionStore } from '@/stores/session'
 
 defineProps<{
@@ -10,6 +11,7 @@ defineProps<{
 
 const router = useRouter()
 const route = useRoute()
+const apiClient = useTeacherApiClient()
 const session = useSessionStore()
 
 const navigation = computed(() => [
@@ -36,6 +38,7 @@ function isActive(path: string) {
 }
 
 async function handleLogout() {
+  await apiClient.logout?.()
   session.logout()
   await router.push('/login')
 }

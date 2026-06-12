@@ -27,11 +27,17 @@ export async function requestJson<T>(
   fetchImpl: FetchLike,
   url: string,
   init?: RequestInit,
+  options: {
+    onUnauthorized?: () => void | Promise<void>
+  } = {},
 ): Promise<T> {
   const response = await fetchImpl(url, init)
 
   if (!response.ok) {
     const body = await safeJson(response)
+    if (response.status === 401) {
+      await options.onUnauthorized?.()
+    }
     throw new Error(resolveErrorMessage(response.status, body))
   }
 

@@ -46,6 +46,31 @@ describe('createFetchTeacherApiClient', () => {
     })
   })
 
+  it('posts teacher logout to /api/teacher/logout', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(
+      createFetchResponse({
+        status: 'ok',
+      }),
+    )
+    const api = createFetchTeacherApiClient({
+      baseUrl: 'https://teacher.example',
+      fetchImpl,
+      getToken: () => 'teacher-token',
+    })
+
+    await expect(api.logout()).resolves.toBeUndefined()
+
+    expect(fetchImpl).toHaveBeenCalledWith(
+      'https://teacher.example/api/teacher/logout',
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer teacher-token',
+        },
+      }),
+    )
+  })
+
   it('reads students, releases and live dashboard from the expected paths', async () => {
     const fetchImpl = vi
       .fn()
@@ -233,5 +258,25 @@ describe('createFetchTeacherApiClient', () => {
         updatedAt: '2026-05-25T12:00:00Z',
       },
     ])
+  })
+
+  it('calls unauthorized handler when a protected request returns 401', async () => {
+    const onUnauthorized = vi.fn()
+    const fetchImpl = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 401,
+      json: async () => ({
+        message: 'missing or invalid bearer token',
+      }),
+    })
+    const api = createFetchTeacherApiClient({
+      baseUrl: 'https://teacher.example',
+      fetchImpl,
+      getToken: () => 'expired-token',
+      onUnauthorized,
+    })
+
+    await expect(api.listStudents()).rejects.toThrow('missing or invalid bearer token')
+    expect(onUnauthorized).toHaveBeenCalledTimes(1)
   })
 })

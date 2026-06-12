@@ -54,6 +54,7 @@ export interface LiveDashboardSnapshot {
 
 export interface TeacherApiClient {
   login(input: TeacherLoginInput): Promise<TeacherSession>
+  logout?(): Promise<void>
   listStudents(): Promise<TeacherStudent[]>
   listReleases(): Promise<TeacherRelease[]>
   getLiveDashboard(releaseId: string): Promise<LiveDashboardSnapshot>
@@ -96,10 +97,26 @@ export function createFetchTeacherApiClient(options: {
   baseUrl?: string
   fetchImpl?: FetchLike
   getToken?: () => string
+  onUnauthorized?: () => void | Promise<void>
 } = {}): TeacherApiClient {
   const fetchImpl = options.fetchImpl ?? fetch
   const baseUrl = options.baseUrl
   const getToken = options.getToken
+  const onUnauthorized = options.onUnauthorized
+
+  async function requestAuthedJson<T>(path: string): Promise<T> {
+    return requestJson<T>(
+      fetchImpl,
+      buildApiUrl(baseUrl, path),
+      {
+        method: 'GET',
+        headers: buildAuthHeaders(getToken),
+      },
+      {
+        onUnauthorized,
+      },
+    )
+  }
 
   return {
     async login(input) {
@@ -115,15 +132,21 @@ export function createFetchTeacherApiClient(options: {
         },
       )
     },
-    async listStudents() {
-      const payload = await requestJson<unknown>(
+    async logout() {
+      await requestJson(
         fetchImpl,
-        buildApiUrl(baseUrl, '/api/teacher/students'),
+        buildApiUrl(baseUrl, '/api/teacher/logout'),
         {
-          method: 'GET',
+          method: 'POST',
           headers: buildAuthHeaders(getToken),
         },
+        {
+          onUnauthorized,
+        },
       )
+    },
+    async listStudents() {
+      const payload = await requestAuthedJson<unknown>('/api/teacher/students')
       const students = normalizeStudents(payload)
       if (!students.length) {
         return students
@@ -132,13 +155,8 @@ export function createFetchTeacherApiClient(options: {
       const histories = await Promise.all(
         students.map(async (student) => {
           try {
-            const historyPayload = await requestJson<unknown>(
-              fetchImpl,
-              buildApiUrl(baseUrl, `/api/teacher/dashboard/students/${student.id}/history`),
-              {
-                method: 'GET',
-                headers: buildAuthHeaders(getToken),
-              },
+            const historyPayload = await requestAuthedJson<unknown>(
+              `/api/teacher/dashboard/students/${student.id}/history`,
             )
             return normalizeStudentHistoryItems(historyPayload)
           } catch {
@@ -152,24 +170,12 @@ export function createFetchTeacherApiClient(options: {
         .sort(compareStudentsByUpdatedAt)
     },
     async listReleases() {
-      const payload = await requestJson<unknown>(
-        fetchImpl,
-        buildApiUrl(baseUrl, '/api/teacher/assignments'),
-        {
-          method: 'GET',
-          headers: buildAuthHeaders(getToken),
-        },
-      )
+      const payload = await requestAuthedJson<unknown>('/api/teacher/assignments')
       return normalizeReleases(payload)
     },
     async getLiveDashboard(releaseId) {
-      const payload = await requestJson<unknown>(
-        fetchImpl,
-        buildApiUrl(baseUrl, `/api/teacher/dashboard/assignments/${releaseId}/live`),
-        {
-          method: 'GET',
-          headers: buildAuthHeaders(getToken),
-        },
+      const payload = await requestAuthedJson<unknown>(
+        `/api/teacher/dashboard/assignments/${releaseId}/live`,
       )
       return normalizeLiveDashboard(payload)
     },

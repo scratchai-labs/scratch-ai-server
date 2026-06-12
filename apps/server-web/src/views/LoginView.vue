@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { resolveTeacherApiRuntime } from '@/services/runtimeEnv'
 import { useSessionStore } from '@/stores/session'
 import { toErrorMessage } from '@/stores/storeUtils'
 import { useTeacherApiClient } from '@/services/teacherApi'
@@ -18,6 +19,7 @@ const form = reactive({
 const submitting = ref(false)
 const feedback = ref('')
 const feedbackTone = ref<'error' | 'success' | ''>('')
+const runtime = resolveTeacherApiRuntime(import.meta.env, import.meta.env.PROD)
 
 const redirectTarget = computed(() => {
   const redirect = route.query.redirect
@@ -112,7 +114,7 @@ async function handleSubmit() {
         </button>
       </form>
 
-      <p class="helper-text">
+      <p v-if="runtime.showMockLoginHint" class="helper-text">
         Mock 登录：
         <code>teacher</code> / <code>teach123</code>
       </p>

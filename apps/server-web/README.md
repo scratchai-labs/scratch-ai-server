@@ -45,6 +45,12 @@ VITE_SERVER_WEB_API_BASE_URL=http://localhost:8000
 
 仓库里也提供了 [`./.env.example`](./.env.example) 作为最小示例。
 
+生产构建约束：
+
+- `VITE_SERVER_WEB_API_MODE` 在生产环境必须是 `real`
+- `VITE_SERVER_WEB_API_BASE_URL` 在生产环境必须显式配置
+- 若缺失上述变量，`vite build` 期间会直接失败，不再静默回退到 mock 或同源 `/api`
+
 当前真实 API 模式下，教师总览和学生管理会先请求 `GET /api/teacher/students`，再按学生补拉 `GET /api/teacher/dashboard/students/:id/history`，用最近一条学习历史渲染真实的 `status / currentTarget / stepSummary / latestAiHint / updatedAt`。
 
 如果只想在子目录里单独调试，也可以：
@@ -70,4 +76,5 @@ npm run dev
 - 需要注入：
   - `VITE_SERVER_WEB_API_MODE=real`
   - `VITE_SERVER_WEB_API_BASE_URL=https://<your-zeabur-api-domain>`
+- 生产环境不再自动展示 mock 登录提示，也不会回退到 mock client
 - 仓库已提供 `vercel.json`，用于把 Vue Router history 路由统一回写到 `index.html`

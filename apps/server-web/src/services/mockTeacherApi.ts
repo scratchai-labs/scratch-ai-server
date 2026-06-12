@@ -133,6 +133,9 @@ export function createMockTeacherApiClient(): TeacherApiClient {
 
       throw new TeacherApiError('用户名或密码错误', 401)
     },
+    async logout() {
+      return undefined
+    },
     async listStudents() {
       return clone(demoStudents)
     },
