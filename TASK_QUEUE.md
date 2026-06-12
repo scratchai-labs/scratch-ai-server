@@ -2,10 +2,11 @@
 
 ## 待确认
 
-- 2026-06-12：确认并完成 `Vercel` 上 `server-web`（Teacher Web）部署流程，按文档逐步核对根目录、构建命令、环境变量、域名与真实 API 联调检查。
+- 当前无待确认任务。
 
 ## 已完成
 
+- 2026-06-12：完成 `Vercel` 上 `server-web`（Teacher Web）部署：已按 `apps/server-web` 子目录完成构建与发布，前端已指向真实 API `https://scratchai.zeabur.app`，并进入部署后联调收尾阶段。
 - 2026-06-12：完成 `Zeabur` 上 `server-api`（Go 服务）部署：已核对根目录、环境变量、`/data` 持久卷、`/health` 探活与教师注册写库链路，当前公网 API `https://scratchai.zeabur.app` 已可用。
 - 2026-06-12：补齐部署文档，新增 `docs/deployment.zh-CN.md` 作为部署真值源，明确 `Vercel + Zeabur + Neon` 的 staging / production 拓扑、双数据库建议、固定 staging 域名与 `CORS` 约束、环境变量矩阵、上线顺序、回滚和验证清单；并同步更新根 README、`docs/README`、`server-development`、`server-api`、`server-web` 的部署入口。
 - 2026-06-12：完成部署前第二轮多 agent code review 收口：把 `server-web` 的真实环境校验前移到 `vite build`，让缺失 `VITE_SERVER_WEB_API_MODE=real` / `VITE_SERVER_WEB_API_BASE_URL` 的生产构建直接失败；同步为 GitHub Actions 注入占位发布变量，避免 CI 假红；修复学生历史补拉把 `401` 吞成空历史的问题；并把 `server:web:smoke:mock` 改为直接跑 `Vite dev` mock 页面，补齐当前 UI 断言，确保 mock 冒烟验证恢复可用。
