@@ -33,5 +33,8 @@ jobs:
       - run: npm ci
 
       - run: npm run build
+        env:
+          VITE_SERVER_WEB_API_MODE: real
+          VITE_SERVER_WEB_API_BASE_URL: http://localhost:8000
 
       - run: npm run test

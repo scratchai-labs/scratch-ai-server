@@ -1,7 +1,24 @@
 import { describe, expect, it } from 'vitest'
-import { resolveTeacherApiRuntime } from './runtimeEnv'
+import {
+  resolveTeacherApiRuntime,
+  validateTeacherApiRuntimeEnv,
+} from './runtimeEnv'
 
 describe('resolveTeacherApiRuntime', () => {
+  it('accepts real mode with an explicit API base url in production', () => {
+    expect(() =>
+      validateTeacherApiRuntimeEnv(
+        {
+          DEV: false,
+          PROD: true,
+          VITE_SERVER_WEB_API_MODE: 'real',
+          VITE_SERVER_WEB_API_BASE_URL: 'https://api.example',
+        },
+        true,
+      ),
+    ).not.toThrow()
+  })
+
   it('requires real mode in production', () => {
     expect(() =>
       resolveTeacherApiRuntime(

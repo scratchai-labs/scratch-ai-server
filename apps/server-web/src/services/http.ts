@@ -9,6 +9,16 @@ export type FetchLike = (
   init?: RequestInit,
 ) => Promise<ResponseLike>
 
+export class HttpError extends Error {
+  readonly status: number
+
+  constructor(message: string, status: number) {
+    super(message)
+    this.name = 'HttpError'
+    this.status = status
+  }
+}
+
 export function buildApiUrl(baseUrl: string | undefined, path: string): string {
   const normalizedBase = baseUrl?.trim()
 
@@ -38,7 +48,7 @@ export async function requestJson<T>(
     if (response.status === 401) {
       await options.onUnauthorized?.()
     }
-    throw new Error(resolveErrorMessage(response.status, body))
+    throw new HttpError(resolveErrorMessage(response.status, body), response.status)
   }
 
   return (await response.json()) as T

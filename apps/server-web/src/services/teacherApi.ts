@@ -1,5 +1,5 @@
 import { inject, type InjectionKey } from 'vue'
-import { buildApiUrl, requestJson, type FetchLike } from './http'
+import { buildApiUrl, HttpError, requestJson, type FetchLike } from './http'
 
 export interface TeacherLoginInput {
   username: string
@@ -159,7 +159,10 @@ export function createFetchTeacherApiClient(options: {
               `/api/teacher/dashboard/students/${student.id}/history`,
             )
             return normalizeStudentHistoryItems(historyPayload)
-          } catch {
+          } catch (error) {
+            if (error instanceof HttpError && error.status === 401) {
+              throw error
+            }
             return []
           }
         }),

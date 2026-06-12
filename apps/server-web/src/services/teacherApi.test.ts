@@ -279,4 +279,37 @@ describe('createFetchTeacherApiClient', () => {
     await expect(api.listStudents()).rejects.toThrow('missing or invalid bearer token')
     expect(onUnauthorized).toHaveBeenCalledTimes(1)
   })
+
+  it('does not swallow a 401 from student history requests', async () => {
+    const onUnauthorized = vi.fn()
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(
+        createFetchResponse({
+          items: [
+            {
+              id: 1,
+              displayName: 'Ada',
+              createdAt: '2026-05-25T12:00:00Z',
+            },
+          ],
+        }),
+      )
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        json: async () => ({
+          message: 'missing or invalid bearer token',
+        }),
+      })
+    const api = createFetchTeacherApiClient({
+      baseUrl: 'https://teacher.example',
+      fetchImpl,
+      getToken: () => 'expired-token',
+      onUnauthorized,
+    })
+
+    await expect(api.listStudents()).rejects.toThrow('missing or invalid bearer token')
+    expect(onUnauthorized).toHaveBeenCalledTimes(1)
+  })
 })

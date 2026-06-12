@@ -10,7 +10,7 @@ import { chromium } from 'playwright'
 const scriptDir = path.dirname(fileURLToPath(import.meta.url))
 const appDir = path.resolve(scriptDir, '..')
 const host = '127.0.0.1'
-const previewProcessRef = {
+const serverProcessRef = {
   current: null,
 }
 
@@ -20,22 +20,24 @@ try {
   console.error(error instanceof Error ? error.message : error)
   process.exitCode = 1
 } finally {
-  await stopProcess(previewProcessRef.current)
+  await stopProcess(serverProcessRef.current)
 }
 
 async function run() {
   const port = await findFreePort(4173)
   const baseUrl = `http://${host}:${port}/`
 
-  await runCommand('build', ['run', 'build'])
+  const serverProcess = spawn(
+    viteCommand(),
+    ['--host', host, '--port', String(port), '--strictPort'],
+    {
+      cwd: appDir,
+      env: buildEnv(),
+      stdio: 'inherit',
+    },
+  )
 
-  const previewProcess = spawn(viteCommand(), ['preview', '--host', host, '--port', String(port), '--strictPort'], {
-    cwd: appDir,
-    env: buildEnv(),
-    stdio: 'inherit',
-  })
-
-  previewProcessRef.current = previewProcess
+  serverProcessRef.current = serverProcess
 
   await waitForServer(baseUrl)
   await runBrowserSmoke(baseUrl)
@@ -80,12 +82,12 @@ async function runBrowserSmoke(baseUrl) {
     await waitForBodyIncludes(page, [
       '欢迎 王老师',
       '在册学生',
-      '3',
       '1 / 2',
-      '55%',
+      '0 / 3',
+      '最新学生状态',
       'Ada',
-      '72%',
       '补上广播消息后再测试一次',
+      '最新发布单',
       '第一期发布单',
       '已发布',
     ])
@@ -160,39 +162,11 @@ async function runBrowserSmoke(baseUrl) {
   }
 }
 
-async function runCommand(label, args) {
-  await new Promise((resolve, reject) => {
-    const child = spawn(npmCommand(), args, {
-      cwd: appDir,
-      env: buildEnv(),
-      stdio: 'inherit',
-    })
-
-    child.on('exit', (code, signal) => {
-      if (code === 0) {
-        resolve(undefined)
-        return
-      }
-
-      reject(
-        new Error(
-          `${label} command failed with ${signal ? `signal ${signal}` : `code ${code}`}`,
-        ),
-      )
-    })
-    child.on('error', reject)
-  })
-}
-
 function buildEnv() {
   return {
     ...process.env,
     VITE_SERVER_WEB_API_MODE: 'mock',
   }
-}
-
-function npmCommand() {
-  return process.platform === 'win32' ? 'npm.cmd' : 'npm'
 }
 
 function viteCommand() {

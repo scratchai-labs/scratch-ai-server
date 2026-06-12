@@ -6,6 +6,7 @@
 
 ## 已完成
 
+- 2026-06-12：完成部署前第二轮多 agent code review 收口：把 `server-web` 的真实环境校验前移到 `vite build`，让缺失 `VITE_SERVER_WEB_API_MODE=real` / `VITE_SERVER_WEB_API_BASE_URL` 的生产构建直接失败；同步为 GitHub Actions 注入占位发布变量，避免 CI 假红；修复学生历史补拉把 `401` 吞成空历史的问题；并把 `server:web:smoke:mock` 改为直接跑 `Vite dev` mock 页面，补齐当前 UI 断言，确保 mock 冒烟验证恢复可用。
 - 2026-06-12：完成部署前加固与上线准备：为 `server-api` 补上 `release` 配置校验、`CORS` 白名单、readiness 健康检查、`sb3` 上传限流和数据库写错误透传；为 `server-web` 收口真实环境 fail-fast、教师退出登录和 `401` 未授权处理；同步根级 `.env.example`、Zeabur / Vercel README 与 GitHub Actions 的 `Go` 工具链配置，并已通过根级 `npm run test` 与 `npm run build`。
 - 2026-06-12：为独立部署前清理服务器端仓库历史与本地生成物：裁掉 `TASK_QUEUE.md` 中和当前仓边界无关的旧桌面端记录，删除本地 `node_modules`、`apps/server-web/node_modules` 与遗留 `server-api.sqlite3`，保持仓库对外只呈现 `server-api + server-web` 主线。
 - 2026-06-12：收口仓库边界到 `apps/server-api` + `apps/server-web`，清理支持文档、维护文档、清理脚本、忽略规则、issue 模板和锁文件里残留的 `apps/desktop-companion` / `tools/verification` / `packages/shared` / `installers` 旧引用；当前仓库只保留服务器端 monorepo 入口。
