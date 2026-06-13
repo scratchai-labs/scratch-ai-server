@@ -18,7 +18,7 @@ function createRouterForTest() {
 }
 
 describe('AppShell', () => {
-  it('renders a top header nav and footer layout', async () => {
+  it('renders a sidebar navigation shell', async () => {
     window.localStorage.setItem(
       'scratch-server-web.session',
       JSON.stringify({
@@ -50,9 +50,9 @@ describe('AppShell', () => {
       },
     })
 
-    expect(wrapper.get('header.shell__header').text()).toContain('Scratch 教师后台')
+    expect(wrapper.get('aside.shell__sidebar').text()).toContain('Scratch 教师后台')
     expect(wrapper.get('nav.shell__nav').text()).toContain('实时总览')
-    expect(wrapper.get('footer.shell__site-footer').text()).toContain('课堂工具')
+    expect(wrapper.get('.shell__footer').text()).toContain('当前教师')
   })
 
   it('calls teacher logout api before clearing session', async () => {

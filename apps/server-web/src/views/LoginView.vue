@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import StatusBadge from '@/components/StatusBadge.vue'
 import { resolveTeacherApiRuntime } from '@/services/runtimeEnv'
 import { useSessionStore } from '@/stores/session'
 import { toErrorMessage } from '@/stores/storeUtils'
@@ -32,13 +31,6 @@ const redirectTarget = computed(() => {
 
   return '/dashboard'
 })
-
-const runtimeModeLabel = computed(() => (runtime.mode === 'real' ? 'Real API' : 'Mock API'))
-const runtimeModeDescription = computed(() =>
-  runtime.mode === 'real'
-    ? '当前登录页已连接真实教师 API，可直接进入联调。'
-    : '当前登录页默认连接 mock client，适合本地开发、演示与界面验证。',
-)
 
 async function handleSubmit() {
   if (!form.username.trim() || !form.password.trim()) {
@@ -82,9 +74,6 @@ async function handleSubmit() {
         </div>
 
         <div class="auth-header__meta">
-          <StatusBadge :tone="runtime.showMockLoginHint ? 'warning' : 'success'">
-            {{ runtimeModeLabel }}
-          </StatusBadge>
           <a
             class="auth-header__link"
             :href="documentationHref"
@@ -154,12 +143,11 @@ async function handleSubmit() {
     </main>
 
     <footer class="auth-footer">
-      <div class="site-frame auth-footer__bar">
+      <div class="auth-frame auth-footer__bar">
         <p class="auth-footer__text">
           Scratch 教师后台 · 面向课堂教师的 AI 辅助工具
         </p>
         <div class="auth-footer__meta">
-          <span>联调模式：{{ runtimeModeLabel }}</span>
           <a
             class="auth-footer__link"
             :href="documentationHref"
