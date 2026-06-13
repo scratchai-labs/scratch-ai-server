@@ -440,11 +440,14 @@ button {
 
 .auth-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(360px, 420px);
-  gap: 1.25rem;
-  align-items: stretch;
+  grid-template-columns: minmax(300px, 420px) minmax(360px, 420px);
+  justify-content: center;
+  gap: 1rem;
+  align-items: center;
+  max-width: 980px;
+  margin: 0 auto;
   min-height: 100vh;
-  padding: 1.25rem;
+  padding: 1.5rem 1.25rem;
 }
 
 .auth-hero,
@@ -458,31 +461,34 @@ button {
 .auth-hero {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  gap: 1.5rem;
-  padding: 2.25rem;
-  background: linear-gradient(180deg, #f8fbfd 0%, #ecf3f7 100%);
+  justify-content: flex-start;
+  gap: 1.15rem;
+  align-self: center;
+  padding: 1.5rem 1.4rem;
+  background: linear-gradient(180deg, rgba(248, 251, 253, 0.96) 0%, rgba(236, 243, 247, 0.92) 100%);
+  box-shadow: none;
 }
 
 .auth-hero h1 {
   margin: 0;
-  font-size: 2.5rem;
-  line-height: 1.08;
+  font-size: 2rem;
+  line-height: 1.12;
   letter-spacing: -0.03em;
   text-wrap: balance;
 }
 
 .auth-hero p {
   margin: 0;
-  max-width: 56ch;
+  max-width: 44ch;
   color: var(--muted);
-  line-height: 1.6;
+  font-size: 0.95rem;
+  line-height: 1.55;
   text-wrap: pretty;
 }
 
 .auth-hero__points {
   display: grid;
-  gap: 0.9rem;
+  gap: 0.7rem;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -493,7 +499,8 @@ button {
   align-items: flex-start;
   gap: 0.7rem;
   color: var(--text);
-  line-height: 1.5;
+  font-size: 0.92rem;
+  line-height: 1.45;
 }
 
 .auth-hero__points li::before {
@@ -511,7 +518,7 @@ button {
   display: grid;
   align-content: center;
   width: min(100%, 26rem);
-  justify-self: end;
+  justify-self: stretch;
   padding: 2rem 1.75rem;
 }
 
@@ -750,7 +757,7 @@ button {
   }
 
   .auth-layout {
-    grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
+    grid-template-columns: minmax(280px, 380px) minmax(320px, 380px);
   }
 }
 
@@ -817,7 +824,7 @@ button {
   }
 
   .auth-hero h1 {
-    font-size: 2rem;
+    font-size: 1.75rem;
   }
 
   .data-table th,

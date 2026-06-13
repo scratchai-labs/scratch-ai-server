@@ -6,6 +6,7 @@
 
 ## 已完成
 
+- 2026-06-13：根据首页反馈完成登录页 `auth-hero` 二次收口：将登录页双栏整体居中，缩小左侧说明区列宽与内边距，取消其卡片阴影、下调标题与段落尺寸，并保持右侧登录卡为主要焦点；本次仅改 `server-web` 首页视觉布局，不改登录行为与其他页面。已通过 `npm run server:web:test`、`npm run server:web:smoke:mock`，并在注入占位真实环境变量后通过 `npm run server:web:build`。
 - 2026-06-13：修正 `.impeccable/live/config.json` 的入口路径为 `apps/server-web/index.html`，解决 monorepo 根目录下执行 `$impeccable live` 时注入失败的问题；当前教师端 live 预览可通过本地 `Vite` 开发服务器正常加载。
 - 2026-06-13：完成 `$impeccable polish apps/server-web/src/styles.css`：在不改页面结构的前提下，收口教师后台共享样式系统，降低全局装饰噪音，统一容器圆角与阴影，移除条纹/发光式背景语言，补齐按钮/导航/输入的焦点态与 reduced motion，增强表格、空状态、登录页和实时看板的产品化层级；已通过 `npm run server:web:test`、`npm run server:web:smoke:mock`，并在注入占位真实环境变量后通过 `npm run server:web:build`。
 - 2026-06-13：完成 `$impeccable init` 首轮初始化：新增根目录 `PRODUCT.md`，明确本仓库默认 `register=product`、教师课堂工具定位、品牌气质、反例、设计原则与默认 `WCAG AA` 无障碍口径；同时创建 `.impeccable/live/config.json`，按 `Vite SPA` 的 `index.html` 入口完成 live mode 预配置，并确认当前仓库未检测到需处理的 `CSP`。`DESIGN.md` 暂未生成，后续可按现有前端代码执行 `$impeccable document` 补齐视觉真值源。
