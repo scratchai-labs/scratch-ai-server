@@ -34,7 +34,8 @@ describe('LoginView', () => {
     })
 
     expect(wrapper.get('header.auth-header').text()).toContain('Scratch 教师后台')
-    expect(wrapper.get('main.auth-main').text()).toContain('教师登录')
+    expect(wrapper.find('.auth-hero').exists()).toBe(false)
+    expect(wrapper.get('main.auth-main').text()).toContain('登录教师后台')
     expect(wrapper.get('footer.auth-footer').text()).toContain('联调模式')
     expect(wrapper.text()).toContain('Mock API')
   })

@@ -98,25 +98,8 @@ async function handleSubmit() {
     </header>
 
     <main class="auth-main">
-      <div class="auth-main__stack">
-        <section class="auth-hero">
-          <div class="stack">
-            <p class="auth-hero__eyebrow">教师登录</p>
-            <h1>把课堂状态、发布单和 AI 提示放回同一个工作台。</h1>
-            <p>
-              用于教师查看学生最新进度、整理发布单，并在实时看板里跟进 AI
-              提示更新。
-            </p>
-          </div>
-
-          <ul class="auth-hero__points">
-            <li>登录后进入总览、学生管理和发布单页面。</li>
-            <li>教师端负责管理与判断，AI 提示在服务端生成。</li>
-            <li>{{ runtimeModeDescription }}</li>
-          </ul>
-        </section>
-
-        <section class="auth-card">
+      <div class="site-frame auth-main__frame">
+        <section class="auth-card auth-card--solo">
           <div class="stack">
             <h2>登录教师后台</h2>
             <p class="auth-card__description">
@@ -171,32 +154,21 @@ async function handleSubmit() {
     </main>
 
     <footer class="auth-footer">
-      <div class="auth-frame auth-footer__grid">
-        <section class="auth-footer__item">
-          <p class="auth-footer__label">课堂场景</p>
-          <p class="auth-footer__text">
-            面向 Scratch 课堂教师，用于课前准备、课中巡视和课后复盘。
-          </p>
-        </section>
-
-        <section class="auth-footer__item">
-          <p class="auth-footer__label">联调模式</p>
-          <p class="auth-footer__text">{{ runtimeModeDescription }}</p>
-        </section>
-
-        <section class="auth-footer__item">
-          <p class="auth-footer__label">文档支持</p>
-          <p class="auth-footer__text">
-            <a
-              class="auth-footer__link"
-              :href="documentationHref"
-              target="_blank"
-              rel="noreferrer"
-            >
-              查看服务器端开发说明
-            </a>
-          </p>
-        </section>
+      <div class="site-frame auth-footer__bar">
+        <p class="auth-footer__text">
+          Scratch 教师后台 · 面向课堂教师的 AI 辅助工具
+        </p>
+        <div class="auth-footer__meta">
+          <span>联调模式：{{ runtimeModeLabel }}</span>
+          <a
+            class="auth-footer__link"
+            :href="documentationHref"
+            target="_blank"
+            rel="noreferrer"
+          >
+            开发说明
+          </a>
+        </div>
       </div>
     </footer>
   </div>

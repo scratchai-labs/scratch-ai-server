@@ -13,6 +13,8 @@ const router = useRouter()
 const route = useRoute()
 const apiClient = useTeacherApiClient()
 const session = useSessionStore()
+const documentationHref =
+  'https://github.com/scratchai-labs/scratch-ai-server/blob/main/docs/server-development.zh-CN.md'
 
 const navigation = computed(() => [
   {
@@ -49,52 +51,71 @@ async function handleLogout() {
 
 <template>
   <div class="shell">
-    <aside class="shell__sidebar">
-      <div class="shell__brand">
-        <div class="shell__brand-mark">S</div>
-        <div>
-          <strong>Scratch 教师后台</strong>
-          <p>mockable API · Vue 3 + Vite</p>
+    <header class="shell__header">
+      <div class="site-frame shell__header-bar">
+        <div class="shell__brand">
+          <div class="shell__brand-mark">S</div>
+          <div>
+            <strong>Scratch 教师后台</strong>
+            <p>AI 辅助课堂教学工具</p>
+          </div>
+        </div>
+
+        <nav class="shell__nav">
+          <RouterLink
+            v-for="item in navigation"
+            :key="item.to"
+            :to="item.to"
+            class="shell__nav-link"
+            :class="{ 'shell__nav-link--active': isActive(item.to) }"
+          >
+            {{ item.label }}
+          </RouterLink>
+        </nav>
+
+        <div class="shell__header-meta">
+          <div class="shell__session">
+            <p class="shell__session-label">当前教师</p>
+            <strong>{{ session.teacherName || '未登录' }}</strong>
+          </div>
+          <button class="button button--ghost" type="button" @click="handleLogout">
+            退出登录
+          </button>
         </div>
       </div>
+    </header>
 
-      <nav class="shell__nav">
-        <RouterLink
-          v-for="item in navigation"
-          :key="item.to"
-          :to="item.to"
-          class="shell__nav-link"
-          :class="{ 'shell__nav-link--active': isActive(item.to) }"
-        >
-          {{ item.label }}
-        </RouterLink>
-      </nav>
+    <main class="shell__main">
+      <div class="site-frame shell__main-frame">
+        <header class="page-header">
+          <div class="stack">
+            <p class="page-header__eyebrow">Teacher Console</p>
+            <h1 class="page-header__title">{{ title }}</h1>
+            <p v-if="description" class="page-header__description">
+              {{ description }}
+            </p>
+          </div>
+          <div class="page-header__actions">
+            <slot name="actions" />
+          </div>
+        </header>
 
-      <div class="shell__footer">
-        <p class="shell__footer-label">当前教师</p>
-        <strong>{{ session.teacherName || '未登录' }}</strong>
-        <span>{{ session.isAuthenticated ? '会话已加载' : '请先登录' }}</span>
-        <button class="button button--ghost" type="button" @click="handleLogout">
-          退出登录
-        </button>
+        <slot />
       </div>
-    </aside>
-
-    <main class="shell__content">
-      <header class="page-header">
-        <div class="stack">
-          <p class="page-header__eyebrow">Teacher Console</p>
-          <h1 class="page-header__title">{{ title }}</h1>
-          <p v-if="description" class="page-header__description">
-            {{ description }}
-          </p>
-        </div>
-        <div class="page-header__actions">
-          <slot name="actions" />
-        </div>
-      </header>
-
-      <slot />
     </main>
+
+    <footer class="shell__site-footer">
+      <div class="site-frame shell__site-footer-bar">
+        <p class="shell__site-footer-text">Scratch 教师后台 · 课堂工具</p>
+        <a
+          class="shell__site-footer-link"
+          :href="documentationHref"
+          target="_blank"
+          rel="noreferrer"
+        >
+          开发说明
+        </a>
+      </div>
+    </footer>
   </div>
 </template>
