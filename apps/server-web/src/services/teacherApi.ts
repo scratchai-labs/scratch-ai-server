@@ -25,6 +25,26 @@ export interface CreateManagedTeacherInput {
   initialPassword: string
 }
 
+export interface AdminOverview {
+  adminCount: number
+  teacherCount: number
+  activeTeacherCount: number
+  disabledTeacherCount: number
+  studentCount: number
+  activeStudentCount: number
+  disabledStudentCount: number
+}
+
+export interface ManagedStudent {
+  id: string
+  teacherId: string
+  teacherUsername: string
+  username: string
+  displayName: string
+  status: string
+  createdAt: string
+}
+
 export interface TeacherStudent {
   id: string
   name: string
@@ -72,11 +92,16 @@ export interface TeacherApiClient {
   listStudents(): Promise<TeacherStudent[]>
   listReleases(): Promise<TeacherRelease[]>
   getLiveDashboard(releaseId: string): Promise<LiveDashboardSnapshot>
+  getAdminOverview?(): Promise<AdminOverview>
   listTeachers?(): Promise<ManagedTeacher[]>
   createTeacher?(input: CreateManagedTeacherInput): Promise<ManagedTeacher>
   resetTeacherPassword?(teacherId: string, newPassword: string): Promise<ManagedTeacher>
   enableTeacher?(teacherId: string): Promise<ManagedTeacher>
   disableTeacher?(teacherId: string): Promise<ManagedTeacher>
+  listManagedStudents?(): Promise<ManagedStudent[]>
+  resetManagedStudentPassword?(studentId: string, newPassword: string): Promise<ManagedStudent>
+  enableManagedStudent?(studentId: string): Promise<ManagedStudent>
+  disableManagedStudent?(studentId: string): Promise<ManagedStudent>
 }
 
 interface TeacherStudentHistoryItem {
@@ -223,6 +248,10 @@ export function createFetchTeacherApiClient(options: {
       )
       return normalizeLiveDashboard(payload)
     },
+    async getAdminOverview() {
+      const payload = await requestAuthedJson<unknown>('/api/admin/overview')
+      return normalizeAdminOverview(payload)
+    },
     async listTeachers() {
       const payload = await requestAuthedJson<unknown>('/api/admin/teachers')
       return normalizeManagedTeachers(payload)
@@ -249,6 +278,29 @@ export function createFetchTeacherApiClient(options: {
         `/api/admin/teachers/${teacherId}/disable`,
       )
       return normalizeManagedTeacher(payload)
+    },
+    async listManagedStudents() {
+      const payload = await requestAuthedJson<unknown>('/api/admin/students')
+      return normalizeManagedStudents(payload)
+    },
+    async resetManagedStudentPassword(studentId, newPassword) {
+      const payload = await requestAuthedMutation<unknown>(
+        `/api/admin/students/${studentId}/reset-password`,
+        { newPassword },
+      )
+      return normalizeManagedStudent(payload)
+    },
+    async enableManagedStudent(studentId) {
+      const payload = await requestAuthedMutation<unknown>(
+        `/api/admin/students/${studentId}/enable`,
+      )
+      return normalizeManagedStudent(payload)
+    },
+    async disableManagedStudent(studentId) {
+      const payload = await requestAuthedMutation<unknown>(
+        `/api/admin/students/${studentId}/disable`,
+      )
+      return normalizeManagedStudent(payload)
     },
   }
 }
@@ -307,6 +359,20 @@ function normalizeManagedTeachers(payload: unknown): ManagedTeacher[] {
   )
 }
 
+function normalizeAdminOverview(payload: unknown): AdminOverview {
+  const record = payload && typeof payload === 'object' ? (payload as Record<string, unknown>) : {}
+
+  return {
+    adminCount: Number(record.adminCount ?? 0),
+    teacherCount: Number(record.teacherCount ?? 0),
+    activeTeacherCount: Number(record.activeTeacherCount ?? 0),
+    disabledTeacherCount: Number(record.disabledTeacherCount ?? 0),
+    studentCount: Number(record.studentCount ?? 0),
+    activeStudentCount: Number(record.activeStudentCount ?? 0),
+    disabledStudentCount: Number(record.disabledStudentCount ?? 0),
+  }
+}
+
 function normalizeManagedTeacher(payload: unknown): ManagedTeacher {
   const record = payload && typeof payload === 'object' ? (payload as Record<string, unknown>) : {}
 
@@ -314,6 +380,26 @@ function normalizeManagedTeacher(payload: unknown): ManagedTeacher {
     id: String(record.id ?? ''),
     username: String(record.username ?? ''),
     role: String(record.role ?? 'teacher'),
+    status: String(record.status ?? 'active'),
+    createdAt: String(record.createdAt ?? '—'),
+  }
+}
+
+function normalizeManagedStudents(payload: unknown): ManagedStudent[] {
+  return normalizeCollection<Record<string, unknown>>(payload).map((item) =>
+    normalizeManagedStudent(item),
+  )
+}
+
+function normalizeManagedStudent(payload: unknown): ManagedStudent {
+  const record = payload && typeof payload === 'object' ? (payload as Record<string, unknown>) : {}
+
+  return {
+    id: String(record.id ?? ''),
+    teacherId: String(record.teacherId ?? ''),
+    teacherUsername: String(record.teacherUsername ?? ''),
+    username: String(record.username ?? ''),
+    displayName: String(record.displayName ?? ''),
     status: String(record.status ?? 'active'),
     createdAt: String(record.createdAt ?? '—'),
   }

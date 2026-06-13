@@ -13,7 +13,9 @@ function createRouterForTest() {
       { path: '/dashboard', component: { template: '<div>dashboard</div>' } },
       { path: '/students', component: { template: '<div>students</div>' } },
       { path: '/releases', component: { template: '<div>releases</div>' } },
+      { path: '/admin', component: { template: '<div>admin overview</div>' } },
       { path: '/admin/teachers', component: { template: '<div>admin teachers</div>' } },
+      { path: '/admin/students', component: { template: '<div>admin students</div>' } },
     ],
   })
 }
@@ -119,9 +121,14 @@ describe('AppShell', () => {
       resetTeacherPassword: vi.fn(),
       enableTeacher: vi.fn(),
       disableTeacher: vi.fn(),
+      getAdminOverview: vi.fn(),
+      listManagedStudents: vi.fn(),
+      resetManagedStudentPassword: vi.fn(),
+      enableManagedStudent: vi.fn(),
+      disableManagedStudent: vi.fn(),
     }
     const router = createRouterForTest()
-    router.push('/admin/teachers')
+    router.push('/admin')
     await router.isReady()
 
     const wrapper = mount(AppShell, {
@@ -136,7 +143,9 @@ describe('AppShell', () => {
       },
     })
 
+    expect(wrapper.get('nav.shell__nav').text()).toContain('后台总览')
     expect(wrapper.get('nav.shell__nav').text()).toContain('教师管理')
-    expect(wrapper.get('nav.shell__nav').text()).not.toContain('学生管理')
+    expect(wrapper.get('nav.shell__nav').text()).toContain('学生管理')
+    expect(wrapper.get('nav.shell__nav').text()).not.toContain('实时总览')
   })
 })

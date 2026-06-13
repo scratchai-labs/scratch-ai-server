@@ -12,7 +12,7 @@ An open source server workspace for Scratch teaching. The current production tra
 
 - 当前主线只维护 **服务器端教学版**
 - 核心是服务端 API
-- 管理员可通过 Web 管理教师账号
+- 管理员可通过 Web 管理教师和学生账号
 - 教师通过 Web 管理学生和任务
 - 学生通过客户端登录和接收提示
 - 所有 AI 处理都放在服务端
@@ -36,7 +36,7 @@ An open source server workspace for Scratch teaching. The current production tra
 ## Current Direction
 
 - 教师注册、登录
-- 管理员创建、禁用、启用、重置教师账号
+- 管理员创建、禁用、启用、重置教师和学生账号
 - 教师批量创建学生账号和密码
 - 教师上传并分析参考 `sb3`
 - 学生客户端登录与进度上报
@@ -90,7 +90,7 @@ npm run dev
 
 - 教师 Web 已完成一次真实浏览器点击验证
 - 真实 API 联调已通过登录、学生列表、发布单列表、实时看板和退出登录主流程
-- 管理员教师管理 MVP 已落地，可通过 `ADMIN_BOOTSTRAP_USERNAME` / `ADMIN_BOOTSTRAP_PASSWORD` 自举首个管理员账号
+- 管理员后台已落地，可通过 `ADMIN_BOOTSTRAP_USERNAME` / `ADMIN_BOOTSTRAP_PASSWORD` 自举首个管理员账号并进入 `/admin`
 
 ## License
 

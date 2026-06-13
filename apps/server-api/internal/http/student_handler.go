@@ -187,6 +187,8 @@ func (h *studentHandler) handleStudentLogin(c *gin.Context) {
 		switch {
 		case errors.Is(err, student.ErrInvalidClientType):
 			writeJSONError(c, 400, err.Error())
+		case errors.Is(err, student.ErrStudentDisabled):
+			writeJSONError(c, 403, err.Error())
 		case errors.Is(err, student.ErrInvalidCredentials):
 			writeJSONError(c, 401, err.Error())
 		default:

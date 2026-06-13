@@ -18,8 +18,16 @@ const navigation = computed(() => [
   ...(session.isAdmin
     ? [
         {
+          label: '后台总览',
+          to: '/admin',
+        },
+        {
           label: '教师管理',
           to: '/admin/teachers',
+        },
+        {
+          label: '学生管理',
+          to: '/admin/students',
         },
       ]
     : [
@@ -63,7 +71,7 @@ async function handleLogout() {
         <div class="shell__brand-mark">S</div>
         <div>
           <strong>{{ session.isAdmin ? 'Scratch 管理后台' : 'Scratch 教师后台' }}</strong>
-          <p>{{ session.isAdmin ? '管理员入口 · Teacher Accounts' : 'mockable API · Vue 3 + Vite' }}</p>
+          <p>{{ session.isAdmin ? '管理员入口 · Accounts Overview' : 'mockable API · Vue 3 + Vite' }}</p>
         </div>
       </div>
 

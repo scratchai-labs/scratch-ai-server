@@ -1,6 +1,8 @@
 import {
+  type AdminOverview,
   TeacherApiError,
   type LiveDashboardSnapshot,
+  type ManagedStudent,
   type ManagedTeacher,
   type TeacherApiClient,
   type TeacherLoginInput,
@@ -147,9 +149,31 @@ const managedTeachers: ManagedTeacher[] = [
   },
 ]
 
+const managedStudents: ManagedStudent[] = [
+  {
+    id: '10',
+    teacherId: '2',
+    teacherUsername: 'teacher',
+    username: 'student-1',
+    displayName: '小蓝',
+    status: 'active',
+    createdAt: '2026-06-13T12:20:00Z',
+  },
+  {
+    id: '11',
+    teacherId: '2',
+    teacherUsername: 'teacher',
+    username: 'student-2',
+    displayName: '小橙',
+    status: 'disabled',
+    createdAt: '2026-06-13T12:22:00Z',
+  },
+]
+
 export function createMockTeacherApiClient(): TeacherApiClient {
   const cursorByRelease = new Map<string, number>()
   const teachers = clone(managedTeachers)
+  const students = clone(managedStudents)
 
   return {
     async login(input: TeacherLoginInput) {
@@ -179,6 +203,9 @@ export function createMockTeacherApiClient(): TeacherApiClient {
       const index = Math.min(cursor, snapshots.length - 1)
       cursorByRelease.set(releaseId, cursor + 1)
       return clone(snapshots[index] ?? snapshots[snapshots.length - 1]!)
+    },
+    async getAdminOverview() {
+      return buildAdminOverview(teachers, students)
     },
     async listTeachers() {
       return clone(teachers)
@@ -217,6 +244,48 @@ export function createMockTeacherApiClient(): TeacherApiClient {
       target.status = 'active'
       return clone(target)
     },
+    async listManagedStudents() {
+      return clone(students)
+    },
+    async resetManagedStudentPassword(studentId) {
+      const target = students.find((student) => student.id === studentId)
+      if (!target) {
+        throw new TeacherApiError('student not found', 404)
+      }
+      return clone(target)
+    },
+    async disableManagedStudent(studentId) {
+      const target = students.find((student) => student.id === studentId)
+      if (!target) {
+        throw new TeacherApiError('student not found', 404)
+      }
+      target.status = 'disabled'
+      return clone(target)
+    },
+    async enableManagedStudent(studentId) {
+      const target = students.find((student) => student.id === studentId)
+      if (!target) {
+        throw new TeacherApiError('student not found', 404)
+      }
+      target.status = 'active'
+      return clone(target)
+    },
+  }
+}
+
+function buildAdminOverview(teachers: ManagedTeacher[], students: ManagedStudent[]): AdminOverview {
+  return {
+    adminCount: teachers.filter((teacher) => teacher.role === 'admin').length,
+    teacherCount: teachers.filter((teacher) => teacher.role !== 'admin').length,
+    activeTeacherCount: teachers.filter(
+      (teacher) => teacher.role !== 'admin' && teacher.status !== 'disabled',
+    ).length,
+    disabledTeacherCount: teachers.filter(
+      (teacher) => teacher.role !== 'admin' && teacher.status === 'disabled',
+    ).length,
+    studentCount: students.length,
+    activeStudentCount: students.filter((student) => student.status !== 'disabled').length,
+    disabledStudentCount: students.filter((student) => student.status === 'disabled').length,
   }
 }
 

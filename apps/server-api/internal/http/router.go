@@ -85,11 +85,16 @@ func NewRouter(cfg config.Config) (http.Handler, error) {
 
 	adminGroup := engine.Group("/api/admin")
 	adminGroup.Use(requireAdmin(authService))
+	adminGroup.GET("/overview", adminRoutes.handleAdminOverview)
 	adminGroup.GET("/teachers", adminRoutes.handleAdminTeachersList)
 	adminGroup.POST("/teachers", adminRoutes.handleAdminTeachersCreate)
 	adminGroup.POST("/teachers/:id/reset-password", adminRoutes.handleAdminTeacherPasswordReset)
 	adminGroup.POST("/teachers/:id/disable", adminRoutes.handleAdminTeacherDisable)
 	adminGroup.POST("/teachers/:id/enable", adminRoutes.handleAdminTeacherEnable)
+	adminGroup.GET("/students", adminRoutes.handleAdminStudentsList)
+	adminGroup.POST("/students/:id/reset-password", adminRoutes.handleAdminStudentPasswordReset)
+	adminGroup.POST("/students/:id/disable", adminRoutes.handleAdminStudentDisable)
+	adminGroup.POST("/students/:id/enable", adminRoutes.handleAdminStudentEnable)
 
 	studentGroup := engine.Group("/api/student")
 	studentGroup.Use(requireStudent(studentService))

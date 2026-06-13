@@ -56,7 +56,7 @@ VITE_SERVER_WEB_API_BASE_URL=http://localhost:8000
 
 当前真实 API 模式下，教师总览和学生管理会先请求 `GET /api/teacher/students`，再按学生补拉 `GET /api/teacher/dashboard/students/:id/history`，用最近一条学习历史渲染真实的 `status / currentTarget / stepSummary / latestAiHint / updatedAt`。
 
-管理员账号登录后，会进入 `/admin/teachers`，通过 `GET /api/admin/teachers` 以及教师管理相关接口统一维护教师账号。
+管理员账号登录后，会进入 `/admin`，通过 `GET /api/admin/overview`、`GET /api/admin/teachers`、`GET /api/admin/students` 以及对应的启停/重置接口统一维护账号。
 
 如果只想在子目录里单独调试，也可以：
 

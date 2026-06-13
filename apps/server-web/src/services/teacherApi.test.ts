@@ -156,6 +156,116 @@ describe('createFetchTeacherApiClient', () => {
     )
   })
 
+  it('reads admin overview and managed students from admin endpoints', async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(
+        createFetchResponse({
+          adminCount: 1,
+          teacherCount: 2,
+          activeTeacherCount: 2,
+          disabledTeacherCount: 0,
+          studentCount: 24,
+          activeStudentCount: 22,
+          disabledStudentCount: 2,
+        }),
+      )
+      .mockResolvedValueOnce(
+        createFetchResponse({
+          items: [
+            {
+              id: 5,
+              teacherId: 2,
+              teacherUsername: 'teacher-1',
+              username: 'student-1',
+              displayName: '小蓝',
+              status: 'active',
+              createdAt: '2026-06-13T12:05:00Z',
+            },
+          ],
+        }),
+      )
+      .mockResolvedValueOnce(
+        createFetchResponse({
+          id: 5,
+          teacherId: 2,
+          teacherUsername: 'teacher-1',
+          username: 'student-1',
+          displayName: '小蓝',
+          status: 'disabled',
+          createdAt: '2026-06-13T12:05:00Z',
+        }),
+      )
+    const api = createFetchTeacherApiClient({
+      baseUrl: 'https://teacher.example',
+      fetchImpl,
+      getToken: () => 'admin-token',
+    })
+
+    await expect(api.getAdminOverview?.()).resolves.toEqual({
+      adminCount: 1,
+      teacherCount: 2,
+      activeTeacherCount: 2,
+      disabledTeacherCount: 0,
+      studentCount: 24,
+      activeStudentCount: 22,
+      disabledStudentCount: 2,
+    })
+
+    await expect(api.listManagedStudents?.()).resolves.toEqual([
+      {
+        id: '5',
+        teacherId: '2',
+        teacherUsername: 'teacher-1',
+        username: 'student-1',
+        displayName: '小蓝',
+        status: 'active',
+        createdAt: '2026-06-13T12:05:00Z',
+      },
+    ])
+
+    await expect(api.disableManagedStudent?.('5')).resolves.toEqual({
+      id: '5',
+      teacherId: '2',
+      teacherUsername: 'teacher-1',
+      username: 'student-1',
+      displayName: '小蓝',
+      status: 'disabled',
+      createdAt: '2026-06-13T12:05:00Z',
+    })
+
+    expect(fetchImpl).toHaveBeenNthCalledWith(
+      1,
+      'https://teacher.example/api/admin/overview',
+      expect.objectContaining({
+        method: 'GET',
+        headers: {
+          Authorization: 'Bearer admin-token',
+        },
+      }),
+    )
+    expect(fetchImpl).toHaveBeenNthCalledWith(
+      2,
+      'https://teacher.example/api/admin/students',
+      expect.objectContaining({
+        method: 'GET',
+        headers: {
+          Authorization: 'Bearer admin-token',
+        },
+      }),
+    )
+    expect(fetchImpl).toHaveBeenNthCalledWith(
+      3,
+      'https://teacher.example/api/admin/students/5/disable',
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer admin-token',
+        },
+      }),
+    )
+  })
+
   it('posts teacher logout to /api/teacher/logout', async () => {
     const fetchImpl = vi.fn().mockResolvedValue(
       createFetchResponse({

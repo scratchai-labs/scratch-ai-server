@@ -11,6 +11,7 @@ function createRouterForTest() {
     routes: [
       { path: '/login', component: LoginView },
       { path: '/dashboard', component: { template: '<div>dashboard</div>' } },
+      { path: '/admin', component: { template: '<div>admin overview</div>' } },
       { path: '/admin/teachers', component: { template: '<div>admin teachers</div>' } },
     ],
   })
@@ -96,7 +97,7 @@ describe('LoginView', () => {
     expect(router.currentRoute.value.fullPath).toBe('/dashboard')
   })
 
-  it('navigates admin users to the teacher management page after login succeeds', async () => {
+  it('navigates admin users to the admin overview page after login succeeds', async () => {
     const api = {
       login: vi.fn().mockResolvedValue({
         token: 'token-admin',
@@ -122,6 +123,6 @@ describe('LoginView', () => {
     await wrapper.get('form').trigger('submit.prevent')
     await flushPromises()
 
-    expect(router.currentRoute.value.fullPath).toBe('/admin/teachers')
+    expect(router.currentRoute.value.fullPath).toBe('/admin')
   })
 })

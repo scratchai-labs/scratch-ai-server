@@ -11,6 +11,25 @@ type adminHandler struct {
 	service *admin.Service
 }
 
+// handleAdminOverview godoc
+//
+//	@Summary		Admin overview
+//	@Description	Read aggregated teacher/student account counts for the current administrator.
+//	@Tags			admin
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Success		200	{object}	AdminOverviewResponse
+//	@Failure		401	{object}	ErrorResponse
+//	@Failure		403	{object}	ErrorResponse
+//	@Router			/api/admin/overview [get]
+func (h *adminHandler) handleAdminOverview(c *gin.Context) {
+	if teacherRecord := mustTeacher(c); teacherRecord.ID == 0 {
+		return
+	}
+
+	writeJSON(c, 200, h.service.GetOverview())
+}
+
 // handleAdminTeachersList godoc
 //
 //	@Summary		List teachers
@@ -29,6 +48,27 @@ func (h *adminHandler) handleAdminTeachersList(c *gin.Context) {
 
 	writeJSON(c, 200, admin.TeachersResponse{
 		Items: h.service.ListTeachers(),
+	})
+}
+
+// handleAdminStudentsList godoc
+//
+//	@Summary		List students
+//	@Description	List all managed student accounts for the current administrator.
+//	@Tags			admin
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Success		200	{object}	AdminStudentsResponse
+//	@Failure		401	{object}	ErrorResponse
+//	@Failure		403	{object}	ErrorResponse
+//	@Router			/api/admin/students [get]
+func (h *adminHandler) handleAdminStudentsList(c *gin.Context) {
+	if teacherRecord := mustTeacher(c); teacherRecord.ID == 0 {
+		return
+	}
+
+	writeJSON(c, 200, admin.StudentsResponse{
+		Items: h.service.ListStudents(),
 	})
 }
 
@@ -114,6 +154,125 @@ func (h *adminHandler) handleAdminTeacherPasswordReset(c *gin.Context) {
 	}
 
 	writeJSON(c, 200, updatedTeacher)
+}
+
+// handleAdminStudentPasswordReset godoc
+//
+//	@Summary		Reset student password
+//	@Description	Replace one managed student account password.
+//	@Tags			admin
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id		path		int64							true	"Student ID"
+//	@Param			payload	body		AdminStudentPasswordResetRequestDoc	true	"New password payload"
+//	@Success		200		{object}	AdminStudentItemResponse
+//	@Failure		400		{object}	ErrorResponse
+//	@Failure		401		{object}	ErrorResponse
+//	@Failure		403		{object}	ErrorResponse
+//	@Failure		404		{object}	ErrorResponse
+//	@Router			/api/admin/students/{id}/reset-password [post]
+func (h *adminHandler) handleAdminStudentPasswordReset(c *gin.Context) {
+	if teacherRecord := mustTeacher(c); teacherRecord.ID == 0 {
+		return
+	}
+
+	studentID, ok := parseIDParam(c, "id", "student")
+	if !ok {
+		return
+	}
+
+	var request admin.ResetStudentPasswordInput
+	if err := c.ShouldBindJSON(&request); err != nil {
+		writeJSONError(c, 400, "invalid request body")
+		return
+	}
+
+	updatedStudent, err := h.service.ResetStudentPassword(studentID, request.NewPassword)
+	if err != nil {
+		if errors.Is(err, admin.ErrStudentNotFound) {
+			writeJSONError(c, 404, err.Error())
+			return
+		}
+		writeJSONError(c, 500, "student password reset failed")
+		return
+	}
+
+	writeJSON(c, 200, updatedStudent)
+}
+
+// handleAdminStudentDisable godoc
+//
+//	@Summary		Disable student
+//	@Description	Disable one managed student account.
+//	@Tags			admin
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id	path		int64	true	"Student ID"
+//	@Success		200	{object}	AdminStudentItemResponse
+//	@Failure		400	{object}	ErrorResponse
+//	@Failure		401	{object}	ErrorResponse
+//	@Failure		403	{object}	ErrorResponse
+//	@Failure		404	{object}	ErrorResponse
+//	@Router			/api/admin/students/{id}/disable [post]
+func (h *adminHandler) handleAdminStudentDisable(c *gin.Context) {
+	if teacherRecord := mustTeacher(c); teacherRecord.ID == 0 {
+		return
+	}
+
+	studentID, ok := parseIDParam(c, "id", "student")
+	if !ok {
+		return
+	}
+
+	updatedStudent, err := h.service.DisableStudent(studentID)
+	if err != nil {
+		if errors.Is(err, admin.ErrStudentNotFound) {
+			writeJSONError(c, 404, err.Error())
+			return
+		}
+		writeJSONError(c, 500, "student disable failed")
+		return
+	}
+
+	writeJSON(c, 200, updatedStudent)
+}
+
+// handleAdminStudentEnable godoc
+//
+//	@Summary		Enable student
+//	@Description	Enable one managed student account.
+//	@Tags			admin
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id	path		int64	true	"Student ID"
+//	@Success		200	{object}	AdminStudentItemResponse
+//	@Failure		400	{object}	ErrorResponse
+//	@Failure		401	{object}	ErrorResponse
+//	@Failure		403	{object}	ErrorResponse
+//	@Failure		404	{object}	ErrorResponse
+//	@Router			/api/admin/students/{id}/enable [post]
+func (h *adminHandler) handleAdminStudentEnable(c *gin.Context) {
+	if teacherRecord := mustTeacher(c); teacherRecord.ID == 0 {
+		return
+	}
+
+	studentID, ok := parseIDParam(c, "id", "student")
+	if !ok {
+		return
+	}
+
+	updatedStudent, err := h.service.EnableStudent(studentID)
+	if err != nil {
+		if errors.Is(err, admin.ErrStudentNotFound) {
+			writeJSONError(c, 404, err.Error())
+			return
+		}
+		writeJSONError(c, 500, "student enable failed")
+		return
+	}
+
+	writeJSON(c, 200, updatedStudent)
 }
 
 // handleAdminTeacherDisable godoc

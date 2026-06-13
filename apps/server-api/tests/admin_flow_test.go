@@ -88,6 +88,67 @@ func TestAdminCanResetDisableAndEnableTeacher(t *testing.T) {
 	require.Equal(t, http.StatusOK, newLoginRes.Code)
 }
 
+func TestAdminCanViewOverviewAndManageStudents(t *testing.T) {
+	t.Setenv("ADMIN_BOOTSTRAP_USERNAME", "admin")
+	t.Setenv("ADMIN_BOOTSTRAP_PASSWORD", "admin12345")
+
+	handler := newTestHandler()
+	adminToken := loginTeacherToken(t, handler, "admin", "admin12345")
+	teacherToken := registerTeacher(t, handler, "teacher-students-admin", "secret123")
+	studentID := createStudent(t, handler, teacherToken, "student-admin-1", "小蓝", "stud1234")
+
+	overviewRes := performAuthedJSONRequest(t, handler, adminToken, http.MethodGet, "/api/admin/overview", nil)
+	require.Equal(t, http.StatusOK, overviewRes.Code)
+	require.EqualValues(t, 1, requireInt64Field(t, overviewRes.Body.String(), "adminCount"))
+	require.EqualValues(t, 1, requireInt64Field(t, overviewRes.Body.String(), "teacherCount"))
+	require.EqualValues(t, 1, requireInt64Field(t, overviewRes.Body.String(), "activeTeacherCount"))
+	require.EqualValues(t, 0, requireInt64Field(t, overviewRes.Body.String(), "disabledTeacherCount"))
+	require.EqualValues(t, 1, requireInt64Field(t, overviewRes.Body.String(), "studentCount"))
+	require.EqualValues(t, 1, requireInt64Field(t, overviewRes.Body.String(), "activeStudentCount"))
+	require.EqualValues(t, 0, requireInt64Field(t, overviewRes.Body.String(), "disabledStudentCount"))
+
+	listRes := performAuthedJSONRequest(t, handler, adminToken, http.MethodGet, "/api/admin/students", nil)
+	require.Equal(t, http.StatusOK, listRes.Code)
+	requireJSONArrayLen(t, listRes.Body.String(), "items", 1)
+	requireBodyField(t, listRes.Body.String(), "items.0.username", "student-admin-1")
+	requireBodyField(t, listRes.Body.String(), "items.0.displayName", "小蓝")
+	requireBodyField(t, listRes.Body.String(), "items.0.teacherUsername", "teacher-students-admin")
+	requireBodyField(t, listRes.Body.String(), "items.0.status", "active")
+
+	resetRes := performAuthedJSONRequest(t, handler, adminToken, http.MethodPost, "/api/admin/students/"+strconv.FormatInt(studentID, 10)+"/reset-password", map[string]any{
+		"newPassword": "renewed123",
+	})
+	require.Equal(t, http.StatusOK, resetRes.Code)
+	requireBodyField(t, resetRes.Body.String(), "status", "active")
+
+	disableRes := performAuthedJSONRequest(t, handler, adminToken, http.MethodPost, "/api/admin/students/"+strconv.FormatInt(studentID, 10)+"/disable", nil)
+	require.Equal(t, http.StatusOK, disableRes.Code)
+	requireBodyField(t, disableRes.Body.String(), "status", "disabled")
+
+	disabledLoginRes := performJSONRequest(t, handler, http.MethodPost, "/api/student/login", map[string]any{
+		"username":   "student-admin-1",
+		"password":   "renewed123",
+		"clientType": "desktop",
+	})
+	require.Equal(t, http.StatusForbidden, disabledLoginRes.Code)
+
+	overviewAfterDisableRes := performAuthedJSONRequest(t, handler, adminToken, http.MethodGet, "/api/admin/overview", nil)
+	require.Equal(t, http.StatusOK, overviewAfterDisableRes.Code)
+	require.EqualValues(t, 0, requireInt64Field(t, overviewAfterDisableRes.Body.String(), "activeStudentCount"))
+	require.EqualValues(t, 1, requireInt64Field(t, overviewAfterDisableRes.Body.String(), "disabledStudentCount"))
+
+	enableRes := performAuthedJSONRequest(t, handler, adminToken, http.MethodPost, "/api/admin/students/"+strconv.FormatInt(studentID, 10)+"/enable", nil)
+	require.Equal(t, http.StatusOK, enableRes.Code)
+	requireBodyField(t, enableRes.Body.String(), "status", "active")
+
+	enabledLoginRes := performJSONRequest(t, handler, http.MethodPost, "/api/student/login", map[string]any{
+		"username":   "student-admin-1",
+		"password":   "renewed123",
+		"clientType": "desktop",
+	})
+	require.Equal(t, http.StatusOK, enabledLoginRes.Code)
+}
+
 func TestTeacherCannotAccessAdminRoutes(t *testing.T) {
 	t.Setenv("ADMIN_BOOTSTRAP_USERNAME", "admin")
 	t.Setenv("ADMIN_BOOTSTRAP_PASSWORD", "admin12345")
@@ -98,6 +159,12 @@ func TestTeacherCannotAccessAdminRoutes(t *testing.T) {
 
 	listRes := performAuthedJSONRequest(t, handler, teacherToken, http.MethodGet, "/api/admin/teachers", nil)
 	require.Equal(t, http.StatusForbidden, listRes.Code)
+
+	studentsRes := performAuthedJSONRequest(t, handler, teacherToken, http.MethodGet, "/api/admin/students", nil)
+	require.Equal(t, http.StatusForbidden, studentsRes.Code)
+
+	overviewRes := performAuthedJSONRequest(t, handler, teacherToken, http.MethodGet, "/api/admin/overview", nil)
+	require.Equal(t, http.StatusForbidden, overviewRes.Code)
 
 	disableSelfRes := performAuthedJSONRequest(t, handler, loginTeacherToken(t, handler, "admin", "admin12345"), http.MethodPost, "/api/admin/teachers/1/disable", nil)
 	require.Equal(t, http.StatusConflict, disableSelfRes.Code)

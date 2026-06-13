@@ -68,6 +68,20 @@ type AdminTeacherPasswordResetRequestDoc struct {
 	NewPassword string `json:"newPassword" binding:"required" example:"updated123"`
 }
 
+type AdminStudentPasswordResetRequestDoc struct {
+	NewPassword string `json:"newPassword" binding:"required" example:"updated123"`
+}
+
+type AdminOverviewResponse struct {
+	AdminCount           int `json:"adminCount" example:"1"`
+	TeacherCount         int `json:"teacherCount" example:"8"`
+	ActiveTeacherCount   int `json:"activeTeacherCount" example:"7"`
+	DisabledTeacherCount int `json:"disabledTeacherCount" example:"1"`
+	StudentCount         int `json:"studentCount" example:"180"`
+	ActiveStudentCount   int `json:"activeStudentCount" example:"172"`
+	DisabledStudentCount int `json:"disabledStudentCount" example:"8"`
+}
+
 type AdminTeacherItemResponse struct {
 	ID        int64  `json:"id" example:"1"`
 	Username  string `json:"username" example:"teacher01"`
@@ -76,8 +90,22 @@ type AdminTeacherItemResponse struct {
 	CreatedAt string `json:"createdAt" example:"2026-06-13T12:00:00Z"`
 }
 
+type AdminStudentItemResponse struct {
+	ID              int64  `json:"id" example:"1"`
+	TeacherID       int64  `json:"teacherId" example:"2"`
+	TeacherUsername string `json:"teacherUsername" example:"teacher01"`
+	Username        string `json:"username" example:"student01"`
+	DisplayName     string `json:"displayName" example:"小明"`
+	Status          string `json:"status" example:"active"`
+	CreatedAt       string `json:"createdAt" example:"2026-06-13T12:00:00Z"`
+}
+
 type AdminTeachersResponse struct {
 	Items []AdminTeacherItemResponse `json:"items"`
+}
+
+type AdminStudentsResponse struct {
+	Items []AdminStudentItemResponse `json:"items"`
 }
 
 type TeacherAssignmentsResponse struct {

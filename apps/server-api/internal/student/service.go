@@ -49,6 +49,7 @@ type StudentItem struct {
 var (
 	ErrInvalidCredentials = errors.New("invalid student credentials")
 	ErrInvalidClientType  = errors.New("student login only supports desktop client")
+	ErrStudentDisabled    = errors.New("student account is disabled")
 	ErrUnauthorized       = errors.New("missing or invalid bearer token")
 	ErrStudentNotFound    = errors.New("student not found")
 )
@@ -115,6 +116,9 @@ func (s *Service) Login(input LoginInput) (StudentSession, error) {
 	if err := bcrypt.CompareHashAndPassword([]byte(studentRecord.PasswordHash), []byte(input.Password)); err != nil {
 		return StudentSession{}, ErrInvalidCredentials
 	}
+	if studentRecord.Status != "active" {
+		return StudentSession{}, ErrStudentDisabled
+	}
 
 	token, err := randomToken()
 	if err != nil {
@@ -138,6 +142,9 @@ func (s *Service) StudentFromBearer(authorizationHeader string) (memory.Student,
 
 	studentRecord, ok := s.store.FindStudentByToken(token)
 	if !ok {
+		return memory.Student{}, ErrUnauthorized
+	}
+	if studentRecord.Status != "active" {
 		return memory.Student{}, ErrUnauthorized
 	}
 

@@ -29,6 +29,15 @@ func TestSwaggerDocJSONExposesCoreAPIContract(t *testing.T) {
 	paths, ok := spec["paths"].(map[string]any)
 	require.True(t, ok, "swagger spec should expose paths")
 	require.Equal(t, []string{
+		"/api/admin/overview",
+		"/api/admin/students",
+		"/api/admin/students/{id}/disable",
+		"/api/admin/students/{id}/enable",
+		"/api/admin/students/{id}/reset-password",
+		"/api/admin/teachers",
+		"/api/admin/teachers/{id}/disable",
+		"/api/admin/teachers/{id}/enable",
+		"/api/admin/teachers/{id}/reset-password",
 		"/api/student/assignments",
 		"/api/student/assignments/{id}",
 		"/api/student/assignments/{id}/hints",

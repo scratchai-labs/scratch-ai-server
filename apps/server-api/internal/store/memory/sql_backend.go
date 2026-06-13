@@ -289,6 +289,25 @@ func (b *sqlBackend) ListStudentsByTeacher(teacherID int64) []Student {
 	return records
 }
 
+func (b *sqlBackend) ListStudents() []Student {
+	rows, err := b.db.Query(
+		b.rebind("SELECT id, teacher_id, username, display_name, password_hash, status, created_at FROM students ORDER BY id ASC"),
+	)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+
+	records := make([]Student, 0)
+	for rows.Next() {
+		record, scanErr := scanStudent(rows)
+		if scanErr == nil {
+			records = append(records, record)
+		}
+	}
+	return records
+}
+
 func (b *sqlBackend) FindStudentByUsername(username string) (Student, bool) {
 	row := b.db.QueryRow(
 		b.rebind("SELECT id, teacher_id, username, display_name, password_hash, status, created_at FROM students WHERE username = ?"),
@@ -348,6 +367,18 @@ func (b *sqlBackend) GetStudentByTeacher(teacherID int64, studentID int64) (Stud
 	return record, err == nil
 }
 
+func (b *sqlBackend) GetStudentByID(studentID int64) (Student, bool) {
+	row := b.db.QueryRow(
+		b.rebind("SELECT id, teacher_id, username, display_name, password_hash, status, created_at FROM students WHERE id = ?"),
+		studentID,
+	)
+	record, err := scanStudent(row)
+	if errors.Is(err, sql.ErrNoRows) {
+		return Student{}, false
+	}
+	return record, err == nil
+}
+
 func (b *sqlBackend) UpdateStudentPassword(teacherID int64, studentID int64, passwordHash string) (Student, error) {
 	if _, ok := b.GetStudentByTeacher(teacherID, studentID); !ok {
 		return Student{}, ErrStudentNotFound
@@ -364,6 +395,48 @@ func (b *sqlBackend) UpdateStudentPassword(teacherID int64, studentID int64, pas
 	}
 
 	record, ok := b.GetStudentByTeacher(teacherID, studentID)
+	if !ok {
+		return Student{}, ErrStudentNotFound
+	}
+	return record, nil
+}
+
+func (b *sqlBackend) UpdateStudentPasswordByID(studentID int64, passwordHash string) (Student, error) {
+	if _, ok := b.GetStudentByID(studentID); !ok {
+		return Student{}, ErrStudentNotFound
+	}
+
+	_, err := b.db.Exec(
+		b.rebind("UPDATE students SET password_hash = ? WHERE id = ?"),
+		passwordHash,
+		studentID,
+	)
+	if err != nil {
+		return Student{}, err
+	}
+
+	record, ok := b.GetStudentByID(studentID)
+	if !ok {
+		return Student{}, ErrStudentNotFound
+	}
+	return record, nil
+}
+
+func (b *sqlBackend) UpdateStudentStatus(studentID int64, status string) (Student, error) {
+	if _, ok := b.GetStudentByID(studentID); !ok {
+		return Student{}, ErrStudentNotFound
+	}
+
+	_, err := b.db.Exec(
+		b.rebind("UPDATE students SET status = ? WHERE id = ?"),
+		status,
+		studentID,
+	)
+	if err != nil {
+		return Student{}, err
+	}
+
+	record, ok := b.GetStudentByID(studentID)
 	if !ok {
 		return Student{}, ErrStudentNotFound
 	}

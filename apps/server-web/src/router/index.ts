@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory, type RouteLocationNormalized } from 'vue-router'
 import type { Pinia } from 'pinia'
 import { useSessionStore } from '@/stores/session'
+import AdminOverviewView from '@/views/AdminOverviewView.vue'
+import AdminStudentsView from '@/views/AdminStudentsView.vue'
 import AdminTeachersView from '@/views/AdminTeachersView.vue'
 import DashboardView from '@/views/DashboardView.vue'
 import LiveReleaseView from '@/views/LiveReleaseView.vue'
@@ -58,9 +60,25 @@ export function createTeacherRouter(pinia: Pinia) {
         },
       },
       {
+        path: '/admin',
+        name: 'admin-overview',
+        component: AdminOverviewView,
+        meta: {
+          requiresAdmin: true,
+        },
+      },
+      {
         path: '/admin/teachers',
         name: 'admin-teachers',
         component: AdminTeachersView,
+        meta: {
+          requiresAdmin: true,
+        },
+      },
+      {
+        path: '/admin/students',
+        name: 'admin-students',
+        component: AdminStudentsView,
         meta: {
           requiresAdmin: true,
         },
@@ -96,7 +114,7 @@ export function createTeacherRouter(pinia: Pinia) {
     }
 
     if (to.meta.requiresTeacher && sessionStore.isAdmin) {
-      return '/admin/teachers'
+      return '/admin'
     }
 
     return true

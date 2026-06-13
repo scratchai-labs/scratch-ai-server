@@ -290,6 +290,69 @@ definitions:
       studentName:
         type: string
     type: object
+  http.AdminOverviewResponse:
+    properties:
+      activeStudentCount:
+        example: 172
+        type: integer
+      activeTeacherCount:
+        example: 7
+        type: integer
+      adminCount:
+        example: 1
+        type: integer
+      disabledStudentCount:
+        example: 8
+        type: integer
+      disabledTeacherCount:
+        example: 1
+        type: integer
+      studentCount:
+        example: 180
+        type: integer
+      teacherCount:
+        example: 8
+        type: integer
+    type: object
+  http.AdminStudentItemResponse:
+    properties:
+      createdAt:
+        example: "2026-06-13T12:00:00Z"
+        type: string
+      displayName:
+        example: 小明
+        type: string
+      id:
+        example: 1
+        type: integer
+      status:
+        example: active
+        type: string
+      teacherId:
+        example: 2
+        type: integer
+      teacherUsername:
+        example: teacher01
+        type: string
+      username:
+        example: student01
+        type: string
+    type: object
+  http.AdminStudentPasswordResetRequestDoc:
+    properties:
+      newPassword:
+        example: updated123
+        type: string
+    required:
+    - newPassword
+    type: object
+  http.AdminStudentsResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/http.AdminStudentItemResponse'
+        type: array
+    type: object
   http.AdminTeacherCreateRequestDoc:
     properties:
       initialPassword:
@@ -677,6 +740,175 @@ info:
   title: Scratch AI Server API
   version: "1.0"
 paths:
+  /api/admin/overview:
+    get:
+      description: Read aggregated teacher/student account counts for the current
+        administrator.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.AdminOverviewResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Admin overview
+      tags:
+      - admin
+  /api/admin/students:
+    get:
+      description: List all managed student accounts for the current administrator.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.AdminStudentsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List students
+      tags:
+      - admin
+  /api/admin/students/{id}/disable:
+    post:
+      description: Disable one managed student account.
+      parameters:
+      - description: Student ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.AdminStudentItemResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Disable student
+      tags:
+      - admin
+  /api/admin/students/{id}/enable:
+    post:
+      description: Enable one managed student account.
+      parameters:
+      - description: Student ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.AdminStudentItemResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Enable student
+      tags:
+      - admin
+  /api/admin/students/{id}/reset-password:
+    post:
+      consumes:
+      - application/json
+      description: Replace one managed student account password.
+      parameters:
+      - description: Student ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: New password payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/http.AdminStudentPasswordResetRequestDoc'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.AdminStudentItemResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Reset student password
+      tags:
+      - admin
   /api/admin/teachers:
     get:
       description: List all teacher/admin accounts for the current administrator.

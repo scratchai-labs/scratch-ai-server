@@ -426,6 +426,31 @@ func (s *Store) ListStudentsByTeacher(teacherID int64) []Student {
 	return students
 }
 
+func (s *Store) ListStudents() []Student {
+	if s.sql != nil {
+		return s.sql.ListStudents()
+	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	students := make([]Student, 0, len(s.studentsByID))
+	for _, student := range s.studentsByID {
+		students = append(students, student)
+	}
+	slices.SortFunc(students, func(a Student, b Student) int {
+		switch {
+		case a.ID < b.ID:
+			return -1
+		case a.ID > b.ID:
+			return 1
+		default:
+			return 0
+		}
+	})
+	return students
+}
+
 func (s *Store) FindStudentByUsername(username string) (Student, bool) {
 	if s.sql != nil {
 		return s.sql.FindStudentByUsername(username)
@@ -497,6 +522,18 @@ func (s *Store) GetStudentByTeacher(teacherID int64, studentID int64) (Student, 
 	return student, true
 }
 
+func (s *Store) GetStudentByID(studentID int64) (Student, bool) {
+	if s.sql != nil {
+		return s.sql.GetStudentByID(studentID)
+	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	student, ok := s.studentsByID[studentID]
+	return student, ok
+}
+
 func (s *Store) UpdateStudentPassword(teacherID int64, studentID int64, passwordHash string) (Student, error) {
 	if s.sql != nil {
 		return s.sql.UpdateStudentPassword(teacherID, studentID, passwordHash)
@@ -511,6 +548,42 @@ func (s *Store) UpdateStudentPassword(teacherID int64, studentID int64, password
 	}
 
 	student.PasswordHash = passwordHash
+	s.studentsByID[studentID] = student
+	return student, nil
+}
+
+func (s *Store) UpdateStudentPasswordByID(studentID int64, passwordHash string) (Student, error) {
+	if s.sql != nil {
+		return s.sql.UpdateStudentPasswordByID(studentID, passwordHash)
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	student, ok := s.studentsByID[studentID]
+	if !ok {
+		return Student{}, ErrStudentNotFound
+	}
+
+	student.PasswordHash = passwordHash
+	s.studentsByID[studentID] = student
+	return student, nil
+}
+
+func (s *Store) UpdateStudentStatus(studentID int64, status string) (Student, error) {
+	if s.sql != nil {
+		return s.sql.UpdateStudentStatus(studentID, status)
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	student, ok := s.studentsByID[studentID]
+	if !ok {
+		return Student{}, ErrStudentNotFound
+	}
+
+	student.Status = status
 	s.studentsByID[studentID] = student
 	return student, nil
 }
