@@ -6,6 +6,7 @@
 
 ## 已完成
 
+- 2026-06-13：完成登录首页结构重做：将 `LoginView` 从左右双栏改为 `header / main / footer` 的上中下结构，页头补齐品牌标识、运行模式和开发说明入口，中间收口为紧凑 hero + 居中登录卡，页脚补齐课堂场景、联调模式和文档支持三段说明；同步新增组件测试锁定首页骨架与 `Mock API` 信息。已通过 `npm run server:web:test`、`npm run server:web:smoke:mock`，并在注入占位真实环境变量后通过 `npm run server:web:build`。
 - 2026-06-13：根据首页反馈完成登录页 `auth-hero` 二次收口：将登录页双栏整体居中，缩小左侧说明区列宽与内边距，取消其卡片阴影、下调标题与段落尺寸，并保持右侧登录卡为主要焦点；本次仅改 `server-web` 首页视觉布局，不改登录行为与其他页面。已通过 `npm run server:web:test`、`npm run server:web:smoke:mock`，并在注入占位真实环境变量后通过 `npm run server:web:build`。
 - 2026-06-13：修正 `.impeccable/live/config.json` 的入口路径为 `apps/server-web/index.html`，解决 monorepo 根目录下执行 `$impeccable live` 时注入失败的问题；当前教师端 live 预览可通过本地 `Vite` 开发服务器正常加载。
 - 2026-06-13：完成 `$impeccable polish apps/server-web/src/styles.css`：在不改页面结构的前提下，收口教师后台共享样式系统，降低全局装饰噪音，统一容器圆角与阴影，移除条纹/发光式背景语言，补齐按钮/导航/输入的焦点态与 reduced motion，增强表格、空状态、登录页和实时看板的产品化层级；已通过 `npm run server:web:test`、`npm run server:web:smoke:mock`，并在注入占位真实环境变量后通过 `npm run server:web:build`。

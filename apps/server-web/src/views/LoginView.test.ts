@@ -16,6 +16,29 @@ function createRouterForTest() {
 }
 
 describe('LoginView', () => {
+  it('renders a stacked header main footer homepage frame', async () => {
+    const api = {
+      login: vi.fn(),
+    }
+    const router = createRouterForTest()
+    router.push('/login')
+    await router.isReady()
+
+    const wrapper = mount(LoginView, {
+      global: {
+        plugins: [createPinia(), router],
+        provide: {
+          [teacherApiKey as symbol]: api,
+        },
+      },
+    })
+
+    expect(wrapper.get('header.auth-header').text()).toContain('Scratch 教师后台')
+    expect(wrapper.get('main.auth-main').text()).toContain('教师登录')
+    expect(wrapper.get('footer.auth-footer').text()).toContain('联调模式')
+    expect(wrapper.text()).toContain('Mock API')
+  })
+
   it('shows error feedback when login fails', async () => {
     const api = {
       login: vi.fn().mockRejectedValue(new Error('用户名或密码错误')),

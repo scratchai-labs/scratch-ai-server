@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import StatusBadge from '@/components/StatusBadge.vue'
 import { resolveTeacherApiRuntime } from '@/services/runtimeEnv'
 import { useSessionStore } from '@/stores/session'
 import { toErrorMessage } from '@/stores/storeUtils'
@@ -20,6 +21,8 @@ const submitting = ref(false)
 const feedback = ref('')
 const feedbackTone = ref<'error' | 'success' | ''>('')
 const runtime = resolveTeacherApiRuntime(import.meta.env, import.meta.env.PROD)
+const documentationHref =
+  'https://github.com/scratchai-labs/scratch-ai-server/blob/main/docs/server-development.zh-CN.md'
 
 const redirectTarget = computed(() => {
   const redirect = route.query.redirect
@@ -29,6 +32,13 @@ const redirectTarget = computed(() => {
 
   return '/dashboard'
 })
+
+const runtimeModeLabel = computed(() => (runtime.mode === 'real' ? 'Real API' : 'Mock API'))
+const runtimeModeDescription = computed(() =>
+  runtime.mode === 'real'
+    ? '当前登录页已连接真实教师 API，可直接进入联调。'
+    : '当前登录页默认连接 mock client，适合本地开发、演示与界面验证。',
+)
 
 async function handleSubmit() {
   if (!form.username.trim() || !form.password.trim()) {
@@ -61,67 +71,133 @@ async function handleSubmit() {
 
 <template>
   <div class="auth-layout">
-    <section class="auth-hero">
-      <div class="stack">
-        <p class="auth-hero__eyebrow">Scratch Teacher Backend</p>
-        <h1>教师后台基础页</h1>
-        <p>
-          用于查看学生最新进度、整理发布单，并在实时看板里跟进 AI 提示更新。
-        </p>
+    <header class="auth-header">
+      <div class="auth-frame auth-header__bar">
+        <div class="auth-brand">
+          <div class="auth-brand__mark">S</div>
+          <div class="auth-brand__copy">
+            <strong class="auth-brand__title">Scratch 教师后台</strong>
+            <p class="auth-brand__subtitle">AI 辅助课堂教学工具</p>
+          </div>
+        </div>
+
+        <div class="auth-header__meta">
+          <StatusBadge :tone="runtime.showMockLoginHint ? 'warning' : 'success'">
+            {{ runtimeModeLabel }}
+          </StatusBadge>
+          <a
+            class="auth-header__link"
+            :href="documentationHref"
+            target="_blank"
+            rel="noreferrer"
+          >
+            开发说明
+          </a>
+        </div>
       </div>
+    </header>
 
-      <ul class="auth-hero__points">
-        <li>登录后进入总览、学生和发布单页面。</li>
-        <li>实时看板当前采用轮询模型，便于后端替换。</li>
-        <li>{{ runtime.showMockLoginHint ? '默认可直接使用 mock client 开发与联调。' : '当前页面已连接真实教师 API。' }}</li>
-      </ul>
-    </section>
+    <main class="auth-main">
+      <div class="auth-main__stack">
+        <section class="auth-hero">
+          <div class="stack">
+            <p class="auth-hero__eyebrow">教师登录</p>
+            <h1>把课堂状态、发布单和 AI 提示放回同一个工作台。</h1>
+            <p>
+              用于教师查看学生最新进度、整理发布单，并在实时看板里跟进 AI
+              提示更新。
+            </p>
+          </div>
 
-    <section class="auth-card">
-      <div class="stack">
-        <h2>登录教师后台</h2>
-        <p class="auth-card__description">
-          {{ runtime.showMockLoginHint ? '这里先接 mock client，等后端就绪后再切到真实 `/api/teacher/login`。' : '当前会直接调用真实 `/api/teacher/login`。' }}
-        </p>
+          <ul class="auth-hero__points">
+            <li>登录后进入总览、学生管理和发布单页面。</li>
+            <li>教师端负责管理与判断，AI 提示在服务端生成。</li>
+            <li>{{ runtimeModeDescription }}</li>
+          </ul>
+        </section>
+
+        <section class="auth-card">
+          <div class="stack">
+            <h2>登录教师后台</h2>
+            <p class="auth-card__description">
+              {{ runtime.showMockLoginHint ? '这里先接 mock client，等后端就绪后再切到真实 `/api/teacher/login`。' : '当前会直接调用真实 `/api/teacher/login`。' }}
+            </p>
+          </div>
+
+          <form class="form-grid" @submit.prevent="handleSubmit">
+            <label class="field">
+              <span>账号</span>
+              <input
+                v-model="form.username"
+                class="input"
+                name="username"
+                autocomplete="username"
+                placeholder="teacher"
+              />
+            </label>
+
+            <label class="field">
+              <span>密码</span>
+              <input
+                v-model="form.password"
+                class="input"
+                name="password"
+                type="password"
+                autocomplete="current-password"
+                placeholder="teach123"
+              />
+            </label>
+
+            <button class="button button--primary" type="submit" :disabled="submitting">
+              {{ submitting ? '登录中…' : '登录' }}
+            </button>
+          </form>
+
+          <p v-if="runtime.showMockLoginHint" class="helper-text">
+            Mock 登录：
+            <code>teacher</code> / <code>teach123</code>
+          </p>
+
+          <p
+            v-if="feedback"
+            :role="feedbackTone === 'error' ? 'alert' : 'status'"
+            class="feedback"
+            :class="`feedback--${feedbackTone}`"
+          >
+            {{ feedback }}
+          </p>
+        </section>
       </div>
+    </main>
 
-      <form class="form-grid" @submit.prevent="handleSubmit">
-        <label class="field">
-          <span>账号</span>
-          <input
-            v-model="form.username"
-            class="input"
-            name="username"
-            autocomplete="username"
-            placeholder="teacher"
-          />
-        </label>
+    <footer class="auth-footer">
+      <div class="auth-frame auth-footer__grid">
+        <section class="auth-footer__item">
+          <p class="auth-footer__label">课堂场景</p>
+          <p class="auth-footer__text">
+            面向 Scratch 课堂教师，用于课前准备、课中巡视和课后复盘。
+          </p>
+        </section>
 
-        <label class="field">
-          <span>密码</span>
-          <input
-            v-model="form.password"
-            class="input"
-            name="password"
-            type="password"
-            autocomplete="current-password"
-            placeholder="teach123"
-          />
-        </label>
+        <section class="auth-footer__item">
+          <p class="auth-footer__label">联调模式</p>
+          <p class="auth-footer__text">{{ runtimeModeDescription }}</p>
+        </section>
 
-        <button class="button button--primary" type="submit" :disabled="submitting">
-          {{ submitting ? '登录中…' : '登录' }}
-        </button>
-      </form>
-
-      <p v-if="runtime.showMockLoginHint" class="helper-text">
-        Mock 登录：
-        <code>teacher</code> / <code>teach123</code>
-      </p>
-
-      <p v-if="feedback" :role="feedbackTone === 'error' ? 'alert' : 'status'" class="feedback" :class="`feedback--${feedbackTone}`">
-        {{ feedback }}
-      </p>
-    </section>
+        <section class="auth-footer__item">
+          <p class="auth-footer__label">文档支持</p>
+          <p class="auth-footer__text">
+            <a
+              class="auth-footer__link"
+              :href="documentationHref"
+              target="_blank"
+              rel="noreferrer"
+            >
+              查看服务器端开发说明
+            </a>
+          </p>
+        </section>
+      </div>
+    </footer>
   </div>
 </template>
