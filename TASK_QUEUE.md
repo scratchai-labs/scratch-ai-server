@@ -6,6 +6,7 @@
 
 ## 已完成
 
+- 2026-06-13：阅读并梳理服务端相关文档，结合 `apps/server-api` 实际代码与测试，汇总服务器端需求边界与当前完成进度；已核对产品总览、架构、路线图、API 契约、部署说明与实际模块/路由/测试，确认当前主线为 `Go API + 教师 Web`，且服务端第一阶段主链路已经落地。
 - 2026-06-13：清理 `apps/server-web/index.html` 中遗留的 `impeccable live` 注入脚本，恢复教师端入口页为正常生产模板，不改页面结构与业务逻辑。已在注入占位真实环境变量后通过 `npm run server:web:build`。
 - 2026-06-13：微调 `server-web` 登录页登录卡纵向留白：仅收紧 `auth-card--solo` 的上下内边距，并缩小登录标题说明与表单之间的纵向间距，让首页更紧凑，不改结构与交互。已通过 `npm run server:web:test`、`npm run server:web:smoke:mock`，并在注入占位真实环境变量后通过 `npm run server:web:build`。
 - 2026-06-13：回退 `server-web` 最近一次全站壳层改造：登录页保留品牌型 `header / 登录卡 / footer`，并将头尾统一为窄幅品牌容器与简单文档跳转；登录后应用页恢复为侧边栏工作区结构，同时清理 `styles.css` 中残留的顶栏壳层断点样式。已通过 `npm run server:web:test`、`npm run server:web:smoke:mock`，并在注入占位真实环境变量后通过 `npm run server:web:build`。
