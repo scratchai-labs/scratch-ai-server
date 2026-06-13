@@ -544,6 +544,7 @@ button {
 
 .auth-card--solo {
   min-height: 0;
+  padding-block: 1.45rem;
 }
 
 .auth-card h2 {
@@ -553,7 +554,7 @@ button {
 }
 
 .auth-card__description {
-  margin: 0.4rem 0 1.4rem;
+  margin: 0.35rem 0 1.1rem;
   color: var(--muted);
   line-height: 1.55;
 }
