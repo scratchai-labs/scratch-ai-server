@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	serverapidocs "github.com/scratchai-labs/scratch-ai-server/apps/server-api/docs"
+	"github.com/scratchai-labs/scratch-ai-server/apps/server-api/internal/admin"
 	"github.com/scratchai-labs/scratch-ai-server/apps/server-api/internal/assignment"
 	"github.com/scratchai-labs/scratch-ai-server/apps/server-api/internal/auth"
 	"github.com/scratchai-labs/scratch-ai-server/apps/server-api/internal/config"
@@ -27,6 +28,10 @@ func NewRouter(cfg config.Config) (http.Handler, error) {
 		return nil, err
 	}
 	authService := auth.NewService(store)
+	if err := authService.EnsureBootstrapAdmin(cfg.AdminBootstrap); err != nil {
+		return nil, err
+	}
+	adminService := admin.NewService(store)
 	studentService := student.NewService(store)
 	assignmentService := assignment.NewService(store, sb3.NewAnalyzer(), sb3.NewLocalStorage(cfg.SB3StorageDir))
 	progressService := progress.NewService(store)
@@ -34,6 +39,7 @@ func NewRouter(cfg config.Config) (http.Handler, error) {
 	dashboardService := dashboard.NewService(store)
 
 	authRoutes := &authHandler{service: authService}
+	adminRoutes := &adminHandler{service: adminService}
 	studentRoutes := &studentHandler{
 		studentService:    studentService,
 		assignmentService: assignmentService,
@@ -77,6 +83,14 @@ func NewRouter(cfg config.Config) (http.Handler, error) {
 	teacherGroup.GET("/dashboard/assignments/:id/live", dashboardRoutes.handleTeacherLiveDashboard)
 	teacherGroup.GET("/dashboard/students/:id/history", dashboardRoutes.handleTeacherStudentHistory)
 
+	adminGroup := engine.Group("/api/admin")
+	adminGroup.Use(requireAdmin(authService))
+	adminGroup.GET("/teachers", adminRoutes.handleAdminTeachersList)
+	adminGroup.POST("/teachers", adminRoutes.handleAdminTeachersCreate)
+	adminGroup.POST("/teachers/:id/reset-password", adminRoutes.handleAdminTeacherPasswordReset)
+	adminGroup.POST("/teachers/:id/disable", adminRoutes.handleAdminTeacherDisable)
+	adminGroup.POST("/teachers/:id/enable", adminRoutes.handleAdminTeacherEnable)
+
 	studentGroup := engine.Group("/api/student")
 	studentGroup.Use(requireStudent(studentService))
 	studentGroup.GET("/me", studentRoutes.handleStudentMe)
@@ -91,6 +105,18 @@ func NewRouter(cfg config.Config) (http.Handler, error) {
 
 func requireTeacher(authService *auth.Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		requireTeacherRole(authService, "teacher")(c)
+	}
+}
+
+func requireAdmin(authService *auth.Service) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		requireTeacherRole(authService, "admin")(c)
+	}
+}
+
+func requireTeacherRole(authService *auth.Service, role string) gin.HandlerFunc {
+	return func(c *gin.Context) {
 		teacherRecord, err := authService.TeacherFromBearer(c.GetHeader("Authorization"))
 		if err != nil {
 			status := 500
@@ -98,6 +124,11 @@ func requireTeacher(authService *auth.Service) gin.HandlerFunc {
 				status = 401
 			}
 			writeJSONError(c, status, err.Error())
+			c.Abort()
+			return
+		}
+		if teacherRecord.Role != role {
+			writeJSONError(c, 403, auth.ErrForbidden.Error())
 			c.Abort()
 			return
 		}

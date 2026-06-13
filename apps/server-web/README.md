@@ -36,6 +36,8 @@ mock 模式下可直接用这组演示账号登录：
 
 - `teacher`
 - `teach123`
+- `admin`
+- `admin12345`
 
 如果要切到真实后端，设置环境变量：
 
@@ -53,6 +55,8 @@ VITE_SERVER_WEB_API_BASE_URL=http://localhost:8000
 - 若缺失上述变量，`vite build` 期间会直接失败，不再静默回退到 mock 或同源 `/api`
 
 当前真实 API 模式下，教师总览和学生管理会先请求 `GET /api/teacher/students`，再按学生补拉 `GET /api/teacher/dashboard/students/:id/history`，用最近一条学习历史渲染真实的 `status / currentTarget / stepSummary / latestAiHint / updatedAt`。
+
+管理员账号登录后，会进入 `/admin/teachers`，通过 `GET /api/admin/teachers` 以及教师管理相关接口统一维护教师账号。
 
 如果只想在子目录里单独调试，也可以：
 

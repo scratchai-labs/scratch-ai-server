@@ -9,6 +9,20 @@ export interface TeacherLoginInput {
 export interface TeacherSession {
   token: string
   teacherName: string
+  role: 'teacher' | 'admin'
+}
+
+export interface ManagedTeacher {
+  id: string
+  username: string
+  role: string
+  status: string
+  createdAt: string
+}
+
+export interface CreateManagedTeacherInput {
+  username: string
+  initialPassword: string
 }
 
 export interface TeacherStudent {
@@ -58,6 +72,11 @@ export interface TeacherApiClient {
   listStudents(): Promise<TeacherStudent[]>
   listReleases(): Promise<TeacherRelease[]>
   getLiveDashboard(releaseId: string): Promise<LiveDashboardSnapshot>
+  listTeachers?(): Promise<ManagedTeacher[]>
+  createTeacher?(input: CreateManagedTeacherInput): Promise<ManagedTeacher>
+  resetTeacherPassword?(teacherId: string, newPassword: string): Promise<ManagedTeacher>
+  enableTeacher?(teacherId: string): Promise<ManagedTeacher>
+  disableTeacher?(teacherId: string): Promise<ManagedTeacher>
 }
 
 interface TeacherStudentHistoryItem {
@@ -118,9 +137,30 @@ export function createFetchTeacherApiClient(options: {
     )
   }
 
+  async function requestAuthedMutation<T>(
+    path: string,
+    body?: Record<string, unknown>,
+  ): Promise<T> {
+    return requestJson<T>(
+      fetchImpl,
+      buildApiUrl(baseUrl, path),
+      {
+        method: 'POST',
+        headers: {
+          ...(buildAuthHeaders(getToken) ?? {}),
+          ...(body ? { 'Content-Type': 'application/json' } : {}),
+        },
+        body: body ? JSON.stringify(body) : undefined,
+      },
+      {
+        onUnauthorized,
+      },
+    )
+  }
+
   return {
     async login(input) {
-      return requestJson<TeacherSession>(
+      const payload = await requestJson<TeacherSession>(
         fetchImpl,
         buildApiUrl(baseUrl, '/api/teacher/login'),
         {
@@ -131,6 +171,7 @@ export function createFetchTeacherApiClient(options: {
           body: JSON.stringify(input),
         },
       )
+      return normalizeTeacherSession(payload)
     },
     async logout() {
       await requestJson(
@@ -182,6 +223,41 @@ export function createFetchTeacherApiClient(options: {
       )
       return normalizeLiveDashboard(payload)
     },
+    async listTeachers() {
+      const payload = await requestAuthedJson<unknown>('/api/admin/teachers')
+      return normalizeManagedTeachers(payload)
+    },
+    async createTeacher(input) {
+      const payload = await requestAuthedMutation<unknown>('/api/admin/teachers', input)
+      return normalizeManagedTeacher(payload)
+    },
+    async resetTeacherPassword(teacherId, newPassword) {
+      const payload = await requestAuthedMutation<unknown>(
+        `/api/admin/teachers/${teacherId}/reset-password`,
+        { newPassword },
+      )
+      return normalizeManagedTeacher(payload)
+    },
+    async enableTeacher(teacherId) {
+      const payload = await requestAuthedMutation<unknown>(
+        `/api/admin/teachers/${teacherId}/enable`,
+      )
+      return normalizeManagedTeacher(payload)
+    },
+    async disableTeacher(teacherId) {
+      const payload = await requestAuthedMutation<unknown>(
+        `/api/admin/teachers/${teacherId}/disable`,
+      )
+      return normalizeManagedTeacher(payload)
+    },
+  }
+}
+
+function normalizeTeacherSession(payload: TeacherSession): TeacherSession {
+  return {
+    token: String(payload.token ?? ''),
+    teacherName: String(payload.teacherName ?? ''),
+    role: payload.role === 'admin' ? 'admin' : 'teacher',
   }
 }
 
@@ -223,6 +299,24 @@ function normalizeStudents(payload: unknown): TeacherStudent[] {
     latestAiHint: '等待学生请求提示',
     updatedAt: String(item.createdAt ?? item.updatedAt ?? '—'),
   }))
+}
+
+function normalizeManagedTeachers(payload: unknown): ManagedTeacher[] {
+  return normalizeCollection<Record<string, unknown>>(payload).map((item) =>
+    normalizeManagedTeacher(item),
+  )
+}
+
+function normalizeManagedTeacher(payload: unknown): ManagedTeacher {
+  const record = payload && typeof payload === 'object' ? (payload as Record<string, unknown>) : {}
+
+  return {
+    id: String(record.id ?? ''),
+    username: String(record.username ?? ''),
+    role: String(record.role ?? 'teacher'),
+    status: String(record.status ?? 'active'),
+    createdAt: String(record.createdAt ?? '—'),
+  }
 }
 
 function normalizeStudentHistoryItems(payload: unknown): TeacherStudentHistoryItem[] {

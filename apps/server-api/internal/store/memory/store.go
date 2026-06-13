@@ -13,6 +13,7 @@ import (
 
 var (
 	ErrTeacherConflict    = errors.New("teacher username already exists")
+	ErrTeacherNotFound    = errors.New("teacher not found")
 	ErrStudentConflict    = errors.New("student username already exists")
 	ErrAssignmentNotFound = errors.New("assignment not found")
 	ErrAssignmentNotReady = errors.New("assignment analysis not ready")
@@ -23,6 +24,8 @@ type Teacher struct {
 	ID           int64
 	Username     string
 	PasswordHash string
+	Role         string
+	Status       string
 	CreatedAt    time.Time
 }
 
@@ -185,8 +188,12 @@ func NewStore(cfg config.Config) (*Store, error) {
 }
 
 func (s *Store) CreateTeacher(username string, passwordHash string) (Teacher, error) {
+	return s.CreateTeacherWithRole(username, passwordHash, "teacher", "active")
+}
+
+func (s *Store) CreateTeacherWithRole(username string, passwordHash string, role string, status string) (Teacher, error) {
 	if s.sql != nil {
-		return s.sql.CreateTeacher(username, passwordHash)
+		return s.sql.CreateTeacherWithRole(username, passwordHash, role, status)
 	}
 
 	s.mu.Lock()
@@ -200,6 +207,40 @@ func (s *Store) CreateTeacher(username string, passwordHash string) (Teacher, er
 		ID:           s.nextTeacherID,
 		Username:     username,
 		PasswordHash: passwordHash,
+		Role:         role,
+		Status:       status,
+		CreatedAt:    time.Now().UTC(),
+	}
+	s.nextTeacherID++
+
+	s.teachersByID[teacher.ID] = teacher
+	s.teachersByUsername[teacher.Username] = teacher.ID
+	return teacher, nil
+}
+
+func (s *Store) EnsureTeacher(username string, passwordHash string, role string, status string) (Teacher, error) {
+	if s.sql != nil {
+		return s.sql.EnsureTeacher(username, passwordHash, role, status)
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if id, exists := s.teachersByUsername[username]; exists {
+		teacher := s.teachersByID[id]
+		teacher.PasswordHash = passwordHash
+		teacher.Role = role
+		teacher.Status = status
+		s.teachersByID[id] = teacher
+		return teacher, nil
+	}
+
+	teacher := Teacher{
+		ID:           s.nextTeacherID,
+		Username:     username,
+		PasswordHash: passwordHash,
+		Role:         role,
+		Status:       status,
 		CreatedAt:    time.Now().UTC(),
 	}
 	s.nextTeacherID++
@@ -263,6 +304,79 @@ func (s *Store) FindTeacherByToken(token string) (Teacher, bool) {
 
 	teacher, ok := s.teachersByID[teacherID]
 	return teacher, ok
+}
+
+func (s *Store) ListTeachers() []Teacher {
+	if s.sql != nil {
+		return s.sql.ListTeachers()
+	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	teachers := make([]Teacher, 0, len(s.teachersByID))
+	for _, teacher := range s.teachersByID {
+		teachers = append(teachers, teacher)
+	}
+	slices.SortFunc(teachers, func(a Teacher, b Teacher) int {
+		switch {
+		case a.ID < b.ID:
+			return -1
+		case a.ID > b.ID:
+			return 1
+		default:
+			return 0
+		}
+	})
+	return teachers
+}
+
+func (s *Store) GetTeacherByID(teacherID int64) (Teacher, bool) {
+	if s.sql != nil {
+		return s.sql.GetTeacherByID(teacherID)
+	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	teacher, ok := s.teachersByID[teacherID]
+	return teacher, ok
+}
+
+func (s *Store) UpdateTeacherPassword(teacherID int64, passwordHash string) (Teacher, error) {
+	if s.sql != nil {
+		return s.sql.UpdateTeacherPassword(teacherID, passwordHash)
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	teacher, ok := s.teachersByID[teacherID]
+	if !ok {
+		return Teacher{}, ErrTeacherNotFound
+	}
+
+	teacher.PasswordHash = passwordHash
+	s.teachersByID[teacherID] = teacher
+	return teacher, nil
+}
+
+func (s *Store) UpdateTeacherStatus(teacherID int64, status string) (Teacher, error) {
+	if s.sql != nil {
+		return s.sql.UpdateTeacherStatus(teacherID, status)
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	teacher, ok := s.teachersByID[teacherID]
+	if !ok {
+		return Teacher{}, ErrTeacherNotFound
+	}
+
+	teacher.Status = status
+	s.teachersByID[teacherID] = teacher
+	return teacher, nil
 }
 
 func (s *Store) CreateStudent(teacherID int64, input CreateStudentInput) (Student, error) {

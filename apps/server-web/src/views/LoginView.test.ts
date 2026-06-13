@@ -11,6 +11,7 @@ function createRouterForTest() {
     routes: [
       { path: '/login', component: LoginView },
       { path: '/dashboard', component: { template: '<div>dashboard</div>' } },
+      { path: '/admin/teachers', component: { template: '<div>admin teachers</div>' } },
     ],
   })
 }
@@ -35,7 +36,7 @@ describe('LoginView', () => {
 
     expect(wrapper.get('header.auth-header').text()).toContain('Scratch 教师后台')
     expect(wrapper.find('.auth-hero').exists()).toBe(false)
-    expect(wrapper.get('main.auth-main').text()).toContain('登录教师后台')
+    expect(wrapper.get('main.auth-main').text()).toContain('登录教学后台')
     expect(wrapper.get('footer.auth-footer').text()).toContain('开发说明')
   })
 
@@ -70,6 +71,7 @@ describe('LoginView', () => {
       login: vi.fn().mockResolvedValue({
         token: 'token-1',
         teacherName: '王老师',
+        role: 'teacher',
       }),
     }
     const router = createRouterForTest()
@@ -92,5 +94,34 @@ describe('LoginView', () => {
 
     expect(wrapper.get('[role="status"]').text()).toContain('登录成功')
     expect(router.currentRoute.value.fullPath).toBe('/dashboard')
+  })
+
+  it('navigates admin users to the teacher management page after login succeeds', async () => {
+    const api = {
+      login: vi.fn().mockResolvedValue({
+        token: 'token-admin',
+        teacherName: '系统管理员',
+        role: 'admin',
+      }),
+    }
+    const router = createRouterForTest()
+    router.push('/login')
+    await router.isReady()
+
+    const wrapper = mount(LoginView, {
+      global: {
+        plugins: [createPinia(), router],
+        provide: {
+          [teacherApiKey as symbol]: api,
+        },
+      },
+    })
+
+    await wrapper.get('input[name="username"]').setValue('admin')
+    await wrapper.get('input[name="password"]').setValue('admin12345')
+    await wrapper.get('form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(router.currentRoute.value.fullPath).toBe('/admin/teachers')
   })
 })

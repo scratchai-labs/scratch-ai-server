@@ -29,7 +29,7 @@ const redirectTarget = computed(() => {
     return redirect
   }
 
-  return '/dashboard'
+  return sessionStore.landingPath
 })
 
 async function handleSubmit() {
@@ -90,9 +90,9 @@ async function handleSubmit() {
       <div class="site-frame auth-main__frame">
         <section class="auth-card auth-card--solo">
           <div class="stack">
-            <h2>登录教师后台</h2>
+            <h2>登录教学后台</h2>
             <p class="auth-card__description">
-              {{ runtime.showMockLoginHint ? '这里先接 mock client，等后端就绪后再切到真实 `/api/teacher/login`。' : '当前会直接调用真实 `/api/teacher/login`。' }}
+              {{ runtime.showMockLoginHint ? '这里先接 mock client，支持教师或管理员演示登录；切到真实环境后统一走 `/api/teacher/login`。' : '当前会直接调用真实 `/api/teacher/login`，并按账号角色进入对应后台。' }}
             </p>
           </div>
 
@@ -128,6 +128,8 @@ async function handleSubmit() {
           <p v-if="runtime.showMockLoginHint" class="helper-text">
             Mock 登录：
             <code>teacher</code> / <code>teach123</code>
+            ·
+            <code>admin</code> / <code>admin12345</code>
           </p>
 
           <p

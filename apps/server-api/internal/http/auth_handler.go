@@ -75,6 +75,10 @@ func (h *authHandler) handleTeacherLogin(c *gin.Context) {
 			writeJSONError(c, 401, err.Error())
 			return
 		}
+		if errors.Is(err, auth.ErrTeacherDisabled) {
+			writeJSONError(c, 403, err.Error())
+			return
+		}
 		writeJSONError(c, 500, "teacher login failed")
 		return
 	}
@@ -102,6 +106,7 @@ func (h *authHandler) handleTeacherMe(c *gin.Context) {
 	writeJSON(c, 200, TeacherMeResponse{
 		TeacherID:   teacherRecord.ID,
 		TeacherName: teacherRecord.Username,
+		Role:        teacherRecord.Role,
 	})
 }
 

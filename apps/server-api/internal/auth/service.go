@@ -8,6 +8,7 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
+	"github.com/scratchai-labs/scratch-ai-server/apps/server-api/internal/config"
 	"github.com/scratchai-labs/scratch-ai-server/apps/server-api/internal/store/memory"
 )
 
@@ -15,11 +16,14 @@ var (
 	ErrInvalidCredentials = errors.New("invalid teacher credentials")
 	ErrTeacherConflict    = errors.New("teacher username already exists")
 	ErrUnauthorized       = errors.New("missing or invalid bearer token")
+	ErrTeacherDisabled    = errors.New("teacher account is disabled")
+	ErrForbidden          = errors.New("forbidden")
 )
 
 type Session struct {
 	Token       string `json:"token"`
 	TeacherName string `json:"teacherName"`
+	Role        string `json:"role"`
 }
 
 type Service struct {
@@ -28,6 +32,20 @@ type Service struct {
 
 func NewService(store *memory.Store) *Service {
 	return &Service{store: store}
+}
+
+func (s *Service) EnsureBootstrapAdmin(cfg config.AdminBootstrapConfig) error {
+	if strings.TrimSpace(cfg.Username) == "" || strings.TrimSpace(cfg.Password) == "" {
+		return nil
+	}
+
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(cfg.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	_, err = s.store.EnsureTeacher(strings.TrimSpace(cfg.Username), string(passwordHash), "admin", "active")
+	return err
 }
 
 func (s *Service) Register(username string, password string) (Session, error) {
@@ -44,7 +62,7 @@ func (s *Service) Register(username string, password string) (Session, error) {
 		return Session{}, err
 	}
 
-	return s.issueSession(teacher.ID, teacher.Username)
+	return s.issueSession(teacher.ID, teacher.Username, teacher.Role)
 }
 
 func (s *Service) Login(username string, password string) (Session, error) {
@@ -56,8 +74,11 @@ func (s *Service) Login(username string, password string) (Session, error) {
 	if err := bcrypt.CompareHashAndPassword([]byte(teacher.PasswordHash), []byte(password)); err != nil {
 		return Session{}, ErrInvalidCredentials
 	}
+	if teacher.Status != "active" {
+		return Session{}, ErrTeacherDisabled
+	}
 
-	return s.issueSession(teacher.ID, teacher.Username)
+	return s.issueSession(teacher.ID, teacher.Username, teacher.Role)
 }
 
 func (s *Service) TeacherFromBearer(authorizationHeader string) (memory.Teacher, error) {
@@ -68,6 +89,9 @@ func (s *Service) TeacherFromBearer(authorizationHeader string) (memory.Teacher,
 
 	teacher, ok := s.store.FindTeacherByToken(token)
 	if !ok {
+		return memory.Teacher{}, ErrUnauthorized
+	}
+	if teacher.Status != "active" {
 		return memory.Teacher{}, ErrUnauthorized
 	}
 
@@ -87,7 +111,7 @@ func (s *Service) Logout(authorizationHeader string) error {
 	return s.store.DeleteTeacherToken(token)
 }
 
-func (s *Service) issueSession(teacherID int64, teacherName string) (Session, error) {
+func (s *Service) issueSession(teacherID int64, teacherName string, role string) (Session, error) {
 	token, err := randomToken()
 	if err != nil {
 		return Session{}, err
@@ -99,6 +123,7 @@ func (s *Service) issueSession(teacherID int64, teacherName string) (Session, er
 	return Session{
 		Token:       token,
 		TeacherName: teacherName,
+		Role:        role,
 	}, nil
 }
 

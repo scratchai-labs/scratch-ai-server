@@ -93,6 +93,8 @@ Vercel Production / 正式域名
 - `DATABASE_URL=<对应环境的 Neon 连接串>`
 - `CORS_ALLOWED_ORIGINS=<对应环境允许的前端域名>`
 - `SB3_STORAGE_DIR=<对应环境的持久卷目录>`
+- `ADMIN_BOOTSTRAP_USERNAME=<首个管理员账号，可选>`
+- `ADMIN_BOOTSTRAP_PASSWORD=<首个管理员密码，可选>`
 - `DEEPSEEK_BASE_URL=https://api.deepseek.com`
 - `DEEPSEEK_API_KEY=<真实密钥，若要走真实提示链路>`
 - `DEEPSEEK_MODEL=deepseek-v4-flash`
@@ -121,6 +123,7 @@ SB3_STORAGE_DIR=/data/prod-sb3
 - `GIN_MODE=release` 下，缺少 `DATABASE_URL`、`SB3_STORAGE_DIR` 或 `CORS_ALLOWED_ORIGINS`，服务会直接启动失败
 - `/health` 现在会做数据库 `Ping`，数据库不通时会返回 `503`
 - `SB3_STORAGE_DIR` 必须挂到持久卷，不能放在临时容器文件系统里
+- 若配置了 `ADMIN_BOOTSTRAP_USERNAME` + `ADMIN_BOOTSTRAP_PASSWORD`，服务启动时会自动创建或提升该管理员账号，适合部署后首次进入教师管理后台
 
 ### 4.2 `server-web` on Vercel
 

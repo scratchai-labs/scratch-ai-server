@@ -46,6 +46,7 @@ type StatusResponse struct {
 type TeacherMeResponse struct {
 	TeacherID   int64  `json:"teacherId" example:"1"`
 	TeacherName string `json:"teacherName" example:"teacher01"`
+	Role        string `json:"role" example:"teacher"`
 }
 
 type StudentMeResponse struct {
@@ -56,6 +57,27 @@ type StudentMeResponse struct {
 
 type TeacherStudentsResponse struct {
 	Items []student.StudentItem `json:"items"`
+}
+
+type AdminTeacherCreateRequestDoc struct {
+	Username        string `json:"username" binding:"required" example:"teacher01"`
+	InitialPassword string `json:"initialPassword" binding:"required" example:"secret123"`
+}
+
+type AdminTeacherPasswordResetRequestDoc struct {
+	NewPassword string `json:"newPassword" binding:"required" example:"updated123"`
+}
+
+type AdminTeacherItemResponse struct {
+	ID        int64  `json:"id" example:"1"`
+	Username  string `json:"username" example:"teacher01"`
+	Role      string `json:"role" example:"teacher"`
+	Status    string `json:"status" example:"active"`
+	CreatedAt string `json:"createdAt" example:"2026-06-13T12:00:00Z"`
+}
+
+type AdminTeachersResponse struct {
+	Items []AdminTeacherItemResponse `json:"items"`
 }
 
 type TeacherAssignmentsResponse struct {

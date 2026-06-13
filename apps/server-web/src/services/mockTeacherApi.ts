@@ -1,6 +1,7 @@
 import {
   TeacherApiError,
   type LiveDashboardSnapshot,
+  type ManagedTeacher,
   type TeacherApiClient,
   type TeacherLoginInput,
   type TeacherRelease,
@@ -11,6 +12,13 @@ import {
 const demoSession: TeacherSession = {
   token: 'mock-session-token',
   teacherName: '王老师',
+  role: 'teacher',
+}
+
+const demoAdminSession: TeacherSession = {
+  token: 'mock-admin-token',
+  teacherName: '系统管理员',
+  role: 'admin',
 }
 
 const demoStudents: TeacherStudent[] = [
@@ -122,11 +130,32 @@ const demoSnapshots: Record<string, LiveDashboardSnapshot[]> = {
   ],
 }
 
+const managedTeachers: ManagedTeacher[] = [
+  {
+    id: '1',
+    username: 'admin',
+    role: 'admin',
+    status: 'active',
+    createdAt: '2026-06-13T12:00:00Z',
+  },
+  {
+    id: '2',
+    username: 'teacher',
+    role: 'teacher',
+    status: 'active',
+    createdAt: '2026-06-13T12:10:00Z',
+  },
+]
+
 export function createMockTeacherApiClient(): TeacherApiClient {
   const cursorByRelease = new Map<string, number>()
+  const teachers = clone(managedTeachers)
 
   return {
     async login(input: TeacherLoginInput) {
+      if (input.username === 'admin' && input.password === 'admin12345') {
+        return clone(demoAdminSession)
+      }
       if (input.username === 'teacher' && input.password === 'teach123') {
         return clone(demoSession)
       }
@@ -150,6 +179,43 @@ export function createMockTeacherApiClient(): TeacherApiClient {
       const index = Math.min(cursor, snapshots.length - 1)
       cursorByRelease.set(releaseId, cursor + 1)
       return clone(snapshots[index] ?? snapshots[snapshots.length - 1]!)
+    },
+    async listTeachers() {
+      return clone(teachers)
+    },
+    async createTeacher(input) {
+      const nextTeacher = {
+        id: String(teachers.length + 1),
+        username: input.username,
+        role: 'teacher',
+        status: 'active',
+        createdAt: '2026-06-13T12:30:00Z',
+      } satisfies ManagedTeacher
+      teachers.push(nextTeacher)
+      return clone(nextTeacher)
+    },
+    async resetTeacherPassword(teacherId) {
+      const target = teachers.find((teacher) => teacher.id === teacherId)
+      if (!target) {
+        throw new TeacherApiError('teacher not found', 404)
+      }
+      return clone(target)
+    },
+    async disableTeacher(teacherId) {
+      const target = teachers.find((teacher) => teacher.id === teacherId)
+      if (!target) {
+        throw new TeacherApiError('teacher not found', 404)
+      }
+      target.status = 'disabled'
+      return clone(target)
+    },
+    async enableTeacher(teacherId) {
+      const target = teachers.find((teacher) => teacher.id === teacherId)
+      if (!target) {
+        throw new TeacherApiError('teacher not found', 404)
+      }
+      target.status = 'active'
+      return clone(target)
     },
   }
 }

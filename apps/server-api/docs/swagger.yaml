@@ -215,6 +215,8 @@ definitions:
     type: object
   auth.Session:
     properties:
+      role:
+        type: string
       teacherName:
         type: string
       token:
@@ -287,6 +289,51 @@ definitions:
         type: integer
       studentName:
         type: string
+    type: object
+  http.AdminTeacherCreateRequestDoc:
+    properties:
+      initialPassword:
+        example: secret123
+        type: string
+      username:
+        example: teacher01
+        type: string
+    required:
+    - initialPassword
+    - username
+    type: object
+  http.AdminTeacherItemResponse:
+    properties:
+      createdAt:
+        example: "2026-06-13T12:00:00Z"
+        type: string
+      id:
+        example: 1
+        type: integer
+      role:
+        example: teacher
+        type: string
+      status:
+        example: active
+        type: string
+      username:
+        example: teacher01
+        type: string
+    type: object
+  http.AdminTeacherPasswordResetRequestDoc:
+    properties:
+      newPassword:
+        example: updated123
+        type: string
+    required:
+    - newPassword
+    type: object
+  http.AdminTeachersResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/http.AdminTeacherItemResponse'
+        type: array
     type: object
   http.AssignmentAnalysisResponse:
     properties:
@@ -529,6 +576,9 @@ definitions:
     type: object
   http.TeacherMeResponse:
     properties:
+      role:
+        example: teacher
+        type: string
       teacherId:
         example: 1
         type: integer
@@ -627,6 +677,194 @@ info:
   title: Scratch AI Server API
   version: "1.0"
 paths:
+  /api/admin/teachers:
+    get:
+      description: List all teacher/admin accounts for the current administrator.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.AdminTeachersResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List teachers
+      tags:
+      - admin
+    post:
+      consumes:
+      - application/json
+      description: Create a managed teacher account with an initial password.
+      parameters:
+      - description: Teacher create payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/http.AdminTeacherCreateRequestDoc'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/http.AdminTeacherItemResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create teacher
+      tags:
+      - admin
+  /api/admin/teachers/{id}/disable:
+    post:
+      description: Disable one managed teacher account.
+      parameters:
+      - description: Teacher ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.AdminTeacherItemResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Disable teacher
+      tags:
+      - admin
+  /api/admin/teachers/{id}/enable:
+    post:
+      description: Enable one managed teacher account.
+      parameters:
+      - description: Teacher ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.AdminTeacherItemResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Enable teacher
+      tags:
+      - admin
+  /api/admin/teachers/{id}/reset-password:
+    post:
+      consumes:
+      - application/json
+      description: Replace one managed teacher account password.
+      parameters:
+      - description: Teacher ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: New password payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/http.AdminTeacherPasswordResetRequestDoc'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.AdminTeacherItemResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Reset teacher password
+      tags:
+      - admin
   /api/student/assignments:
     get:
       description: List the assignments currently published and assigned to the authenticated

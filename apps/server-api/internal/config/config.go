@@ -17,7 +17,13 @@ type Config struct {
 	SB3StorageDir           string
 	SB3StorageDirConfigured bool
 	CORSAllowedOrigins      []string
+	AdminBootstrap          AdminBootstrapConfig
 	DeepSeek                DeepSeekConfig
+}
+
+type AdminBootstrapConfig struct {
+	Username string
+	Password string
 }
 
 type DeepSeekConfig struct {
@@ -38,6 +44,10 @@ func FromEnv() Config {
 		SB3StorageDir:           valueOrFallback(sb3StorageDir, defaultSB3StorageDir()),
 		SB3StorageDirConfigured: hasSB3StorageDir,
 		CORSAllowedOrigins:      parseCSVEnv("CORS_ALLOWED_ORIGINS"),
+		AdminBootstrap: AdminBootstrapConfig{
+			Username: strings.TrimSpace(os.Getenv("ADMIN_BOOTSTRAP_USERNAME")),
+			Password: strings.TrimSpace(os.Getenv("ADMIN_BOOTSTRAP_PASSWORD")),
+		},
 		DeepSeek: DeepSeekConfig{
 			BaseURL: strings.TrimRight(envOrDefault("DEEPSEEK_BASE_URL", "https://api.deepseek.com"), "/"),
 			APIKey:  strings.TrimSpace(os.Getenv("DEEPSEEK_API_KEY")),

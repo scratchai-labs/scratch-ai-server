@@ -68,19 +68,28 @@ func (b *sqlBackend) initSchema() error {
 			return err
 		}
 	}
+	if err := b.ensureTeacherColumns(); err != nil {
+		return err
+	}
 	return b.ensureAssignmentAnalysisColumns()
 }
 
 func (b *sqlBackend) CreateTeacher(username string, passwordHash string) (Teacher, error) {
+	return b.CreateTeacherWithRole(username, passwordHash, "teacher", "active")
+}
+
+func (b *sqlBackend) CreateTeacherWithRole(username string, passwordHash string, role string, status string) (Teacher, error) {
 	if _, ok := b.FindTeacherByUsername(username); ok {
 		return Teacher{}, ErrTeacherConflict
 	}
 
 	now := nowUTC()
 	id, err := b.insertReturningID(
-		"INSERT INTO teachers (username, password_hash, created_at) VALUES (?, ?, ?)",
+		"INSERT INTO teachers (username, password_hash, role, status, created_at) VALUES (?, ?, ?, ?, ?)",
 		username,
 		passwordHash,
+		role,
+		status,
 		now,
 	)
 	if err != nil {
@@ -91,13 +100,36 @@ func (b *sqlBackend) CreateTeacher(username string, passwordHash string) (Teache
 		ID:           id,
 		Username:     username,
 		PasswordHash: passwordHash,
+		Role:         role,
+		Status:       status,
 		CreatedAt:    parseTime(now),
 	}, nil
 }
 
+func (b *sqlBackend) EnsureTeacher(username string, passwordHash string, role string, status string) (Teacher, error) {
+	if existing, ok := b.FindTeacherByUsername(username); ok {
+		_, err := b.db.Exec(
+			b.rebind("UPDATE teachers SET password_hash = ?, role = ?, status = ? WHERE id = ?"),
+			passwordHash,
+			role,
+			status,
+			existing.ID,
+		)
+		if err != nil {
+			return Teacher{}, err
+		}
+		existing.PasswordHash = passwordHash
+		existing.Role = role
+		existing.Status = status
+		return existing, nil
+	}
+
+	return b.CreateTeacherWithRole(username, passwordHash, role, status)
+}
+
 func (b *sqlBackend) FindTeacherByUsername(username string) (Teacher, bool) {
 	row := b.db.QueryRow(
-		b.rebind("SELECT id, username, password_hash, created_at FROM teachers WHERE username = ?"),
+		b.rebind("SELECT id, username, password_hash, role, status, created_at FROM teachers WHERE username = ?"),
 		username,
 	)
 	record, err := scanTeacher(row)
@@ -126,7 +158,7 @@ func (b *sqlBackend) DeleteTeacherToken(token string) error {
 func (b *sqlBackend) FindTeacherByToken(token string) (Teacher, bool) {
 	row := b.db.QueryRow(
 		b.rebind(`
-			SELECT t.id, t.username, t.password_hash, t.created_at
+			SELECT t.id, t.username, t.password_hash, t.role, t.status, t.created_at
 			FROM teacher_sessions s
 			JOIN teachers t ON t.id = s.teacher_id
 			WHERE s.token = ?
@@ -138,6 +170,73 @@ func (b *sqlBackend) FindTeacherByToken(token string) (Teacher, bool) {
 		return Teacher{}, false
 	}
 	return record, err == nil
+}
+
+func (b *sqlBackend) ListTeachers() []Teacher {
+	rows, err := b.db.Query(
+		b.rebind("SELECT id, username, password_hash, role, status, created_at FROM teachers ORDER BY id ASC"),
+	)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+
+	records := make([]Teacher, 0)
+	for rows.Next() {
+		record, scanErr := scanTeacher(rows)
+		if scanErr == nil {
+			records = append(records, record)
+		}
+	}
+	return records
+}
+
+func (b *sqlBackend) GetTeacherByID(teacherID int64) (Teacher, bool) {
+	row := b.db.QueryRow(
+		b.rebind("SELECT id, username, password_hash, role, status, created_at FROM teachers WHERE id = ?"),
+		teacherID,
+	)
+	record, err := scanTeacher(row)
+	if errors.Is(err, sql.ErrNoRows) {
+		return Teacher{}, false
+	}
+	return record, err == nil
+}
+
+func (b *sqlBackend) UpdateTeacherPassword(teacherID int64, passwordHash string) (Teacher, error) {
+	if _, ok := b.GetTeacherByID(teacherID); !ok {
+		return Teacher{}, ErrTeacherNotFound
+	}
+
+	_, err := b.db.Exec(
+		b.rebind("UPDATE teachers SET password_hash = ? WHERE id = ?"),
+		passwordHash,
+		teacherID,
+	)
+	if err != nil {
+		return Teacher{}, err
+	}
+
+	teacher, _ := b.GetTeacherByID(teacherID)
+	return teacher, nil
+}
+
+func (b *sqlBackend) UpdateTeacherStatus(teacherID int64, status string) (Teacher, error) {
+	if _, ok := b.GetTeacherByID(teacherID); !ok {
+		return Teacher{}, ErrTeacherNotFound
+	}
+
+	_, err := b.db.Exec(
+		b.rebind("UPDATE teachers SET status = ? WHERE id = ?"),
+		status,
+		teacherID,
+	)
+	if err != nil {
+		return Teacher{}, err
+	}
+
+	teacher, _ := b.GetTeacherByID(teacherID)
+	return teacher, nil
 }
 
 func (b *sqlBackend) CreateStudent(teacherID int64, input CreateStudentInput) (Student, error) {
@@ -670,7 +769,7 @@ func scanTeacher(scanner interface{ Scan(...any) error }) (Teacher, error) {
 		record    Teacher
 		createdAt string
 	)
-	err := scanner.Scan(&record.ID, &record.Username, &record.PasswordHash, &createdAt)
+	err := scanner.Scan(&record.ID, &record.Username, &record.PasswordHash, &record.Role, &record.Status, &createdAt)
 	if err != nil {
 		return Teacher{}, err
 	}
@@ -890,6 +989,8 @@ var sqliteSchemaStatements = []string{
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		username TEXT NOT NULL UNIQUE,
 		password_hash TEXT NOT NULL,
+		role TEXT NOT NULL DEFAULT 'teacher',
+		status TEXT NOT NULL DEFAULT 'active',
 		created_at TEXT NOT NULL
 	)
 	`,
@@ -1003,6 +1104,8 @@ var postgresSchemaStatements = []string{
 		id BIGSERIAL PRIMARY KEY,
 		username TEXT NOT NULL UNIQUE,
 		password_hash TEXT NOT NULL,
+		role TEXT NOT NULL DEFAULT 'teacher',
+		status TEXT NOT NULL DEFAULT 'active',
 		created_at TEXT NOT NULL
 	)
 	`,
@@ -1129,6 +1232,29 @@ func (b *sqlBackend) ensureAssignmentAnalysisColumns() error {
 		}
 
 		if _, err := b.db.Exec(fmt.Sprintf("ALTER TABLE assignment_analysis ADD COLUMN %s", columnDefinition)); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (b *sqlBackend) ensureTeacherColumns() error {
+	requiredColumns := map[string]string{
+		"role":   "role TEXT NOT NULL DEFAULT 'teacher'",
+		"status": "status TEXT NOT NULL DEFAULT 'active'",
+	}
+
+	for columnName, columnDefinition := range requiredColumns {
+		exists, err := b.columnExists("teachers", columnName)
+		if err != nil {
+			return err
+		}
+		if exists {
+			continue
+		}
+
+		if _, err := b.db.Exec(fmt.Sprintf("ALTER TABLE teachers ADD COLUMN %s", columnDefinition)); err != nil {
 			return err
 		}
 	}

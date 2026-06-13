@@ -1,7 +1,7 @@
 
 # Scratch AI Server API
 
-`apps/server-api` 是当前阶段基于 `Gin` 的 `Go` 服务端，负责老师/学生认证、任务上传与分配、学生进度、提示生成和教师实时看板接口。机器可读 API 契约以生成的 OpenAPI 为准。
+`apps/server-api` 是当前阶段基于 `Gin` 的 `Go` 服务端，负责管理员/老师/学生认证、教师账号管理、任务上传与分配、学生进度、提示生成和教师实时看板接口。机器可读 API 契约以生成的 OpenAPI 为准。
 
 客户端接入指南见 [`../../docs/server-api-contract.zh-CN.md`](../../docs/server-api-contract.zh-CN.md)。
 更完整的服务器端开发说明见 [`../../docs/server-development.zh-CN.md`](../../docs/server-development.zh-CN.md)。
@@ -56,6 +56,11 @@ npm run server:api:docs:check
 - `POST /api/teacher/login`
 - `GET /api/teacher/me`
 - `POST /api/teacher/logout`
+- `GET /api/admin/teachers`
+- `POST /api/admin/teachers`
+- `POST /api/admin/teachers/{id}/reset-password`
+- `POST /api/admin/teachers/{id}/disable`
+- `POST /api/admin/teachers/{id}/enable`
 - `GET /api/teacher/students`
 - `POST /api/teacher/students`
 - `POST /api/teacher/students/batch`
@@ -85,6 +90,8 @@ npm run server:api:docs:check
 - `SERVER_API_DB_PATH`
 - `CORS_ALLOWED_ORIGINS`
 - `SB3_STORAGE_DIR`
+- `ADMIN_BOOTSTRAP_USERNAME`
+- `ADMIN_BOOTSTRAP_PASSWORD`
 - `DEEPSEEK_API_KEY`
 - `DEEPSEEK_BASE_URL`
 - `DEEPSEEK_MODEL`
@@ -97,6 +104,7 @@ npm run server:api:docs:check
 - 配置 `DATABASE_URL` 后，自动切到 `Postgres`
 - `CORS_ALLOWED_ORIGINS` 配置后，会按白名单回写 `Access-Control-Allow-Origin`
 - 默认把原始 `sb3` 保存到 `SB3_STORAGE_DIR`，未配置时使用系统临时目录下的 `scratch-ai-server-sb3`
+- 同时配置 `ADMIN_BOOTSTRAP_USERNAME` 和 `ADMIN_BOOTSTRAP_PASSWORD` 后，服务启动时会自动创建或提升一个 `admin` 账号，便于首次进入教师管理后台
 - 配置了 `DEEPSEEK_API_KEY` 后，学生提示链路会优先走真实 `DeepSeek`，失败时自动回退到本地 fallback
 - 当 `GIN_MODE=release` 时，必须显式提供 `DATABASE_URL`、`SB3_STORAGE_DIR` 和 `CORS_ALLOWED_ORIGINS`
 

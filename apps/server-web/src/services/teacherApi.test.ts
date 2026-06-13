@@ -15,6 +15,7 @@ describe('createFetchTeacherApiClient', () => {
       createFetchResponse({
         token: 'token-1',
         teacherName: '王老师',
+        role: 'teacher',
       }),
     )
     const api = createFetchTeacherApiClient({
@@ -43,7 +44,116 @@ describe('createFetchTeacherApiClient', () => {
     expect(session).toEqual({
       token: 'token-1',
       teacherName: '王老师',
+      role: 'teacher',
     })
+  })
+
+  it('reads and mutates managed teachers from admin endpoints', async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(
+        createFetchResponse({
+          items: [
+            {
+              id: 1,
+              username: 'admin',
+              role: 'admin',
+              status: 'active',
+              createdAt: '2026-06-13T12:00:00Z',
+            },
+          ],
+        }),
+      )
+      .mockResolvedValueOnce(
+        createFetchResponse({
+          id: 2,
+          username: 'teacher-1',
+          role: 'teacher',
+          status: 'active',
+          createdAt: '2026-06-13T12:01:00Z',
+        }),
+      )
+      .mockResolvedValueOnce(
+        createFetchResponse({
+          id: 2,
+          username: 'teacher-1',
+          role: 'teacher',
+          status: 'disabled',
+          createdAt: '2026-06-13T12:01:00Z',
+        }),
+      )
+    const api = createFetchTeacherApiClient({
+      baseUrl: 'https://teacher.example',
+      fetchImpl,
+      getToken: () => 'admin-token',
+    })
+
+    await expect(api.listTeachers()).resolves.toEqual([
+      {
+        id: '1',
+        username: 'admin',
+        role: 'admin',
+        status: 'active',
+        createdAt: '2026-06-13T12:00:00Z',
+      },
+    ])
+
+    await expect(
+      api.createTeacher({
+        username: 'teacher-1',
+        initialPassword: 'secret123',
+      }),
+    ).resolves.toEqual({
+      id: '2',
+      username: 'teacher-1',
+      role: 'teacher',
+      status: 'active',
+      createdAt: '2026-06-13T12:01:00Z',
+    })
+
+    await expect(api.disableTeacher('2')).resolves.toEqual({
+      id: '2',
+      username: 'teacher-1',
+      role: 'teacher',
+      status: 'disabled',
+      createdAt: '2026-06-13T12:01:00Z',
+    })
+
+    expect(fetchImpl).toHaveBeenNthCalledWith(
+      1,
+      'https://teacher.example/api/admin/teachers',
+      expect.objectContaining({
+        method: 'GET',
+        headers: {
+          Authorization: 'Bearer admin-token',
+        },
+      }),
+    )
+    expect(fetchImpl).toHaveBeenNthCalledWith(
+      2,
+      'https://teacher.example/api/admin/teachers',
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer admin-token',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: 'teacher-1',
+          initialPassword: 'secret123',
+        }),
+      }),
+    )
+    expect(fetchImpl).toHaveBeenNthCalledWith(
+      3,
+      'https://teacher.example/api/admin/teachers/2/disable',
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer admin-token',
+        },
+      }),
+    )
   })
 
   it('posts teacher logout to /api/teacher/logout', async () => {

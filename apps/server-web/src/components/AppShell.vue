@@ -15,18 +15,27 @@ const apiClient = useTeacherApiClient()
 const session = useSessionStore()
 
 const navigation = computed(() => [
-  {
-    label: '实时总览',
-    to: '/dashboard',
-  },
-  {
-    label: '学生管理',
-    to: '/students',
-  },
-  {
-    label: '发布单管理',
-    to: '/releases',
-  },
+  ...(session.isAdmin
+    ? [
+        {
+          label: '教师管理',
+          to: '/admin/teachers',
+        },
+      ]
+    : [
+        {
+          label: '实时总览',
+          to: '/dashboard',
+        },
+        {
+          label: '学生管理',
+          to: '/students',
+        },
+        {
+          label: '发布单管理',
+          to: '/releases',
+        },
+      ]),
 ])
 
 function isActive(path: string) {
@@ -53,8 +62,8 @@ async function handleLogout() {
       <div class="shell__brand">
         <div class="shell__brand-mark">S</div>
         <div>
-          <strong>Scratch 教师后台</strong>
-          <p>mockable API · Vue 3 + Vite</p>
+          <strong>{{ session.isAdmin ? 'Scratch 管理后台' : 'Scratch 教师后台' }}</strong>
+          <p>{{ session.isAdmin ? '管理员入口 · Teacher Accounts' : 'mockable API · Vue 3 + Vite' }}</p>
         </div>
       </div>
 
@@ -73,7 +82,7 @@ async function handleLogout() {
       <div class="shell__footer">
         <p class="shell__footer-label">当前教师</p>
         <strong>{{ session.teacherName || '未登录' }}</strong>
-        <span>{{ session.isAuthenticated ? '会话已加载' : '请先登录' }}</span>
+        <span>{{ session.isAuthenticated ? `${session.role} 会话已加载` : '请先登录' }}</span>
         <button class="button button--ghost" type="button" @click="handleLogout">
           退出登录
         </button>

@@ -13,6 +13,7 @@ function createRouterForTest() {
       { path: '/dashboard', component: { template: '<div>dashboard</div>' } },
       { path: '/students', component: { template: '<div>students</div>' } },
       { path: '/releases', component: { template: '<div>releases</div>' } },
+      { path: '/admin/teachers', component: { template: '<div>admin teachers</div>' } },
     ],
   })
 }
@@ -24,6 +25,7 @@ describe('AppShell', () => {
       JSON.stringify({
         token: 'teacher-token',
         teacherName: '王老师',
+        role: 'teacher',
       }),
     )
 
@@ -61,6 +63,7 @@ describe('AppShell', () => {
       JSON.stringify({
         token: 'teacher-token',
         teacherName: '王老师',
+        role: 'teacher',
       }),
     )
 
@@ -93,5 +96,47 @@ describe('AppShell', () => {
     expect(api.logout).toHaveBeenCalledTimes(1)
     expect(window.localStorage.getItem('scratch-server-web.session')).toBeNull()
     expect(router.currentRoute.value.fullPath).toBe('/login')
+  })
+
+  it('renders admin navigation for admin sessions', async () => {
+    window.localStorage.setItem(
+      'scratch-server-web.session',
+      JSON.stringify({
+        token: 'admin-token',
+        teacherName: '系统管理员',
+        role: 'admin',
+      }),
+    )
+
+    const api = {
+      login: vi.fn(),
+      logout: vi.fn(),
+      listStudents: vi.fn(),
+      listReleases: vi.fn(),
+      getLiveDashboard: vi.fn(),
+      listTeachers: vi.fn(),
+      createTeacher: vi.fn(),
+      resetTeacherPassword: vi.fn(),
+      enableTeacher: vi.fn(),
+      disableTeacher: vi.fn(),
+    }
+    const router = createRouterForTest()
+    router.push('/admin/teachers')
+    await router.isReady()
+
+    const wrapper = mount(AppShell, {
+      props: {
+        title: 'Admin',
+      },
+      global: {
+        plugins: [createPinia(), router],
+        provide: {
+          [teacherApiKey as symbol]: api,
+        },
+      },
+    })
+
+    expect(wrapper.get('nav.shell__nav').text()).toContain('教师管理')
+    expect(wrapper.get('nav.shell__nav').text()).not.toContain('学生管理')
   })
 })

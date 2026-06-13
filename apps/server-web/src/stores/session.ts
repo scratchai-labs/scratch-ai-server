@@ -12,8 +12,11 @@ export const useSessionStore = defineStore('session', () => {
   const session = ref<TeacherSession | null>(loadSession())
 
   const isAuthenticated = computed(() => session.value !== null)
+  const role = computed(() => session.value?.role ?? 'teacher')
+  const isAdmin = computed(() => role.value === 'admin')
   const token = computed(() => session.value?.token ?? '')
   const teacherName = computed(() => session.value?.teacherName ?? '')
+  const landingPath = computed(() => (isAdmin.value ? '/admin/teachers' : '/dashboard'))
 
   async function login(api: TeacherApiClient, input: TeacherLoginInput) {
     const nextSession = await api.login(input)
@@ -30,8 +33,11 @@ export const useSessionStore = defineStore('session', () => {
   return {
     session,
     isAuthenticated,
+    role,
+    isAdmin,
     token,
     teacherName,
+    landingPath,
     login,
     logout,
   }
@@ -49,7 +55,16 @@ function loadSession(): TeacherSession | null {
   }
 
   try {
-    return JSON.parse(raw) as TeacherSession
+    const parsed = JSON.parse(raw) as Partial<TeacherSession>
+    if (!parsed?.token || !parsed?.teacherName) {
+      return null
+    }
+
+    return {
+      token: parsed.token,
+      teacherName: parsed.teacherName,
+      role: parsed.role === 'admin' ? 'admin' : 'teacher',
+    }
   } catch {
     return null
   }
