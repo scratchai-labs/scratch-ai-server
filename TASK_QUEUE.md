@@ -6,6 +6,7 @@
 
 ## 已完成
 
+- 2026-06-13：完成 `$impeccable init` 首轮初始化：新增根目录 `PRODUCT.md`，明确本仓库默认 `register=product`、教师课堂工具定位、品牌气质、反例、设计原则与默认 `WCAG AA` 无障碍口径；同时创建 `.impeccable/live/config.json`，按 `Vite SPA` 的 `index.html` 入口完成 live mode 预配置，并确认当前仓库未检测到需处理的 `CSP`。`DESIGN.md` 暂未生成，后续可按现有前端代码执行 `$impeccable document` 补齐视觉真值源。
 - 2026-06-12：完成 `Vercel` 上 `server-web`（Teacher Web）部署：已按 `apps/server-web` 子目录完成构建与发布，前端已指向真实 API `https://scratchai.zeabur.app`，并进入部署后联调收尾阶段。
 - 2026-06-12：完成 `Zeabur` 上 `server-api`（Go 服务）部署：已核对根目录、环境变量、`/data` 持久卷、`/health` 探活与教师注册写库链路，当前公网 API `https://scratchai.zeabur.app` 已可用。
 - 2026-06-12：补齐部署文档，新增 `docs/deployment.zh-CN.md` 作为部署真值源，明确 `Vercel + Zeabur + Neon` 的 staging / production 拓扑、双数据库建议、固定 staging 域名与 `CORS` 约束、环境变量矩阵、上线顺序、回滚和验证清单；并同步更新根 README、`docs/README`、`server-development`、`server-api`、`server-web` 的部署入口。
