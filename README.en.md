@@ -8,6 +8,7 @@ Cross-repo docs, architecture notes, and planning live in [`scratch-ai-docs`](ht
 
 - This repository only maintains the **server teaching edition**
 - The core is the server API
+- Admins can manage teacher accounts through the web console
 - Teachers manage students and assignments through a web console
 - Students log in from the client and only receive hints there
 - All AI processing stays on the server side
@@ -15,6 +16,7 @@ Cross-repo docs, architecture notes, and planning live in [`scratch-ai-docs`](ht
 ## Target Capabilities
 
 - Teacher register and login
+- Admin create, disable, enable, and password reset for teacher accounts
 - Batch creation of student accounts and passwords
 - Reference `sb3` upload and analysis
 - Student client login and progress reporting
@@ -61,6 +63,7 @@ Current integration status:
 
 - the teacher web app has been verified with a real browser click-through
 - the real API flow has been validated for login, students, assignments, live dashboard, and logout
+- the admin teacher-management MVP is now available, and the first admin can be bootstrapped with `ADMIN_BOOTSTRAP_USERNAME` / `ADMIN_BOOTSTRAP_PASSWORD`
 
 The detailed Chinese development spec for the next phase lives in [`docs/server-development.zh-CN.md`](docs/server-development.zh-CN.md).
 The current deployment guide lives in [`docs/deployment.zh-CN.md`](docs/deployment.zh-CN.md).
