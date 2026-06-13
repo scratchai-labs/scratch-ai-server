@@ -6,6 +6,7 @@
 
 ## 已完成
 
+- 2026-06-13：评估“继续自研扩展后台”与“接入 Go 开源管理系统”的工程量、风险和长期维护成本，并补充当前仓库的后台选型建议文档；结论为当前阶段继续沿现有 `Go API + 教师 Web` 自研扩展最合适，若后续需求升级为通用中后台，再单独评估引入 `go-admin-team/go-admin` 作为独立管理中心。
 - 2026-06-13：同步根级 README 与中英文总览文档，补齐管理员教师管理 MVP 的对外能力描述与首次登录口径，确保首页、中文总览和英文总览与当前 `admin` 自举及教师管理能力一致。
 - 2026-06-13：落地管理员教师管理 MVP：在现有 `Go API + 教师 Web` 上新增 `admin` 角色、管理员自举登录、教师账号管理接口与后台页面；后端补齐教师 `role/status`、`/api/admin/teachers*` 接口、首个管理员环境变量自举与 Swagger 生成物，前端补齐角色化登录跳转、管理员导航、教师管理页面与 mock admin 账号。已通过 `go test ./...`、`npm run test --workspace=@scratch-ai/server-web`、`VITE_SERVER_WEB_API_MODE=real VITE_SERVER_WEB_API_BASE_URL=https://api.example.com npm run server:web:build`、`npm run server:api:build`、`npm run server:web:smoke:mock`。
 - 2026-06-13：说明自研管理系统与引入开源后台的差异，并评估当前项目自研后是否可支持人员管理、教师创建与权限控制；结论为自研完全可以支持管理员、教师创建、禁用、重置密码、角色授权等能力，但需要自行补齐后台模型、权限和审计链路。
