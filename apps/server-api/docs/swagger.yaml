@@ -314,6 +314,26 @@ definitions:
         example: 8
         type: integer
     type: object
+  http.AdminStudentCreateRequestDoc:
+    properties:
+      displayName:
+        example: 小明
+        type: string
+      initialPassword:
+        example: abc12345
+        type: string
+      teacherId:
+        example: 2
+        type: integer
+      username:
+        example: student01
+        type: string
+    required:
+    - displayName
+    - initialPassword
+    - teacherId
+    - username
+    type: object
   http.AdminStudentItemResponse:
     properties:
       createdAt:
@@ -785,6 +805,49 @@ paths:
       security:
       - BearerAuth: []
       summary: List students
+      tags:
+      - admin
+    post:
+      consumes:
+      - application/json
+      description: Create a managed student account for the specified teacher.
+      parameters:
+      - description: Student create payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/http.AdminStudentCreateRequestDoc'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/http.AdminStudentItemResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create student
       tags:
       - admin
   /api/admin/students/{id}/disable:

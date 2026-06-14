@@ -64,6 +64,13 @@ type AdminTeacherCreateRequestDoc struct {
 	InitialPassword string `json:"initialPassword" binding:"required" example:"secret123"`
 }
 
+type AdminStudentCreateRequestDoc struct {
+	TeacherID       int64  `json:"teacherId" binding:"required" example:"2"`
+	Username        string `json:"username" binding:"required" example:"student01"`
+	DisplayName     string `json:"displayName" binding:"required" example:"小明"`
+	InitialPassword string `json:"initialPassword" binding:"required" example:"abc12345"`
+}
+
 type AdminTeacherPasswordResetRequestDoc struct {
 	NewPassword string `json:"newPassword" binding:"required" example:"updated123"`
 }

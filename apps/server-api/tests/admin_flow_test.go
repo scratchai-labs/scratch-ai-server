@@ -149,6 +149,41 @@ func TestAdminCanViewOverviewAndManageStudents(t *testing.T) {
 	require.Equal(t, http.StatusOK, enabledLoginRes.Code)
 }
 
+func TestAdminCanCreateStudentForTeacher(t *testing.T) {
+	t.Setenv("ADMIN_BOOTSTRAP_USERNAME", "admin")
+	t.Setenv("ADMIN_BOOTSTRAP_PASSWORD", "admin12345")
+
+	handler := newTestHandler()
+	adminToken := loginTeacherToken(t, handler, "admin", "admin12345")
+
+	createTeacherRes := performAuthedJSONRequest(t, handler, adminToken, http.MethodPost, "/api/admin/teachers", map[string]any{
+		"username":        "teacher-student-owner",
+		"initialPassword": "secret123",
+	})
+	require.Equal(t, http.StatusCreated, createTeacherRes.Code)
+	teacherID := requireInt64Field(t, createTeacherRes.Body.String(), "id")
+
+	createStudentRes := performAuthedJSONRequest(t, handler, adminToken, http.MethodPost, "/api/admin/students", map[string]any{
+		"teacherId":       teacherID,
+		"username":        "student-created-by-admin",
+		"displayName":     "小绿",
+		"initialPassword": "stud1234",
+	})
+	require.Equal(t, http.StatusCreated, createStudentRes.Code)
+	requireBodyField(t, createStudentRes.Body.String(), "username", "student-created-by-admin")
+	requireBodyField(t, createStudentRes.Body.String(), "displayName", "小绿")
+	requireBodyField(t, createStudentRes.Body.String(), "teacherUsername", "teacher-student-owner")
+	requireBodyField(t, createStudentRes.Body.String(), "status", "active")
+
+	studentLoginRes := performJSONRequest(t, handler, http.MethodPost, "/api/student/login", map[string]any{
+		"username":   "student-created-by-admin",
+		"password":   "stud1234",
+		"clientType": "desktop",
+	})
+	require.Equal(t, http.StatusOK, studentLoginRes.Code)
+	requireBodyField(t, studentLoginRes.Body.String(), "studentName", "小绿")
+}
+
 func TestTeacherCannotAccessAdminRoutes(t *testing.T) {
 	t.Setenv("ADMIN_BOOTSTRAP_USERNAME", "admin")
 	t.Setenv("ADMIN_BOOTSTRAP_PASSWORD", "admin12345")
@@ -162,6 +197,14 @@ func TestTeacherCannotAccessAdminRoutes(t *testing.T) {
 
 	studentsRes := performAuthedJSONRequest(t, handler, teacherToken, http.MethodGet, "/api/admin/students", nil)
 	require.Equal(t, http.StatusForbidden, studentsRes.Code)
+
+	createStudentRes := performAuthedJSONRequest(t, handler, teacherToken, http.MethodPost, "/api/admin/students", map[string]any{
+		"teacherId":       1,
+		"username":        "student-denied",
+		"displayName":     "小紫",
+		"initialPassword": "stud1234",
+	})
+	require.Equal(t, http.StatusForbidden, createStudentRes.Code)
 
 	overviewRes := performAuthedJSONRequest(t, handler, teacherToken, http.MethodGet, "/api/admin/overview", nil)
 	require.Equal(t, http.StatusForbidden, overviewRes.Code)

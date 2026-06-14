@@ -87,6 +87,73 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a managed student account for the specified teacher.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Create student",
+                "parameters": [
+                    {
+                        "description": "Student create payload",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.AdminStudentCreateRequestDoc"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/http.AdminStudentItemResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
         "/api/admin/students/{id}/disable": {
@@ -2365,6 +2432,33 @@ const docTemplate = `{
                 "teacherCount": {
                     "type": "integer",
                     "example": 8
+                }
+            }
+        },
+        "http.AdminStudentCreateRequestDoc": {
+            "type": "object",
+            "required": [
+                "displayName",
+                "initialPassword",
+                "teacherId",
+                "username"
+            ],
+            "properties": {
+                "displayName": {
+                    "type": "string",
+                    "example": "小明"
+                },
+                "initialPassword": {
+                    "type": "string",
+                    "example": "abc12345"
+                },
+                "teacherId": {
+                    "type": "integer",
+                    "example": 2
+                },
+                "username": {
+                    "type": "string",
+                    "example": "student01"
                 }
             }
         },

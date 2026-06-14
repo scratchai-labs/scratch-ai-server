@@ -247,6 +247,25 @@ export function createMockTeacherApiClient(): TeacherApiClient {
     async listManagedStudents() {
       return clone(students)
     },
+    async createManagedStudent(input) {
+      const teacher = teachers.find(
+        (item) => item.id === input.teacherId && item.role === 'teacher',
+      )
+      if (!teacher) {
+        throw new TeacherApiError('teacher not found', 404)
+      }
+      const nextStudent = {
+        id: String(students.length + 10),
+        teacherId: input.teacherId,
+        teacherUsername: teacher.username,
+        username: input.username,
+        displayName: input.displayName,
+        status: 'active',
+        createdAt: '2026-06-14T10:00:00Z',
+      } satisfies ManagedStudent
+      students.push(nextStudent)
+      return clone(nextStudent)
+    },
     async resetManagedStudentPassword(studentId) {
       const target = students.find((student) => student.id === studentId)
       if (!target) {

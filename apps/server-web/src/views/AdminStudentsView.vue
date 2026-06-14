@@ -2,34 +2,89 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import AppShell from '@/components/AppShell.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
-import { useTeacherApiClient, type ManagedStudent } from '@/services/teacherApi'
+import { useTeacherApiClient, type ManagedStudent, type ManagedTeacher } from '@/services/teacherApi'
 import { toErrorMessage } from '@/stores/storeUtils'
 
 const apiClient = useTeacherApiClient()
 
+const teachers = ref<ManagedTeacher[]>([])
 const students = ref<ManagedStudent[]>([])
 const loading = ref(false)
 const saving = ref(false)
 const error = ref<string | null>(null)
 const feedback = ref('')
 const resetPasswords = reactive<Record<string, string>>({})
+const createForm = reactive({
+  teacherId: '',
+  username: '',
+  displayName: '',
+  initialPassword: '',
+})
 
 const totalStudents = computed(() => students.value.length)
+const managedTeachers = computed(() =>
+  teachers.value.filter((teacher) => teacher.role === 'teacher'),
+)
 
 async function reloadStudents() {
   loading.value = true
   error.value = null
 
   try {
-    const nextStudents = await apiClient.listManagedStudents?.()
+    const [nextStudents, nextTeachers] = await Promise.all([
+      apiClient.listManagedStudents?.(),
+      apiClient.listTeachers?.(),
+    ])
     if (!nextStudents) {
       throw new Error('管理员学生列表接口未提供')
     }
+    if (!nextTeachers) {
+      throw new Error('管理员教师列表接口未提供')
+    }
     students.value = [...nextStudents].sort(compareStudentsByCreatedAt)
+    teachers.value = [...nextTeachers]
+    if (!createForm.teacherId) {
+      createForm.teacherId = managedTeachers.value[0]?.id ?? ''
+    }
   } catch (nextError) {
     error.value = toErrorMessage(nextError, '学生列表加载失败')
   } finally {
     loading.value = false
+  }
+}
+
+async function submitCreateStudent() {
+  if (
+    !createForm.teacherId.trim()
+    || !createForm.username.trim()
+    || !createForm.displayName.trim()
+    || !createForm.initialPassword.trim()
+  ) {
+    return
+  }
+
+  saving.value = true
+  error.value = null
+
+  try {
+    const createdStudent = await apiClient.createManagedStudent?.({
+      teacherId: createForm.teacherId,
+      username: createForm.username.trim(),
+      displayName: createForm.displayName.trim(),
+      initialPassword: createForm.initialPassword,
+    })
+    if (!createdStudent) {
+      throw new Error('管理员学生创建接口未提供')
+    }
+    students.value = [...students.value, createdStudent].sort(compareStudentsByCreatedAt)
+    feedback.value = `已创建学生账号 ${createdStudent.username}`
+    createForm.username = ''
+    createForm.displayName = ''
+    createForm.initialPassword = ''
+  } catch (nextError) {
+    error.value = toErrorMessage(nextError, '学生创建失败')
+  } finally {
+    saving.value = false
   }
 }
 
@@ -112,8 +167,66 @@ function compareStudentsByCreatedAt(left: ManagedStudent, right: ManagedStudent)
     <section class="panel">
       <div class="panel__head">
         <div>
+          <h2 class="panel__title">新建学生</h2>
+          <p class="panel__meta">管理员可直接为指定教师创建学生账号，用于补录、代建或课前批量准备。</p>
+        </div>
+      </div>
+
+      <form class="form-grid" data-testid="create-student-form" @submit.prevent="submitCreateStudent">
+        <label class="field">
+          <span>归属教师</span>
+          <select v-model="createForm.teacherId" class="input" name="student-teacher">
+            <option value="" disabled>选择教师账号</option>
+            <option v-for="teacher in managedTeachers" :key="teacher.id" :value="teacher.id">
+              {{ teacher.username }}
+            </option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>学生账号</span>
+          <input
+            v-model="createForm.username"
+            class="input"
+            name="student-username"
+            autocomplete="username"
+            placeholder="student-01"
+          />
+        </label>
+
+        <label class="field">
+          <span>显示名</span>
+          <input
+            v-model="createForm.displayName"
+            class="input"
+            name="student-display-name"
+            placeholder="小明"
+          />
+        </label>
+
+        <label class="field">
+          <span>初始密码</span>
+          <input
+            v-model="createForm.initialPassword"
+            class="input"
+            name="student-password"
+            type="password"
+            autocomplete="new-password"
+            placeholder="abc12345"
+          />
+        </label>
+
+        <button class="button button--primary" type="submit" :disabled="saving || !managedTeachers.length">
+          创建学生
+        </button>
+      </form>
+    </section>
+
+    <section class="panel">
+      <div class="panel__head">
+        <div>
           <h2 class="panel__title">学生账号总览</h2>
-          <p class="panel__meta">学生账号仍由教师创建；管理员在这里统一做全局查询、停用与密码重置。</p>
+          <p class="panel__meta">支持按教师查看学生归属，同时统一做全局查询、停用与密码重置。</p>
         </div>
       </div>
 

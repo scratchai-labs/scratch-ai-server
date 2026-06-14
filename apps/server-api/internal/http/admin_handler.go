@@ -72,6 +72,49 @@ func (h *adminHandler) handleAdminStudentsList(c *gin.Context) {
 	})
 }
 
+// handleAdminStudentsCreate godoc
+//
+//	@Summary		Create student
+//	@Description	Create a managed student account for the specified teacher.
+//	@Tags			admin
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			payload	body		AdminStudentCreateRequestDoc	true	"Student create payload"
+//	@Success		201		{object}	AdminStudentItemResponse
+//	@Failure		400		{object}	ErrorResponse
+//	@Failure		401		{object}	ErrorResponse
+//	@Failure		403		{object}	ErrorResponse
+//	@Failure		404		{object}	ErrorResponse
+//	@Failure		409		{object}	ErrorResponse
+//	@Router			/api/admin/students [post]
+func (h *adminHandler) handleAdminStudentsCreate(c *gin.Context) {
+	if teacherRecord := mustTeacher(c); teacherRecord.ID == 0 {
+		return
+	}
+
+	var request admin.CreateStudentInput
+	if err := c.ShouldBindJSON(&request); err != nil {
+		writeJSONError(c, 400, "invalid request body")
+		return
+	}
+
+	createdStudent, err := h.service.CreateStudent(request)
+	if err != nil {
+		switch {
+		case errors.Is(err, admin.ErrTeacherNotFound):
+			writeJSONError(c, 404, err.Error())
+		case errors.Is(err, admin.ErrStudentConflict):
+			writeJSONError(c, 409, err.Error())
+		default:
+			writeJSONError(c, 500, "student create failed")
+		}
+		return
+	}
+
+	writeJSON(c, 201, createdStudent)
+}
+
 // handleAdminTeachersCreate godoc
 //
 //	@Summary		Create teacher

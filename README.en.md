@@ -16,7 +16,7 @@ Cross-repo docs, architecture notes, and planning live in [`scratch-ai-docs`](ht
 ## Target Capabilities
 
 - Teacher register and login
-- Admin create, disable, enable, and password reset for teacher and student accounts
+- Admin create, disable, enable, and reset teacher accounts, and create, disable, enable, and reset student accounts for specific teachers
 - Batch creation of student accounts and passwords
 - Reference `sb3` upload and analysis
 - Student client login and progress reporting

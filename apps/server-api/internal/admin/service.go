@@ -15,6 +15,13 @@ type CreateTeacherInput struct {
 	InitialPassword string `json:"initialPassword" binding:"required"`
 }
 
+type CreateStudentInput struct {
+	TeacherID       int64  `json:"teacherId" binding:"required"`
+	Username        string `json:"username" binding:"required"`
+	DisplayName     string `json:"displayName" binding:"required"`
+	InitialPassword string `json:"initialPassword" binding:"required"`
+}
+
 type ResetTeacherPasswordInput struct {
 	NewPassword string `json:"newPassword" binding:"required"`
 }
@@ -62,6 +69,7 @@ type StudentsResponse struct {
 var (
 	ErrTeacherConflict = errors.New("teacher username already exists")
 	ErrTeacherNotFound = errors.New("teacher not found")
+	ErrStudentConflict = errors.New("student username already exists")
 	ErrStudentNotFound = errors.New("student not found")
 	ErrSelfProtected   = errors.New("admin cannot disable self")
 )
@@ -121,6 +129,32 @@ func (s *Service) ListStudents() []StudentItem {
 		items = append(items, s.toStudentItem(student))
 	}
 	return items
+}
+
+func (s *Service) CreateStudent(input CreateStudentInput) (StudentItem, error) {
+	teacher, ok := s.store.GetTeacherByID(input.TeacherID)
+	if !ok || teacher.Role != "teacher" {
+		return StudentItem{}, ErrTeacherNotFound
+	}
+
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(input.InitialPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return StudentItem{}, err
+	}
+
+	student, err := s.store.CreateStudent(input.TeacherID, memory.CreateStudentInput{
+		Username:     strings.TrimSpace(input.Username),
+		DisplayName:  strings.TrimSpace(input.DisplayName),
+		PasswordHash: string(passwordHash),
+	})
+	if err != nil {
+		if errors.Is(err, memory.ErrStudentConflict) {
+			return StudentItem{}, ErrStudentConflict
+		}
+		return StudentItem{}, err
+	}
+
+	return s.toStudentItem(student), nil
 }
 
 func (s *Service) CreateTeacher(input CreateTeacherInput) (TeacherItem, error) {

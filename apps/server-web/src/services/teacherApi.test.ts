@@ -266,6 +266,59 @@ describe('createFetchTeacherApiClient', () => {
     )
   })
 
+  it('creates a managed student from the admin endpoint', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(
+      createFetchResponse({
+        id: 6,
+        teacherId: 2,
+        teacherUsername: 'teacher-1',
+        username: 'student-2',
+        displayName: '小绿',
+        status: 'active',
+        createdAt: '2026-06-14T10:00:00Z',
+      }),
+    )
+    const api = createFetchTeacherApiClient({
+      baseUrl: 'https://teacher.example',
+      fetchImpl,
+      getToken: () => 'admin-token',
+    })
+
+    await expect(
+      api.createManagedStudent?.({
+        teacherId: '2',
+        username: 'student-2',
+        displayName: '小绿',
+        initialPassword: 'stud1234',
+      }),
+    ).resolves.toEqual({
+      id: '6',
+      teacherId: '2',
+      teacherUsername: 'teacher-1',
+      username: 'student-2',
+      displayName: '小绿',
+      status: 'active',
+      createdAt: '2026-06-14T10:00:00Z',
+    })
+
+    expect(fetchImpl).toHaveBeenCalledWith(
+      'https://teacher.example/api/admin/students',
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer admin-token',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          teacherId: 2,
+          username: 'student-2',
+          displayName: '小绿',
+          initialPassword: 'stud1234',
+        }),
+      }),
+    )
+  })
+
   it('posts teacher logout to /api/teacher/logout', async () => {
     const fetchImpl = vi.fn().mockResolvedValue(
       createFetchResponse({

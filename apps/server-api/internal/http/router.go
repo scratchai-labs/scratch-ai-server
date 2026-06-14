@@ -92,6 +92,7 @@ func NewRouter(cfg config.Config) (http.Handler, error) {
 	adminGroup.POST("/teachers/:id/disable", adminRoutes.handleAdminTeacherDisable)
 	adminGroup.POST("/teachers/:id/enable", adminRoutes.handleAdminTeacherEnable)
 	adminGroup.GET("/students", adminRoutes.handleAdminStudentsList)
+	adminGroup.POST("/students", adminRoutes.handleAdminStudentsCreate)
 	adminGroup.POST("/students/:id/reset-password", adminRoutes.handleAdminStudentPasswordReset)
 	adminGroup.POST("/students/:id/disable", adminRoutes.handleAdminStudentDisable)
 	adminGroup.POST("/students/:id/enable", adminRoutes.handleAdminStudentEnable)

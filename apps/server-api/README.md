@@ -63,6 +63,7 @@ npm run server:api:docs:check
 - `POST /api/admin/teachers/{id}/enable`
 - `GET /api/admin/overview`
 - `GET /api/admin/students`
+- `POST /api/admin/students`
 - `POST /api/admin/students/{id}/reset-password`
 - `POST /api/admin/students/{id}/disable`
 - `POST /api/admin/students/{id}/enable`

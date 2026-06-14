@@ -35,7 +35,7 @@ npm run server:api:docs
 
 已落地能力：
 
-- 管理员自举登录、后台总览、教师账号列表、新建、重置密码、启停，以及学生账号列表、重置密码、启停
+- 管理员自举登录、后台总览、教师账号列表、新建、重置密码、启停，以及学生账号列表、新建、重置密码、启停
 - 教师注册、登录、退出、`me`
 - 教师单个创建学生、批量创建学生、重置学生密码
 - 学生客户端登录、退出、`me`
@@ -418,6 +418,21 @@ Student Client
 - 失败原因
 
 这样教师一次提交后，不需要手工回查哪几个账号创建成功。
+
+管理员侧还提供全局学生管理入口，用于为指定教师代建账号、统一查询、停用和重置密码：
+
+- `GET /api/admin/students`
+- `POST /api/admin/students`
+- `POST /api/admin/students/{id}/reset-password`
+- `POST /api/admin/students/{id}/disable`
+- `POST /api/admin/students/{id}/enable`
+
+`POST /api/admin/students` 请求体应包含：
+
+- `teacherId`
+- `username`
+- `displayName`
+- `initialPassword`
 
 ### 8.3 教学任务与参考 sb3
 

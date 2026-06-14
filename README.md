@@ -36,7 +36,7 @@ An open source server workspace for Scratch teaching. The current production tra
 ## Current Direction
 
 - 教师注册、登录
-- 管理员创建、禁用、启用、重置教师和学生账号
+- 管理员创建、禁用、启用、重置教师账号，并可为指定教师创建、禁用、启用、重置学生账号
 - 教师批量创建学生账号和密码
 - 教师上传并分析参考 `sb3`
 - 学生客户端登录与进度上报

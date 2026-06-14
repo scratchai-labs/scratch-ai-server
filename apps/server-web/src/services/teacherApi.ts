@@ -25,6 +25,13 @@ export interface CreateManagedTeacherInput {
   initialPassword: string
 }
 
+export interface CreateManagedStudentInput {
+  teacherId: string
+  username: string
+  displayName: string
+  initialPassword: string
+}
+
 export interface AdminOverview {
   adminCount: number
   teacherCount: number
@@ -99,6 +106,7 @@ export interface TeacherApiClient {
   enableTeacher?(teacherId: string): Promise<ManagedTeacher>
   disableTeacher?(teacherId: string): Promise<ManagedTeacher>
   listManagedStudents?(): Promise<ManagedStudent[]>
+  createManagedStudent?(input: CreateManagedStudentInput): Promise<ManagedStudent>
   resetManagedStudentPassword?(studentId: string, newPassword: string): Promise<ManagedStudent>
   enableManagedStudent?(studentId: string): Promise<ManagedStudent>
   disableManagedStudent?(studentId: string): Promise<ManagedStudent>
@@ -282,6 +290,13 @@ export function createFetchTeacherApiClient(options: {
     async listManagedStudents() {
       const payload = await requestAuthedJson<unknown>('/api/admin/students')
       return normalizeManagedStudents(payload)
+    },
+    async createManagedStudent(input) {
+      const payload = await requestAuthedMutation<unknown>('/api/admin/students', {
+        ...input,
+        teacherId: Number(input.teacherId),
+      })
+      return normalizeManagedStudent(payload)
     },
     async resetManagedStudentPassword(studentId, newPassword) {
       const payload = await requestAuthedMutation<unknown>(

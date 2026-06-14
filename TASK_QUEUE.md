@@ -2,10 +2,11 @@
 
 ## 待确认
 
-- 当前无待确认任务。
+- 暂无
 
 ## 已完成
 
+- 2026-06-14：落地自研后台第二批能力：允许管理员为指定教师直接创建学生账号，补齐 `/api/admin/students` 创建能力、后台学生管理创建表单、相关测试与文档，并已通过 `go test ./...`、`npm run server:web:test`、`npm run server:api:docs:check`。
 - 2026-06-13：落地自研后台管理系统第一批能力：新增管理员总览页与全局学生管理页，补齐管理员对学生账号的查看、重置密码、启停控制，并同步管理员默认落点到 `/admin`；后端新增 `/api/admin/overview`、`/api/admin/students*`，前端新增后台总览/学生管理页面、管理员导航与 mock 支持，已通过 `go test ./...`、`npm run server:web:test`、`npm run server:web:smoke:mock`、`npm run server:api:build`、`VITE_SERVER_WEB_API_MODE=real VITE_SERVER_WEB_API_BASE_URL=https://api.example.com npm run server:web:build`。
 - 2026-06-13：评估“继续自研扩展后台”与“接入 Go 开源管理系统”的工程量、风险和长期维护成本，并补充当前仓库的后台选型建议文档；结论为当前阶段继续沿现有 `Go API + 教师 Web` 自研扩展最合适，若后续需求升级为通用中后台，再单独评估引入 `go-admin-team/go-admin` 作为独立管理中心。
 - 2026-06-13：同步根级 README 与中英文总览文档，补齐管理员教师管理 MVP 的对外能力描述与首次登录口径，确保首页、中文总览和英文总览与当前 `admin` 自举及教师管理能力一致。
