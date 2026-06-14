@@ -379,6 +379,24 @@ func (s *Store) UpdateTeacherStatus(teacherID int64, status string) (Teacher, er
 	return teacher, nil
 }
 
+func (s *Store) UpdateTeacherRole(teacherID int64, role string) (Teacher, error) {
+	if s.sql != nil {
+		return s.sql.UpdateTeacherRole(teacherID, role)
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	teacher, ok := s.teachersByID[teacherID]
+	if !ok {
+		return Teacher{}, ErrTeacherNotFound
+	}
+
+	teacher.Role = role
+	s.teachersByID[teacherID] = teacher
+	return teacher, nil
+}
+
 func (s *Store) CreateStudent(teacherID int64, input CreateStudentInput) (Student, error) {
 	if s.sql != nil {
 		return s.sql.CreateStudent(teacherID, input)

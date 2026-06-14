@@ -396,3 +396,55 @@ func (h *adminHandler) handleAdminTeacherEnable(c *gin.Context) {
 
 	writeJSON(c, 200, updatedTeacher)
 }
+
+// handleAdminTeacherRoleUpdate godoc
+//
+//	@Summary		Update teacher role
+//	@Description	Switch one managed account role between teacher and admin.
+//	@Tags			admin
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id		path		int64							true	"Teacher ID"
+//	@Param			payload	body		AdminTeacherRoleUpdateRequestDoc	true	"Teacher role payload"
+//	@Success		200		{object}	AdminTeacherItemResponse
+//	@Failure		400		{object}	ErrorResponse
+//	@Failure		401		{object}	ErrorResponse
+//	@Failure		403		{object}	ErrorResponse
+//	@Failure		404		{object}	ErrorResponse
+//	@Failure		409		{object}	ErrorResponse
+//	@Router			/api/admin/teachers/{id}/role [post]
+func (h *adminHandler) handleAdminTeacherRoleUpdate(c *gin.Context) {
+	adminRecord := mustTeacher(c)
+	if adminRecord.ID == 0 {
+		return
+	}
+
+	teacherID, ok := parseIDParam(c, "id", "teacher")
+	if !ok {
+		return
+	}
+
+	var request admin.UpdateTeacherRoleInput
+	if err := c.ShouldBindJSON(&request); err != nil {
+		writeJSONError(c, 400, "invalid request body")
+		return
+	}
+
+	updatedTeacher, err := h.service.UpdateTeacherRole(adminRecord.ID, teacherID, request.Role)
+	if err != nil {
+		switch {
+		case errors.Is(err, admin.ErrInvalidTeacherRole):
+			writeJSONError(c, 400, err.Error())
+		case errors.Is(err, admin.ErrTeacherNotFound):
+			writeJSONError(c, 404, err.Error())
+		case errors.Is(err, admin.ErrSelfRoleProtected):
+			writeJSONError(c, 409, err.Error())
+		default:
+			writeJSONError(c, 500, "teacher role update failed")
+		}
+		return
+	}
+
+	writeJSON(c, 200, updatedTeacher)
+}

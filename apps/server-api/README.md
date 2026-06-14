@@ -61,6 +61,7 @@ npm run server:api:docs:check
 - `POST /api/admin/teachers/{id}/reset-password`
 - `POST /api/admin/teachers/{id}/disable`
 - `POST /api/admin/teachers/{id}/enable`
+- `POST /api/admin/teachers/{id}/role`
 - `GET /api/admin/overview`
 - `GET /api/admin/students`
 - `POST /api/admin/students`
@@ -110,7 +111,7 @@ npm run server:api:docs:check
 - 配置 `DATABASE_URL` 后，自动切到 `Postgres`
 - `CORS_ALLOWED_ORIGINS` 配置后，会按白名单回写 `Access-Control-Allow-Origin`
 - 默认把原始 `sb3` 保存到 `SB3_STORAGE_DIR`，未配置时使用系统临时目录下的 `scratch-ai-server-sb3`
-- 同时配置 `ADMIN_BOOTSTRAP_USERNAME` 和 `ADMIN_BOOTSTRAP_PASSWORD` 后，服务启动时会自动创建或提升一个 `admin` 账号，便于首次进入教师管理后台
+- 同时配置 `ADMIN_BOOTSTRAP_USERNAME` 和 `ADMIN_BOOTSTRAP_PASSWORD` 后，服务启动时会自动创建或提升一个 `admin` 账号，便于首次进入教师管理后台；管理员还可以在后台把教师账号提升或降回普通教师
 - 配置了 `DEEPSEEK_API_KEY` 后，学生提示链路会优先走真实 `DeepSeek`，失败时自动回退到本地 fallback
 - 当 `GIN_MODE=release` 时，必须显式提供 `DATABASE_URL`、`SB3_STORAGE_DIR` 和 `CORS_ALLOWED_ORIGINS`
 

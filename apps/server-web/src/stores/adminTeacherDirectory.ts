@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import type {
   CreateManagedTeacherInput,
   ManagedTeacher,
+  ManagedTeacherRole,
   TeacherApiClient,
 } from '@/services/teacherApi'
 import { toErrorMessage } from './storeUtils'
@@ -61,6 +62,32 @@ export const useAdminTeacherDirectoryStore = defineStore('adminTeacherDirectory'
       return updatedTeacher
     } catch (nextError) {
       error.value = toErrorMessage(nextError, '教师密码重置失败')
+      throw nextError
+    } finally {
+      saving.value = false
+    }
+  }
+
+  async function changeTeacherRole(
+    api: TeacherApiClient,
+    teacherId: string,
+    role: ManagedTeacherRole,
+  ) {
+    saving.value = true
+    error.value = null
+
+    try {
+      const updatedTeacher = await api.changeTeacherRole?.(teacherId, role)
+      if (!updatedTeacher) {
+        throw new Error('教师角色切换接口未提供')
+      }
+      mergeTeacher(updatedTeacher)
+      feedback.value = role === 'admin'
+        ? `已将 ${updatedTeacher.username} 设为管理员`
+        : `已将 ${updatedTeacher.username} 设为教师`
+      return updatedTeacher
+    } catch (nextError) {
+      error.value = toErrorMessage(nextError, '教师角色切换失败')
       throw nextError
     } finally {
       saving.value = false
@@ -126,6 +153,7 @@ export const useAdminTeacherDirectoryStore = defineStore('adminTeacherDirectory'
     loadTeachers,
     createTeacher,
     resetTeacherPassword,
+    changeTeacherRole,
     disableTeacher,
     enableTeacher,
     clearFeedback,

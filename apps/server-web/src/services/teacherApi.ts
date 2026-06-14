@@ -12,6 +12,8 @@ export interface TeacherSession {
   role: 'teacher' | 'admin'
 }
 
+export type ManagedTeacherRole = 'teacher' | 'admin'
+
 export interface ManagedTeacher {
   id: string
   username: string
@@ -103,6 +105,7 @@ export interface TeacherApiClient {
   listTeachers?(): Promise<ManagedTeacher[]>
   createTeacher?(input: CreateManagedTeacherInput): Promise<ManagedTeacher>
   resetTeacherPassword?(teacherId: string, newPassword: string): Promise<ManagedTeacher>
+  changeTeacherRole?(teacherId: string, role: ManagedTeacherRole): Promise<ManagedTeacher>
   enableTeacher?(teacherId: string): Promise<ManagedTeacher>
   disableTeacher?(teacherId: string): Promise<ManagedTeacher>
   listManagedStudents?(): Promise<ManagedStudent[]>
@@ -272,6 +275,13 @@ export function createFetchTeacherApiClient(options: {
       const payload = await requestAuthedMutation<unknown>(
         `/api/admin/teachers/${teacherId}/reset-password`,
         { newPassword },
+      )
+      return normalizeManagedTeacher(payload)
+    },
+    async changeTeacherRole(teacherId, role) {
+      const payload = await requestAuthedMutation<unknown>(
+        `/api/admin/teachers/${teacherId}/role`,
+        { role },
       )
       return normalizeManagedTeacher(payload)
     },

@@ -38,6 +38,7 @@ func TestSwaggerDocJSONExposesCoreAPIContract(t *testing.T) {
 		"/api/admin/teachers/{id}/disable",
 		"/api/admin/teachers/{id}/enable",
 		"/api/admin/teachers/{id}/reset-password",
+		"/api/admin/teachers/{id}/role",
 		"/api/student/assignments",
 		"/api/student/assignments/{id}",
 		"/api/student/assignments/{id}/hints",

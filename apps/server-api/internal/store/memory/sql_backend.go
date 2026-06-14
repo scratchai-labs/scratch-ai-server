@@ -239,6 +239,24 @@ func (b *sqlBackend) UpdateTeacherStatus(teacherID int64, status string) (Teache
 	return teacher, nil
 }
 
+func (b *sqlBackend) UpdateTeacherRole(teacherID int64, role string) (Teacher, error) {
+	if _, ok := b.GetTeacherByID(teacherID); !ok {
+		return Teacher{}, ErrTeacherNotFound
+	}
+
+	_, err := b.db.Exec(
+		b.rebind("UPDATE teachers SET role = ? WHERE id = ?"),
+		role,
+		teacherID,
+	)
+	if err != nil {
+		return Teacher{}, err
+	}
+
+	teacher, _ := b.GetTeacherByID(teacherID)
+	return teacher, nil
+}
+
 func (b *sqlBackend) CreateStudent(teacherID int64, input CreateStudentInput) (Student, error) {
 	if _, ok := b.FindStudentByUsername(input.Username); ok {
 		return Student{}, ErrStudentConflict

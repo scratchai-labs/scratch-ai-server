@@ -4,6 +4,7 @@ import {
   type LiveDashboardSnapshot,
   type ManagedStudent,
   type ManagedTeacher,
+  type ManagedTeacherRole,
   type TeacherApiClient,
   type TeacherLoginInput,
   type TeacherRelease,
@@ -226,6 +227,17 @@ export function createMockTeacherApiClient(): TeacherApiClient {
       if (!target) {
         throw new TeacherApiError('teacher not found', 404)
       }
+      return clone(target)
+    },
+    async changeTeacherRole(teacherId, role: ManagedTeacherRole) {
+      const target = teachers.find((teacher) => teacher.id === teacherId)
+      if (!target) {
+        throw new TeacherApiError('teacher not found', 404)
+      }
+      if (target.username === 'admin' && role !== 'admin') {
+        throw new TeacherApiError('admin cannot change own role', 409)
+      }
+      target.role = role
       return clone(target)
     },
     async disableTeacher(teacherId) {

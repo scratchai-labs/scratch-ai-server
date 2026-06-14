@@ -156,6 +156,52 @@ describe('createFetchTeacherApiClient', () => {
     )
   })
 
+  it('changes a managed teacher role from the admin endpoint', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(
+      createFetchResponse({
+        id: 2,
+        username: 'teacher-1',
+        role: 'admin',
+        status: 'active',
+        createdAt: '2026-06-13T12:01:00Z',
+      }),
+    )
+    const api = createFetchTeacherApiClient({
+      baseUrl: 'https://teacher.example',
+      fetchImpl,
+      getToken: () => 'admin-token',
+    }) as ReturnType<typeof createFetchTeacherApiClient> & {
+      changeTeacherRole?: (teacherId: string, role: string) => Promise<unknown>
+    }
+
+    expect(api.changeTeacherRole).toBeTypeOf('function')
+    if (!api.changeTeacherRole) {
+      return
+    }
+
+    await expect(api.changeTeacherRole('2', 'admin')).resolves.toEqual({
+      id: '2',
+      username: 'teacher-1',
+      role: 'admin',
+      status: 'active',
+      createdAt: '2026-06-13T12:01:00Z',
+    })
+
+    expect(fetchImpl).toHaveBeenCalledWith(
+      'https://teacher.example/api/admin/teachers/2/role',
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer admin-token',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          role: 'admin',
+        }),
+      }),
+    )
+  })
+
   it('reads admin overview and managed students from admin endpoints', async () => {
     const fetchImpl = vi
       .fn()

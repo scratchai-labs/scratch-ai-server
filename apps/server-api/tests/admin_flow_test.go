@@ -184,6 +184,40 @@ func TestAdminCanCreateStudentForTeacher(t *testing.T) {
 	requireBodyField(t, studentLoginRes.Body.String(), "studentName", "小绿")
 }
 
+func TestAdminCanPromoteAndDemoteTeacherRole(t *testing.T) {
+	t.Setenv("ADMIN_BOOTSTRAP_USERNAME", "admin")
+	t.Setenv("ADMIN_BOOTSTRAP_PASSWORD", "admin12345")
+
+	handler := newTestHandler()
+	adminToken := loginTeacherToken(t, handler, "admin", "admin12345")
+
+	createTeacherRes := performAuthedJSONRequest(t, handler, adminToken, http.MethodPost, "/api/admin/teachers", map[string]any{
+		"username":        "teacher-promoted",
+		"initialPassword": "secret123",
+	})
+	require.Equal(t, http.StatusCreated, createTeacherRes.Code)
+	teacherID := requireInt64Field(t, createTeacherRes.Body.String(), "id")
+
+	promoteRes := performAuthedJSONRequest(t, handler, adminToken, http.MethodPost, "/api/admin/teachers/"+strconv.FormatInt(teacherID, 10)+"/role", map[string]any{
+		"role": "admin",
+	})
+	require.Equal(t, http.StatusOK, promoteRes.Code)
+	requireBodyField(t, promoteRes.Body.String(), "role", "admin")
+
+	promotedToken := loginTeacherToken(t, handler, "teacher-promoted", "secret123")
+	promotedOverviewRes := performAuthedJSONRequest(t, handler, promotedToken, http.MethodGet, "/api/admin/overview", nil)
+	require.Equal(t, http.StatusOK, promotedOverviewRes.Code)
+
+	demoteRes := performAuthedJSONRequest(t, handler, adminToken, http.MethodPost, "/api/admin/teachers/"+strconv.FormatInt(teacherID, 10)+"/role", map[string]any{
+		"role": "teacher",
+	})
+	require.Equal(t, http.StatusOK, demoteRes.Code)
+	requireBodyField(t, demoteRes.Body.String(), "role", "teacher")
+
+	demotedOverviewRes := performAuthedJSONRequest(t, handler, promotedToken, http.MethodGet, "/api/admin/overview", nil)
+	require.Equal(t, http.StatusForbidden, demotedOverviewRes.Code)
+}
+
 func TestTeacherCannotAccessAdminRoutes(t *testing.T) {
 	t.Setenv("ADMIN_BOOTSTRAP_USERNAME", "admin")
 	t.Setenv("ADMIN_BOOTSTRAP_PASSWORD", "admin12345")
@@ -211,6 +245,11 @@ func TestTeacherCannotAccessAdminRoutes(t *testing.T) {
 
 	disableSelfRes := performAuthedJSONRequest(t, handler, loginTeacherToken(t, handler, "admin", "admin12345"), http.MethodPost, "/api/admin/teachers/1/disable", nil)
 	require.Equal(t, http.StatusConflict, disableSelfRes.Code)
+
+	demoteSelfRes := performAuthedJSONRequest(t, handler, loginTeacherToken(t, handler, "admin", "admin12345"), http.MethodPost, "/api/admin/teachers/1/role", map[string]any{
+		"role": "teacher",
+	})
+	require.Equal(t, http.StatusConflict, demoteSelfRes.Code)
 }
 
 func loginTeacherToken(t *testing.T, handler http.Handler, username string, password string) string {

@@ -75,6 +75,10 @@ type AdminTeacherPasswordResetRequestDoc struct {
 	NewPassword string `json:"newPassword" binding:"required" example:"updated123"`
 }
 
+type AdminTeacherRoleUpdateRequestDoc struct {
+	Role string `json:"role" binding:"required" example:"admin"`
+}
+
 type AdminStudentPasswordResetRequestDoc struct {
 	NewPassword string `json:"newPassword" binding:"required" example:"updated123"`
 }

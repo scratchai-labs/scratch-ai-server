@@ -35,7 +35,7 @@ npm run server:api:docs
 
 已落地能力：
 
-- 管理员自举登录、后台总览、教师账号列表、新建、重置密码、启停，以及学生账号列表、新建、重置密码、启停
+- 管理员自举登录、后台总览、教师账号列表、新建、角色切换、重置密码、启停，以及学生账号列表、新建、重置密码、启停
 - 教师注册、登录、退出、`me`
 - 教师单个创建学生、批量创建学生、重置学生密码
 - 学生客户端登录、退出、`me`
@@ -384,6 +384,17 @@ Student Client
 - `GET /api/teacher/me`
 
 ### 8.2 学生管理
+
+管理员侧同时维护教师/管理员账号，当前后台接口包含：
+
+- `GET /api/admin/teachers`
+- `POST /api/admin/teachers`
+- `POST /api/admin/teachers/{id}/reset-password`
+- `POST /api/admin/teachers/{id}/disable`
+- `POST /api/admin/teachers/{id}/enable`
+- `POST /api/admin/teachers/{id}/role`
+
+其中 `POST /api/admin/teachers/{id}/role` 用于在 `teacher` / `admin` 之间切换角色，自举管理员账号不能把自己降级为教师。
 
 - `GET /api/teacher/students`
 - `POST /api/teacher/students`

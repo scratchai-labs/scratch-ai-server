@@ -15,6 +15,10 @@ type CreateTeacherInput struct {
 	InitialPassword string `json:"initialPassword" binding:"required"`
 }
 
+type UpdateTeacherRoleInput struct {
+	Role string `json:"role" binding:"required"`
+}
+
 type CreateStudentInput struct {
 	TeacherID       int64  `json:"teacherId" binding:"required"`
 	Username        string `json:"username" binding:"required"`
@@ -67,11 +71,13 @@ type StudentsResponse struct {
 }
 
 var (
-	ErrTeacherConflict = errors.New("teacher username already exists")
-	ErrTeacherNotFound = errors.New("teacher not found")
-	ErrStudentConflict = errors.New("student username already exists")
-	ErrStudentNotFound = errors.New("student not found")
-	ErrSelfProtected   = errors.New("admin cannot disable self")
+	ErrTeacherConflict    = errors.New("teacher username already exists")
+	ErrTeacherNotFound    = errors.New("teacher not found")
+	ErrStudentConflict    = errors.New("student username already exists")
+	ErrStudentNotFound    = errors.New("student not found")
+	ErrSelfProtected      = errors.New("admin cannot disable self")
+	ErrSelfRoleProtected  = errors.New("admin cannot change own role")
+	ErrInvalidTeacherRole = errors.New("invalid teacher role")
 )
 
 type Service struct {
@@ -209,6 +215,26 @@ func (s *Service) DisableTeacher(adminID int64, teacherID int64) (TeacherItem, e
 
 func (s *Service) EnableTeacher(teacherID int64) (TeacherItem, error) {
 	teacher, err := s.store.UpdateTeacherStatus(teacherID, "active")
+	if err != nil {
+		if errors.Is(err, memory.ErrTeacherNotFound) {
+			return TeacherItem{}, ErrTeacherNotFound
+		}
+		return TeacherItem{}, err
+	}
+
+	return toTeacherItem(teacher), nil
+}
+
+func (s *Service) UpdateTeacherRole(adminID int64, teacherID int64, role string) (TeacherItem, error) {
+	nextRole := strings.TrimSpace(role)
+	if nextRole != "teacher" && nextRole != "admin" {
+		return TeacherItem{}, ErrInvalidTeacherRole
+	}
+	if adminID == teacherID && nextRole != "admin" {
+		return TeacherItem{}, ErrSelfRoleProtected
+	}
+
+	teacher, err := s.store.UpdateTeacherRole(teacherID, nextRole)
 	if err != nil {
 		if errors.Is(err, memory.ErrTeacherNotFound) {
 			return TeacherItem{}, ErrTeacherNotFound

@@ -45,6 +45,11 @@ async function submitResetPassword(teacherId: string) {
   resetPasswords[teacherId] = ''
 }
 
+async function toggleTeacherRole(teacherId: string, currentRole: string) {
+  const nextRole = currentRole === 'admin' ? 'teacher' : 'admin'
+  await directoryStore.changeTeacherRole(apiClient, teacherId, nextRole)
+}
+
 async function toggleTeacherStatus(teacherId: string, currentStatus: string) {
   if (currentStatus === 'disabled') {
     await directoryStore.enableTeacher(apiClient, teacherId)
@@ -62,7 +67,7 @@ onMounted(() => {
 <template>
   <AppShell
     title="教师管理"
-    description="管理员统一创建教师、重置密码，并控制教师账号启停。"
+    description="管理员统一创建教师、切换角色、重置密码，并控制教师账号启停。"
   >
     <template #actions>
       <StatusBadge :tone="directoryStore.loading ? 'warning' : 'success'">
@@ -115,7 +120,7 @@ onMounted(() => {
       <div class="panel__head">
         <div>
           <h2 class="panel__title">教师账号列表</h2>
-          <p class="panel__meta">支持查看角色、状态，并对单个教师执行密码重置和启停操作。</p>
+          <p class="panel__meta">支持查看角色、切换管理员权限，并对单个教师执行密码重置和启停操作。</p>
         </div>
       </div>
 
@@ -169,17 +174,28 @@ onMounted(() => {
                 </div>
               </td>
               <td>
-                <button
-                  v-if="teacher.role !== 'admin'"
-                  class="button button--ghost"
-                  type="button"
-                  :data-testid="teacher.status === 'disabled' ? `teacher-enable-${teacher.id}` : `teacher-disable-${teacher.id}`"
-                  :disabled="directoryStore.saving"
-                  @click="toggleTeacherStatus(teacher.id, teacher.status)"
-                >
-                  {{ teacher.status === 'disabled' ? '启用' : '禁用' }}
-                </button>
-                <span v-else class="cell-subtle">系统保留账号</span>
+                <div class="stack">
+                  <button
+                    class="button button--ghost"
+                    type="button"
+                    :data-testid="`teacher-role-${teacher.id}`"
+                    :disabled="directoryStore.saving"
+                    @click="toggleTeacherRole(teacher.id, teacher.role)"
+                  >
+                    {{ teacher.role === 'admin' ? '设为教师' : '设为管理员' }}
+                  </button>
+                  <button
+                    v-if="teacher.role !== 'admin'"
+                    class="button button--ghost"
+                    type="button"
+                    :data-testid="teacher.status === 'disabled' ? `teacher-enable-${teacher.id}` : `teacher-disable-${teacher.id}`"
+                    :disabled="directoryStore.saving"
+                    @click="toggleTeacherStatus(teacher.id, teacher.status)"
+                  >
+                    {{ teacher.status === 'disabled' ? '启用' : '禁用' }}
+                  </button>
+                  <span v-else class="cell-subtle">管理员账号不支持启停</span>
+                </div>
               </td>
             </tr>
           </tbody>
