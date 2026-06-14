@@ -35,6 +35,14 @@ Scratch 帮很多人第一次真正喜欢上电脑、理解程序和创作。这
 - 学生只通过客户端登录和接收提示
 - 所有 AI 处理都放在服务端
 
+## 访问入口与角色落点
+
+- Web 统一登录入口是 `/login`
+- 管理员和教师共用同一登录页；管理员登录成功后跳转到 `/admin`，教师登录成功后进入原有教学工作区
+- 管理员页面是同一套 Web 应用里的独立后台路由，当前包含 `/admin`、`/admin/teachers`、`/admin/students`
+- 教师登录后进入的不是管理员页面；教师访问管理员接口会被后端拒绝
+- 当前没有开放 Web 自助教师注册页；首次教师注册需调用 `POST /api/teacher/register`，或在管理员后台上线后由管理员在 `/admin/teachers` 创建账号
+
 机器可读 API 契约以 [`apps/server-api/docs/swagger.json`](apps/server-api/docs/swagger.json) 和 [`apps/server-api/docs/swagger.yaml`](apps/server-api/docs/swagger.yaml) 为准。
 客户端对接优先看 [`docs/server-api-contract.zh-CN.md`](docs/server-api-contract.zh-CN.md) 里的调用顺序和示例。
 详细开发背景再看 [`docs/server-development.zh-CN.md`](docs/server-development.zh-CN.md)。

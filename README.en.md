@@ -23,6 +23,14 @@ Cross-repo docs, architecture notes, and planning live in [`scratch-ai-docs`](ht
 - Server-side DeepSeek hint generation
 - Live teacher progress dashboard
 
+## Current Access Flow
+
+- The shared web login entry is `/login`
+- Admins and teachers use the same login page; admins land on `/admin`, while teachers land on the teaching workspace
+- The admin console is part of the same web app, but uses dedicated routes: `/admin`, `/admin/teachers`, and `/admin/students`
+- There is no public web sign-up page for teachers right now; the first teacher must be created through `POST /api/teacher/register` or later from the admin console
+- Use `staging` as the online test environment, with its own `DATABASE_URL` and `SB3_STORAGE_DIR`
+
 ## Development Notes
 
 For backend work, use the Go commands directly:

@@ -43,6 +43,14 @@ An open source server workspace for Scratch teaching. The current production tra
 - 服务端调用 DeepSeek 生成下一步提示
 - 教师查看实时进度与提示
 
+## Current Access
+
+- Web 统一登录入口是 `/login`
+- 管理员和教师共用同一登录页；管理员登录后进入 `/admin`，教师登录后进入教学工作区
+- 管理员后台仍是同一套 Web 应用，但使用独立路由：`/admin`、`/admin/teachers`、`/admin/students`
+- 当前没有开放 Web 自助教师注册页；首次教师注册需调用 `POST /api/teacher/register`，或在管理员后台上线后由管理员创建教师账号
+- 线上测试环境建议直接使用 `staging`，并始终绑定独立 `DATABASE_URL` 与 `SB3_STORAGE_DIR`
+
 ## Local Development
 
 后端优先直接用 `Go` 命令：

@@ -149,6 +149,25 @@ VITE_SERVER_WEB_API_BASE_URL=https://api.example.com
 - 生产构建缺少 `VITE_SERVER_WEB_API_MODE=real` 会直接失败
 - 生产构建缺少 `VITE_SERVER_WEB_API_BASE_URL` 会直接失败
 
+### 4.3 部署后首用口径
+
+部署完成后，推荐按下面顺序首次启用：
+
+1. 先确认 `ADMIN_BOOTSTRAP_USERNAME` 和 `ADMIN_BOOTSTRAP_PASSWORD` 已注入到当前环境的 `server-api`
+2. 访问 `https://<web-domain>/login`
+3. 使用管理员账号登录
+4. 登录成功后进入 `/admin`
+5. 在 `/admin/teachers` 创建或维护教师账号
+6. 在 `/admin/students` 为指定教师创建学生账号
+
+补充说明：
+
+- 管理员页面不是单独域名，也不是单独前端项目；仍然走同一个 `server-web`
+- 教师和管理员共用 `/login`，只是登录成功后的跳转和可见路由不同
+- 如果当前环境还没有管理员，但必须先建立一个教师，也可以直接调用 `POST /api/teacher/register` 或使用 Swagger
+- 生产环境更推荐先自举管理员，再由管理员统一创建教师账号，避免线上出现失控的自助注册
+- 测试数据库建议直接使用 `staging DATABASE_URL`；不要让任何联调、验收或演示数据写进 production 数据库
+
 ## 5. 部署顺序
 
 建议按这个顺序做，不要前后乱跳：
