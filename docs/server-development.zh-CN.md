@@ -677,9 +677,8 @@ Prompt 至少应包含：
 - `/admin/students`
 - `/admin/audit-logs`
 - `/students`
-- `/assignments`
-- `/assignments/:id`
-- `/assignments/:id/live`
+- `/releases`
+- `/releases/:id/live`
 
 每个页面职责：
 
@@ -698,18 +697,19 @@ Prompt 至少应包含：
   - 查看管理员敏感操作审计日志
   - 第一阶段先支持按 action 基础筛选
 - `/students`
-  - 单个创建、批量创建、重置密码、查看状态
-  - 第一阶段不做 `CSV` 导入
-- `/assignments`
-  - 上传 `sb3`、创建任务、分配学生、发布/归档
-- `/assignments/:id`
-  - 查看参考 `sb3` 分析结果与已分配学生
-- `/assignments/:id/live`
+  - 单个创建、重置密码、查看状态
+  - 批量创建仍走 API / Swagger，第一阶段不做 `CSV` 导入
+- `/releases`
+  - 上传 `sb3`、创建任务
+  - 在同页查看详情与分析结果
+  - 分配学生、发布/归档
+- `/releases/:id/live`
   - 查看学生最新进度、最新提示、更新时间
 
 补充口径：
 
 - 管理员页面是同一套 Web 应用里的独立后台路由，不是单独前端项目
+- 当前发布单详情没有单独拆成 `/releases/:id` 页面，而是收在 `/releases` 的详情面板里
 - 当前没有开放 Web 自助教师注册页；首次教师注册需调用 `POST /api/teacher/register`，或在管理员后台上线后由管理员创建
 - 教师访问管理员接口时，后端应返回 `403`
 

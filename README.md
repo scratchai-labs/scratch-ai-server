@@ -96,8 +96,8 @@ npm run dev
 
 当前联调状态：
 
-- 教师 Web 已完成一次真实浏览器点击验证
-- 真实 API 联调已通过登录、学生列表、发布单列表、实时看板和退出登录主流程
+- 教师 Web 已沉淀 `mock` / `real` 两套浏览器 smoke 验证
+- `npm run server:web:smoke:real` 已覆盖登录、新建学生、重置密码、上传 `sb3`、详情分析、分配学生、发布、实时看板、学生进度/提示、归档主链路
 - 管理员后台已落地，可通过 `ADMIN_BOOTSTRAP_USERNAME` / `ADMIN_BOOTSTRAP_PASSWORD` 自举首个管理员账号并进入 `/admin`
 
 ## License

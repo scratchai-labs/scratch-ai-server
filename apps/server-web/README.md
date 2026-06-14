@@ -21,6 +21,7 @@ npm run server:web:smoke:real
 ```
 
 最近一轮基于 mock / fake data 的浏览器点击验证记录见 [`../../docs/server-web-mock-smoke-test.zh-CN.md`](../../docs/server-web-mock-smoke-test.zh-CN.md)。
+真实 API 自举冒烟脚本说明见 [`../../docs/server-web-real-smoke-test.zh-CN.md`](../../docs/server-web-real-smoke-test.zh-CN.md)。
 
 首次执行浏览器 smoke test 前，如果本机还没有 Playwright 的 Chromium，可在子目录执行一次：
 

@@ -95,8 +95,8 @@ npm run dev
 
 当前联调状态：
 
-- 教师 Web 已完成一次真实浏览器点击验证
-- 教师端真实 API 联调已通过登录、学生列表、发布单列表、实时看板和退出登录主流程
+- 教师 Web 已沉淀 `mock` / `real` 两套浏览器 smoke 验证
+- `npm run server:web:smoke:real` 已覆盖登录、新建学生、重置密码、上传 `sb3`、详情分析、分配学生、发布、实时看板、学生进度/提示、归档主链路
 - 当前后端已放开教师 Web 本地联调所需的 `CORS` 预检请求
 - 管理员后台已落地，可通过 `ADMIN_BOOTSTRAP_USERNAME` / `ADMIN_BOOTSTRAP_PASSWORD` 自举首个管理员账号并登录 `/admin`
 
@@ -108,6 +108,7 @@ npm run dev
 - API 契约真值源：[`apps/server-api/docs/swagger.json`](apps/server-api/docs/swagger.json) / [`apps/server-api/docs/swagger.yaml`](apps/server-api/docs/swagger.yaml)
 - 接入指南：[`docs/server-api-contract.zh-CN.md`](docs/server-api-contract.zh-CN.md)
 - 服务器端开发说明：[`docs/server-development.zh-CN.md`](docs/server-development.zh-CN.md)
+- 教师后台 mock / real 冒烟说明：[`docs/server-web-mock-smoke-test.zh-CN.md`](docs/server-web-mock-smoke-test.zh-CN.md) / [`docs/server-web-real-smoke-test.zh-CN.md`](docs/server-web-real-smoke-test.zh-CN.md)
 - 跨仓库文档与规划：[`scratch-ai-docs`](https://github.com/scratchai-labs/scratch-ai-docs)
 - 开发工作流：[`scratch-ai-docs/docs/development-workflow.zh-CN.md`](https://github.com/scratchai-labs/scratch-ai-docs/blob/main/docs/development-workflow.zh-CN.md)
 - 文档归属说明：[`scratch-ai-docs/docs/documentation-guide.zh-CN.md`](https://github.com/scratchai-labs/scratch-ai-docs/blob/main/docs/documentation-guide.zh-CN.md)

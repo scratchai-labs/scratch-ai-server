@@ -4,6 +4,7 @@
 
 ## 已完成
 
+- 2026-06-14：维护教师端阶段性收尾文档，收口教师操作链路、real-mode 冒烟脚本和当前页面路由口径；已同步根 README、中英文索引、`server-web` README、部署说明、开发说明与 real smoke 说明文档。
 - 2026-06-14：新增可复用的教师端 `real-mode` 浏览器 smoke 脚本，支持临时自举 `server-api + server-web`、动态端口避让、自动生成样例 `sb3`，并在真实 API 下覆盖“登录 / 新建学生 / 重置密码 / 上传 `sb3` / 详情分析 / 分配 / 发布 / 实时看板 / 归档”链路；已通过 `npm run test --workspace=@scratch-ai/server-web -- --run scripts/real-smoke-support.test.mjs`、`npm run server:web:test`、`npm run server:web:smoke:real`。
 - 2026-06-14：执行一轮更稳的真实链路验证，启动本地 `server-api + server-web(real mode)` 并做浏览器联调，确认教师端近期改动在真实 API 下无明显阻断问题；本轮未发现明显阻断问题，页面与接口均正常。
 - 2026-06-14：执行一轮教师端浏览器模拟测试：先通过 `npm run server:web:smoke:mock` 复核登录 / 总览 / 学生列表 / 发布单列表 / 实时看板主链路，再用 `playwright-cli` 在 mock 环境手动覆盖“新建学生 / 重置密码 / 上传 `sb3` / 查看详情与分析 / 分配学生 / 发布 / 归档”链路；本轮未发现明显阻断问题，也未出现页面报错或失败请求。

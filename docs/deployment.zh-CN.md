@@ -189,8 +189,12 @@ VITE_SERVER_WEB_API_BASE_URL=https://api.example.com
    - 教师登录
    - 学生列表
    - 发布单列表
+   - 新建学生与重置密码
    - 上传 `sb3`
+   - 查看详情与分析
+   - 分配学生与发布
    - `/releases/:id/live` 实时看板
+   - 归档发布单
 5. 再复制到正式环境
    - 新建或复制 `Zeabur production`
    - 替换成 production `DATABASE_URL`、正式域名、正式持久卷
@@ -209,6 +213,7 @@ npm run test
 VITE_SERVER_WEB_API_MODE=real VITE_SERVER_WEB_API_BASE_URL=https://api.example.com npm run build
 npm run server:api:docs:check
 npm run server:web:smoke:mock
+npm run server:web:smoke:real
 ```
 
 部署后至少验这些：
@@ -217,8 +222,12 @@ npm run server:web:smoke:mock
 - 教师能登录
 - 教师能打开学生列表
 - 教师能打开发布单列表
+- 教师能新建学生并重置密码
 - 教师能上传一个合法 `sb3`
+- 教师能查看任务详情和分析结果
+- 教师能完成学生分配与发布
 - 教师能进入实时看板
+- 教师能归档任务
 - staging 数据不会出现在 production
 
 ## 7. 回滚建议
