@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "smoke:mock": "node scripts/mock-smoke-test.mjs"
+    "smoke:mock": "node scripts/mock-smoke-test.mjs",
+    "smoke:real": "node scripts/real-smoke-test.mjs"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",

@@ -17,6 +17,7 @@ npm run server:web:dev
 npm run server:web:test
 npm run server:web:build
 npm run server:web:smoke:mock
+npm run server:web:smoke:real
 ```
 
 最近一轮基于 mock / fake data 的浏览器点击验证记录见 [`../../docs/server-web-mock-smoke-test.zh-CN.md`](../../docs/server-web-mock-smoke-test.zh-CN.md)。
@@ -27,6 +28,17 @@ npm run server:web:smoke:mock
 cd apps/server-web
 npx playwright install chromium
 ```
+
+`npm run server:web:smoke:real` 会自动：
+
+- 启动临时 `server-api`
+- 用临时 `SQLite` 和临时 `sb3` 目录自举真实后端
+- 自动注册教师账号，并在浏览器里走“登录 / 新建学生 / 重置密码 / 上传 `sb3` / 查看详情分析 / 分配 / 发布 / 实时看板 / 归档”链路
+
+补充说明：
+
+- 需要本机可用 `go` 工具链
+- 若环境里带了 `DEEPSEEK_API_KEY`，提示链路会优先走真实 `DeepSeek`；否则会回退到 `fallback`
 
 ## API 模式
 
