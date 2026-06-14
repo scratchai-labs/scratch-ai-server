@@ -2,9 +2,10 @@
 
 ## 待确认
 
-
 ## 已完成
 
+- 2026-06-14：执行一轮更稳的真实链路验证，启动本地 `server-api + server-web(real mode)` 并做浏览器联调，确认教师端近期改动在真实 API 下无明显阻断问题；本轮未发现明显阻断问题，页面与接口均正常。
+- 2026-06-14：执行一轮教师端浏览器模拟测试：先通过 `npm run server:web:smoke:mock` 复核登录 / 总览 / 学生列表 / 发布单列表 / 实时看板主链路，再用 `playwright-cli` 在 mock 环境手动覆盖“新建学生 / 重置密码 / 上传 `sb3` / 查看详情与分析 / 分配学生 / 发布 / 归档”链路；本轮未发现明显阻断问题，也未出现页面报错或失败请求。
 - 2026-06-14：继续开发教师端操作型能力，补齐学生页“新建学生 / 重置密码”以及发布单页“上传 `sb3` / 任务详情与分析 / 分配学生 / 发布 / 归档”前端入口与交互；同步扩展 `teacherApi` / `mockTeacherApi` 数据模型与请求方法，并已通过 `npm run server:web:test`、`VITE_SERVER_WEB_API_MODE=real VITE_SERVER_WEB_API_BASE_URL=https://api.example.com npm run server:web:build`、`npm run server:web:smoke:mock`。
 - 2026-06-14：复核教师端功能需求，结合项目文档与现有实现梳理教师端能力范围、当前开发进度与使用说明；已核对 README、开发说明、API 契约、部署文档，以及 `server-web` 路由与页面实现，确认当前教师端后端能力已覆盖第一阶段主链路，但教师 Web 仍以登录、总览、学生列表、发布单列表和实时看板为主，部分教师操作仍需直调 API / Swagger。
 - 2026-06-14：继续 admin 管理第四批能力，落地操作日志 / 审计日志 MVP：为管理员敏感操作补日志落库、`/api/admin/audit-logs` 查询接口和后台只读日志页，覆盖教师/学生账号治理主链路；已通过 `go test ./tests -run 'TestAdminAuditLogsCaptureSensitiveOperations|TestTeacherCannotAccessAdminRoutes|TestSwaggerDocJSONExposesCoreAPIContract'`、`npm run test --workspace=@scratch-ai/server-web -- --run src/services/teacherApi.test.ts src/components/AppShell.test.ts src/views/AdminAuditLogsView.test.ts`。
