@@ -257,6 +257,57 @@ func (b *sqlBackend) UpdateTeacherRole(teacherID int64, role string) (Teacher, e
 	return teacher, nil
 }
 
+func (b *sqlBackend) CreateAuditLog(input CreateAuditLogInput) (AuditLog, error) {
+	now := nowUTC()
+	id, err := b.insertReturningID(
+		"INSERT INTO audit_logs (actor_teacher_id, actor_username, action, target_type, target_id, target_username, before_json, after_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+		input.ActorTeacherID,
+		input.ActorUsername,
+		input.Action,
+		input.TargetType,
+		input.TargetID,
+		input.TargetUsername,
+		mustJSON(input.BeforeState),
+		mustJSON(input.AfterState),
+		now,
+	)
+	if err != nil {
+		return AuditLog{}, err
+	}
+
+	return AuditLog{
+		ID:             id,
+		ActorTeacherID: input.ActorTeacherID,
+		ActorUsername:  input.ActorUsername,
+		Action:         input.Action,
+		TargetType:     input.TargetType,
+		TargetID:       input.TargetID,
+		TargetUsername: input.TargetUsername,
+		BeforeState:    cloneStringMap(input.BeforeState),
+		AfterState:     cloneStringMap(input.AfterState),
+		CreatedAt:      parseTime(now),
+	}, nil
+}
+
+func (b *sqlBackend) ListAuditLogs() []AuditLog {
+	rows, err := b.db.Query(
+		b.rebind("SELECT id, actor_teacher_id, actor_username, action, target_type, target_id, target_username, before_json, after_json, created_at FROM audit_logs ORDER BY id DESC"),
+	)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+
+	records := make([]AuditLog, 0)
+	for rows.Next() {
+		record, scanErr := scanAuditLog(rows)
+		if scanErr == nil {
+			records = append(records, record)
+		}
+	}
+	return records
+}
+
 func (b *sqlBackend) CreateStudent(teacherID int64, input CreateStudentInput) (Student, error) {
 	if _, ok := b.FindStudentByUsername(input.Username); ok {
 		return Student{}, ErrStudentConflict
@@ -990,6 +1041,35 @@ func scanHint(scanner interface{ Scan(...any) error }) (HintRecord, error) {
 	return record, nil
 }
 
+func scanAuditLog(scanner interface{ Scan(...any) error }) (AuditLog, error) {
+	var (
+		record     AuditLog
+		beforeJSON string
+		afterJSON  string
+		createdAt  string
+	)
+	err := scanner.Scan(
+		&record.ID,
+		&record.ActorTeacherID,
+		&record.ActorUsername,
+		&record.Action,
+		&record.TargetType,
+		&record.TargetID,
+		&record.TargetUsername,
+		&beforeJSON,
+		&afterJSON,
+		&createdAt,
+	)
+	if err != nil {
+		return AuditLog{}, err
+	}
+
+	record.BeforeState = decodeStringMap(beforeJSON)
+	record.AfterState = decodeStringMap(afterJSON)
+	record.CreatedAt = parseTime(createdAt)
+	return record, nil
+}
+
 func decodeStrings(raw string) []string {
 	if strings.TrimSpace(raw) == "" {
 		return []string{}
@@ -1010,6 +1090,18 @@ func decodeIntMap(raw string) map[string]int {
 	_ = json.Unmarshal([]byte(raw), &items)
 	if items == nil {
 		return map[string]int{}
+	}
+	return items
+}
+
+func decodeStringMap(raw string) map[string]string {
+	if strings.TrimSpace(raw) == "" {
+		return map[string]string{}
+	}
+	var items map[string]string
+	_ = json.Unmarshal([]byte(raw), &items)
+	if items == nil {
+		return map[string]string{}
 	}
 	return items
 }
@@ -1180,6 +1272,20 @@ var sqliteSchemaStatements = []string{
 		created_at TEXT NOT NULL
 	)
 	`,
+	`
+	CREATE TABLE IF NOT EXISTS audit_logs (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		actor_teacher_id INTEGER NOT NULL REFERENCES teachers(id) ON DELETE CASCADE,
+		actor_username TEXT NOT NULL,
+		action TEXT NOT NULL,
+		target_type TEXT NOT NULL,
+		target_id INTEGER NOT NULL,
+		target_username TEXT NOT NULL,
+		before_json TEXT NOT NULL,
+		after_json TEXT NOT NULL,
+		created_at TEXT NOT NULL
+	)
+	`,
 	"CREATE INDEX IF NOT EXISTS idx_students_teacher_id ON students(teacher_id)",
 	"CREATE INDEX IF NOT EXISTS idx_teacher_sessions_token ON teacher_sessions(token)",
 	"CREATE INDEX IF NOT EXISTS idx_student_sessions_token ON student_sessions(token)",
@@ -1187,6 +1293,7 @@ var sqliteSchemaStatements = []string{
 	"CREATE INDEX IF NOT EXISTS idx_assignment_students_student_id ON assignment_students(student_id)",
 	"CREATE INDEX IF NOT EXISTS idx_progress_student_assignment_id ON progress_reports(student_id, assignment_id, id DESC)",
 	"CREATE INDEX IF NOT EXISTS idx_hint_student_assignment_id ON hint_records(student_id, assignment_id, id DESC)",
+	"CREATE INDEX IF NOT EXISTS idx_audit_logs_actor_teacher_id ON audit_logs(actor_teacher_id)",
 }
 
 var postgresSchemaStatements = []string{
@@ -1295,6 +1402,20 @@ var postgresSchemaStatements = []string{
 		created_at TEXT NOT NULL
 	)
 	`,
+	`
+	CREATE TABLE IF NOT EXISTS audit_logs (
+		id BIGSERIAL PRIMARY KEY,
+		actor_teacher_id BIGINT NOT NULL REFERENCES teachers(id) ON DELETE CASCADE,
+		actor_username TEXT NOT NULL,
+		action TEXT NOT NULL,
+		target_type TEXT NOT NULL,
+		target_id BIGINT NOT NULL,
+		target_username TEXT NOT NULL,
+		before_json TEXT NOT NULL,
+		after_json TEXT NOT NULL,
+		created_at TEXT NOT NULL
+	)
+	`,
 	"CREATE INDEX IF NOT EXISTS idx_students_teacher_id ON students(teacher_id)",
 	"CREATE INDEX IF NOT EXISTS idx_teacher_sessions_token ON teacher_sessions(token)",
 	"CREATE INDEX IF NOT EXISTS idx_student_sessions_token ON student_sessions(token)",
@@ -1302,6 +1423,7 @@ var postgresSchemaStatements = []string{
 	"CREATE INDEX IF NOT EXISTS idx_assignment_students_student_id ON assignment_students(student_id)",
 	"CREATE INDEX IF NOT EXISTS idx_progress_student_assignment_id ON progress_reports(student_id, assignment_id, id DESC)",
 	"CREATE INDEX IF NOT EXISTS idx_hint_student_assignment_id ON hint_records(student_id, assignment_id, id DESC)",
+	"CREATE INDEX IF NOT EXISTS idx_audit_logs_actor_teacher_id ON audit_logs(actor_teacher_id)",
 }
 
 func (b *sqlBackend) ensureAssignmentAnalysisColumns() error {

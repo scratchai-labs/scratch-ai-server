@@ -1,4 +1,5 @@
 import {
+  type AdminAuditLog,
   type AdminOverview,
   TeacherApiError,
   type LiveDashboardSnapshot,
@@ -171,10 +172,67 @@ const managedStudents: ManagedStudent[] = [
   },
 ]
 
+const initialAuditLogs: AdminAuditLog[] = [
+  {
+    id: '4',
+    actorUsername: 'admin',
+    action: 'teacher.role_change',
+    targetType: 'teacher',
+    targetId: '2',
+    targetUsername: 'teacher',
+    before: { role: 'teacher' },
+    after: { role: 'admin' },
+    createdAt: '2026-06-14T10:06:00Z',
+  },
+  {
+    id: '3',
+    actorUsername: 'admin',
+    action: 'student.disable',
+    targetType: 'student',
+    targetId: '11',
+    targetUsername: 'student-2',
+    before: { status: 'active' },
+    after: { status: 'disabled' },
+    createdAt: '2026-06-14T10:04:00Z',
+  },
+  {
+    id: '2',
+    actorUsername: 'admin',
+    action: 'student.create',
+    targetType: 'student',
+    targetId: '10',
+    targetUsername: 'student-1',
+    before: {},
+    after: {
+      username: 'student-1',
+      displayName: '小蓝',
+      status: 'active',
+      teacherUsername: 'teacher',
+    },
+    createdAt: '2026-06-14T10:02:00Z',
+  },
+  {
+    id: '1',
+    actorUsername: 'admin',
+    action: 'teacher.create',
+    targetType: 'teacher',
+    targetId: '2',
+    targetUsername: 'teacher',
+    before: {},
+    after: {
+      username: 'teacher',
+      role: 'teacher',
+      status: 'active',
+    },
+    createdAt: '2026-06-14T10:00:00Z',
+  },
+]
+
 export function createMockTeacherApiClient(): TeacherApiClient {
   const cursorByRelease = new Map<string, number>()
   const teachers = clone(managedTeachers)
   const students = clone(managedStudents)
+  const auditLogs = clone(initialAuditLogs)
 
   return {
     async login(input: TeacherLoginInput) {
@@ -208,6 +266,9 @@ export function createMockTeacherApiClient(): TeacherApiClient {
     async getAdminOverview() {
       return buildAdminOverview(teachers, students)
     },
+    async listAdminAuditLogs() {
+      return clone(auditLogs)
+    },
     async listTeachers() {
       return clone(teachers)
     },
@@ -220,6 +281,18 @@ export function createMockTeacherApiClient(): TeacherApiClient {
         createdAt: '2026-06-13T12:30:00Z',
       } satisfies ManagedTeacher
       teachers.push(nextTeacher)
+      recordAuditLog(auditLogs, {
+        action: 'teacher.create',
+        targetType: 'teacher',
+        targetId: nextTeacher.id,
+        targetUsername: nextTeacher.username,
+        before: {},
+        after: {
+          username: nextTeacher.username,
+          role: nextTeacher.role,
+          status: nextTeacher.status,
+        },
+      })
       return clone(nextTeacher)
     },
     async resetTeacherPassword(teacherId) {
@@ -227,6 +300,14 @@ export function createMockTeacherApiClient(): TeacherApiClient {
       if (!target) {
         throw new TeacherApiError('teacher not found', 404)
       }
+      recordAuditLog(auditLogs, {
+        action: 'teacher.password_reset',
+        targetType: 'teacher',
+        targetId: target.id,
+        targetUsername: target.username,
+        before: {},
+        after: { passwordStatus: 'updated' },
+      })
       return clone(target)
     },
     async changeTeacherRole(teacherId, role: ManagedTeacherRole) {
@@ -237,7 +318,16 @@ export function createMockTeacherApiClient(): TeacherApiClient {
       if (target.username === 'admin' && role !== 'admin') {
         throw new TeacherApiError('admin cannot change own role', 409)
       }
+      const beforeRole = target.role
       target.role = role
+      recordAuditLog(auditLogs, {
+        action: 'teacher.role_change',
+        targetType: 'teacher',
+        targetId: target.id,
+        targetUsername: target.username,
+        before: { role: beforeRole },
+        after: { role: target.role },
+      })
       return clone(target)
     },
     async disableTeacher(teacherId) {
@@ -245,7 +335,16 @@ export function createMockTeacherApiClient(): TeacherApiClient {
       if (!target) {
         throw new TeacherApiError('teacher not found', 404)
       }
+      const beforeStatus = target.status
       target.status = 'disabled'
+      recordAuditLog(auditLogs, {
+        action: 'teacher.disable',
+        targetType: 'teacher',
+        targetId: target.id,
+        targetUsername: target.username,
+        before: { status: beforeStatus },
+        after: { status: target.status },
+      })
       return clone(target)
     },
     async enableTeacher(teacherId) {
@@ -253,7 +352,16 @@ export function createMockTeacherApiClient(): TeacherApiClient {
       if (!target) {
         throw new TeacherApiError('teacher not found', 404)
       }
+      const beforeStatus = target.status
       target.status = 'active'
+      recordAuditLog(auditLogs, {
+        action: 'teacher.enable',
+        targetType: 'teacher',
+        targetId: target.id,
+        targetUsername: target.username,
+        before: { status: beforeStatus },
+        after: { status: target.status },
+      })
       return clone(target)
     },
     async listManagedStudents() {
@@ -276,6 +384,19 @@ export function createMockTeacherApiClient(): TeacherApiClient {
         createdAt: '2026-06-14T10:00:00Z',
       } satisfies ManagedStudent
       students.push(nextStudent)
+      recordAuditLog(auditLogs, {
+        action: 'student.create',
+        targetType: 'student',
+        targetId: nextStudent.id,
+        targetUsername: nextStudent.username,
+        before: {},
+        after: {
+          username: nextStudent.username,
+          displayName: nextStudent.displayName,
+          status: nextStudent.status,
+          teacherUsername: nextStudent.teacherUsername,
+        },
+      })
       return clone(nextStudent)
     },
     async resetManagedStudentPassword(studentId) {
@@ -283,6 +404,14 @@ export function createMockTeacherApiClient(): TeacherApiClient {
       if (!target) {
         throw new TeacherApiError('student not found', 404)
       }
+      recordAuditLog(auditLogs, {
+        action: 'student.password_reset',
+        targetType: 'student',
+        targetId: target.id,
+        targetUsername: target.username,
+        before: {},
+        after: { passwordStatus: 'updated' },
+      })
       return clone(target)
     },
     async disableManagedStudent(studentId) {
@@ -290,7 +419,16 @@ export function createMockTeacherApiClient(): TeacherApiClient {
       if (!target) {
         throw new TeacherApiError('student not found', 404)
       }
+      const beforeStatus = target.status
       target.status = 'disabled'
+      recordAuditLog(auditLogs, {
+        action: 'student.disable',
+        targetType: 'student',
+        targetId: target.id,
+        targetUsername: target.username,
+        before: { status: beforeStatus },
+        after: { status: target.status },
+      })
       return clone(target)
     },
     async enableManagedStudent(studentId) {
@@ -298,7 +436,16 @@ export function createMockTeacherApiClient(): TeacherApiClient {
       if (!target) {
         throw new TeacherApiError('student not found', 404)
       }
+      const beforeStatus = target.status
       target.status = 'active'
+      recordAuditLog(auditLogs, {
+        action: 'student.enable',
+        targetType: 'student',
+        targetId: target.id,
+        targetUsername: target.username,
+        before: { status: beforeStatus },
+        after: { status: target.status },
+      })
       return clone(target)
     },
   }
@@ -322,4 +469,17 @@ function buildAdminOverview(teachers: ManagedTeacher[], students: ManagedStudent
 
 function clone<T>(value: T): T {
   return structuredClone(value)
+}
+
+function recordAuditLog(
+  auditLogs: AdminAuditLog[],
+  input: Omit<AdminAuditLog, 'id' | 'actorUsername' | 'createdAt'>,
+) {
+  const nextID = String(Number(auditLogs[0]?.id ?? '0') + 1)
+  auditLogs.unshift({
+    id: nextID,
+    actorUsername: 'admin',
+    createdAt: new Date().toISOString(),
+    ...input,
+  })
 }

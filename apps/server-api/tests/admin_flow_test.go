@@ -218,6 +218,57 @@ func TestAdminCanPromoteAndDemoteTeacherRole(t *testing.T) {
 	require.Equal(t, http.StatusForbidden, demotedOverviewRes.Code)
 }
 
+func TestAdminAuditLogsCaptureSensitiveOperations(t *testing.T) {
+	t.Setenv("ADMIN_BOOTSTRAP_USERNAME", "admin")
+	t.Setenv("ADMIN_BOOTSTRAP_PASSWORD", "admin12345")
+
+	handler := newTestHandler()
+	adminToken := loginTeacherToken(t, handler, "admin", "admin12345")
+
+	createTeacherRes := performAuthedJSONRequest(t, handler, adminToken, http.MethodPost, "/api/admin/teachers", map[string]any{
+		"username":        "teacher-audit",
+		"initialPassword": "secret123",
+	})
+	require.Equal(t, http.StatusCreated, createTeacherRes.Code)
+	teacherID := requireInt64Field(t, createTeacherRes.Body.String(), "id")
+
+	createStudentRes := performAuthedJSONRequest(t, handler, adminToken, http.MethodPost, "/api/admin/students", map[string]any{
+		"teacherId":       teacherID,
+		"username":        "student-audit",
+		"displayName":     "小审计",
+		"initialPassword": "stud1234",
+	})
+	require.Equal(t, http.StatusCreated, createStudentRes.Code)
+	studentID := requireInt64Field(t, createStudentRes.Body.String(), "id")
+
+	disableStudentRes := performAuthedJSONRequest(t, handler, adminToken, http.MethodPost, "/api/admin/students/"+strconv.FormatInt(studentID, 10)+"/disable", nil)
+	require.Equal(t, http.StatusOK, disableStudentRes.Code)
+
+	promoteTeacherRes := performAuthedJSONRequest(t, handler, adminToken, http.MethodPost, "/api/admin/teachers/"+strconv.FormatInt(teacherID, 10)+"/role", map[string]any{
+		"role": "admin",
+	})
+	require.Equal(t, http.StatusOK, promoteTeacherRes.Code)
+
+	logsRes := performAuthedJSONRequest(t, handler, adminToken, http.MethodGet, "/api/admin/audit-logs", nil)
+	require.Equal(t, http.StatusOK, logsRes.Code)
+	requireJSONArrayLen(t, logsRes.Body.String(), "items", 4)
+	requireBodyField(t, logsRes.Body.String(), "items.0.actorUsername", "admin")
+	requireBodyField(t, logsRes.Body.String(), "items.0.action", "teacher.role_change")
+	requireBodyField(t, logsRes.Body.String(), "items.0.targetType", "teacher")
+	requireBodyField(t, logsRes.Body.String(), "items.0.targetUsername", "teacher-audit")
+	requireBodyField(t, logsRes.Body.String(), "items.0.before.role", "teacher")
+	requireBodyField(t, logsRes.Body.String(), "items.0.after.role", "admin")
+	requireBodyField(t, logsRes.Body.String(), "items.1.action", "student.disable")
+	requireBodyField(t, logsRes.Body.String(), "items.1.targetType", "student")
+	requireBodyField(t, logsRes.Body.String(), "items.1.targetUsername", "student-audit")
+	requireBodyField(t, logsRes.Body.String(), "items.1.before.status", "active")
+	requireBodyField(t, logsRes.Body.String(), "items.1.after.status", "disabled")
+	requireBodyField(t, logsRes.Body.String(), "items.2.action", "student.create")
+	requireBodyField(t, logsRes.Body.String(), "items.2.after.teacherUsername", "teacher-audit")
+	requireBodyField(t, logsRes.Body.String(), "items.3.action", "teacher.create")
+	requireBodyField(t, logsRes.Body.String(), "items.3.after.username", "teacher-audit")
+}
+
 func TestTeacherCannotAccessAdminRoutes(t *testing.T) {
 	t.Setenv("ADMIN_BOOTSTRAP_USERNAME", "admin")
 	t.Setenv("ADMIN_BOOTSTRAP_PASSWORD", "admin12345")
@@ -242,6 +293,9 @@ func TestTeacherCannotAccessAdminRoutes(t *testing.T) {
 
 	overviewRes := performAuthedJSONRequest(t, handler, teacherToken, http.MethodGet, "/api/admin/overview", nil)
 	require.Equal(t, http.StatusForbidden, overviewRes.Code)
+
+	auditLogsRes := performAuthedJSONRequest(t, handler, teacherToken, http.MethodGet, "/api/admin/audit-logs", nil)
+	require.Equal(t, http.StatusForbidden, auditLogsRes.Code)
 
 	disableSelfRes := performAuthedJSONRequest(t, handler, loginTeacherToken(t, handler, "admin", "admin12345"), http.MethodPost, "/api/admin/teachers/1/disable", nil)
 	require.Equal(t, http.StatusConflict, disableSelfRes.Code)

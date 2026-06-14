@@ -85,6 +85,7 @@ func NewRouter(cfg config.Config) (http.Handler, error) {
 
 	adminGroup := engine.Group("/api/admin")
 	adminGroup.Use(requireAdmin(authService))
+	adminGroup.GET("/audit-logs", adminRoutes.handleAdminAuditLogsList)
 	adminGroup.GET("/overview", adminRoutes.handleAdminOverview)
 	adminGroup.GET("/teachers", adminRoutes.handleAdminTeachersList)
 	adminGroup.POST("/teachers", adminRoutes.handleAdminTeachersCreate)

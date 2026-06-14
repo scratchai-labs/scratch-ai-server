@@ -16,6 +16,7 @@ function createRouterForTest() {
       { path: '/admin', component: { template: '<div>admin overview</div>' } },
       { path: '/admin/teachers', component: { template: '<div>admin teachers</div>' } },
       { path: '/admin/students', component: { template: '<div>admin students</div>' } },
+      { path: '/admin/audit-logs', component: { template: '<div>admin audit logs</div>' } },
     ],
   })
 }
@@ -146,6 +147,7 @@ describe('AppShell', () => {
     expect(wrapper.get('nav.shell__nav').text()).toContain('后台总览')
     expect(wrapper.get('nav.shell__nav').text()).toContain('教师管理')
     expect(wrapper.get('nav.shell__nav').text()).toContain('学生管理')
+    expect(wrapper.get('nav.shell__nav').text()).toContain('操作日志')
     expect(wrapper.get('nav.shell__nav').text()).not.toContain('实时总览')
   })
 })

@@ -290,6 +290,45 @@ definitions:
       studentName:
         type: string
     type: object
+  http.AdminAuditLogItemResponse:
+    properties:
+      action:
+        example: teacher.role_change
+        type: string
+      actorUsername:
+        example: admin
+        type: string
+      after:
+        additionalProperties:
+          type: string
+        type: object
+      before:
+        additionalProperties:
+          type: string
+        type: object
+      createdAt:
+        example: "2026-06-14T12:00:00Z"
+        type: string
+      id:
+        example: 4
+        type: integer
+      targetId:
+        example: 2
+        type: integer
+      targetType:
+        example: teacher
+        type: string
+      targetUsername:
+        example: teacher01
+        type: string
+    type: object
+  http.AdminAuditLogsResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/http.AdminAuditLogItemResponse'
+        type: array
+    type: object
   http.AdminOverviewResponse:
     properties:
       activeStudentCount:
@@ -768,6 +807,29 @@ info:
   title: Scratch AI Server API
   version: "1.0"
 paths:
+  /api/admin/audit-logs:
+    get:
+      description: List recent admin audit logs for sensitive account operations.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.AdminAuditLogsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List audit logs
+      tags:
+      - admin
   /api/admin/overview:
     get:
       description: Read aggregated teacher/student account counts for the current

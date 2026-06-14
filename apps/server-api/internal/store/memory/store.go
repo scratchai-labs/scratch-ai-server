@@ -91,6 +91,19 @@ type HintRecord struct {
 	CreatedAt        time.Time
 }
 
+type AuditLog struct {
+	ID             int64
+	ActorTeacherID int64
+	ActorUsername  string
+	Action         string
+	TargetType     string
+	TargetID       int64
+	TargetUsername string
+	BeforeState    map[string]string
+	AfterState     map[string]string
+	CreatedAt      time.Time
+}
+
 type CreateStudentInput struct {
 	Username     string
 	DisplayName  string
@@ -125,6 +138,17 @@ type CreateHintInput struct {
 	ProviderName     string
 }
 
+type CreateAuditLogInput struct {
+	ActorTeacherID int64
+	ActorUsername  string
+	Action         string
+	TargetType     string
+	TargetID       int64
+	TargetUsername string
+	BeforeState    map[string]string
+	AfterState     map[string]string
+}
+
 type Store struct {
 	sql *sqlBackend
 
@@ -135,6 +159,7 @@ type Store struct {
 	nextAssignmentID int64
 	nextProgressID   int64
 	nextHintID       int64
+	nextAuditLogID   int64
 
 	teachersByID       map[int64]Teacher
 	teachersByUsername map[string]int64
@@ -154,6 +179,7 @@ type Store struct {
 	progressByStudentAssignment map[string][]int64
 	hintsByID                   map[int64]HintRecord
 	hintsByStudentAssignment    map[string][]int64
+	auditLogs                   []AuditLog
 }
 
 func NewStore(cfg config.Config) (*Store, error) {
@@ -169,6 +195,7 @@ func NewStore(cfg config.Config) (*Store, error) {
 		nextAssignmentID:            1,
 		nextProgressID:              1,
 		nextHintID:                  1,
+		nextAuditLogID:              1,
 		teachersByID:                map[int64]Teacher{},
 		teachersByUsername:          map[string]int64{},
 		teacherTokens:               map[string]int64{},
@@ -184,6 +211,7 @@ func NewStore(cfg config.Config) (*Store, error) {
 		progressByStudentAssignment: map[string][]int64{},
 		hintsByID:                   map[int64]HintRecord{},
 		hintsByStudentAssignment:    map[string][]int64{},
+		auditLogs:                   []AuditLog{},
 	}, nil
 }
 
@@ -397,6 +425,49 @@ func (s *Store) UpdateTeacherRole(teacherID int64, role string) (Teacher, error)
 	return teacher, nil
 }
 
+func (s *Store) CreateAuditLog(input CreateAuditLogInput) (AuditLog, error) {
+	if s.sql != nil {
+		return s.sql.CreateAuditLog(input)
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	record := AuditLog{
+		ID:             s.nextAuditLogID,
+		ActorTeacherID: input.ActorTeacherID,
+		ActorUsername:  input.ActorUsername,
+		Action:         input.Action,
+		TargetType:     input.TargetType,
+		TargetID:       input.TargetID,
+		TargetUsername: input.TargetUsername,
+		BeforeState:    cloneStringMap(input.BeforeState),
+		AfterState:     cloneStringMap(input.AfterState),
+		CreatedAt:      time.Now().UTC(),
+	}
+	s.nextAuditLogID++
+	s.auditLogs = append(s.auditLogs, record)
+	return record, nil
+}
+
+func (s *Store) ListAuditLogs() []AuditLog {
+	if s.sql != nil {
+		return s.sql.ListAuditLogs()
+	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	records := make([]AuditLog, 0, len(s.auditLogs))
+	for index := len(s.auditLogs) - 1; index >= 0; index-- {
+		record := s.auditLogs[index]
+		record.BeforeState = cloneStringMap(record.BeforeState)
+		record.AfterState = cloneStringMap(record.AfterState)
+		records = append(records, record)
+	}
+	return records
+}
+
 func (s *Store) CreateStudent(teacherID int64, input CreateStudentInput) (Student, error) {
 	if s.sql != nil {
 		return s.sql.CreateStudent(teacherID, input)
@@ -442,6 +513,18 @@ func (s *Store) ListStudentsByTeacher(teacherID int64) []Student {
 		}
 	}
 	return students
+}
+
+func cloneStringMap(input map[string]string) map[string]string {
+	if len(input) == 0 {
+		return map[string]string{}
+	}
+
+	cloned := make(map[string]string, len(input))
+	for key, value := range input {
+		cloned[key] = value
+	}
+	return cloned
 }
 
 func (s *Store) ListStudents() []Student {

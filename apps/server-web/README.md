@@ -56,13 +56,13 @@ VITE_SERVER_WEB_API_BASE_URL=http://localhost:8000
 
 当前真实 API 模式下，教师总览和学生管理会先请求 `GET /api/teacher/students`，再按学生补拉 `GET /api/teacher/dashboard/students/:id/history`，用最近一条学习历史渲染真实的 `status / currentTarget / stepSummary / latestAiHint / updatedAt`。
 
-管理员账号登录后，会进入 `/admin`，通过 `GET /api/admin/overview`、`GET /api/admin/teachers`、`POST /api/admin/teachers/{id}/role`、`GET /api/admin/students`、`POST /api/admin/students` 以及对应的启停/重置接口统一维护账号；教师管理页支持直接切换教师/管理员角色，学生管理页支持直接为指定教师创建学生账号。
+管理员账号登录后，会进入 `/admin`，通过 `GET /api/admin/overview`、`GET /api/admin/teachers`、`POST /api/admin/teachers/{id}/role`、`GET /api/admin/students`、`POST /api/admin/students`、`GET /api/admin/audit-logs` 以及对应的启停/重置接口统一维护账号；教师管理页支持直接切换教师/管理员角色，学生管理页支持直接为指定教师创建学生账号，操作日志页用于只读审计敏感账号操作。
 
 ## 登录与路由
 
 - Web 对外统一入口是 `/login`
 - 管理员和教师共用同一登录页，不需要单独的管理员域名
-- 管理员登录后进入 `/admin`，再通过 `/admin/teachers` 和 `/admin/students` 维护教师与学生
+- 管理员登录后进入 `/admin`，再通过 `/admin/teachers`、`/admin/students` 和 `/admin/audit-logs` 维护教师与学生并查看审计日志
 - 教师登录后进入原有教学管理页面，不会进入管理员页面
 - 当前 Web 没有教师自助注册页；首次教师注册需走 `POST /api/teacher/register`，生产环境更推荐由管理员在 `/admin/teachers` 创建
 - 教师访问管理员接口时，后端会返回 `403`

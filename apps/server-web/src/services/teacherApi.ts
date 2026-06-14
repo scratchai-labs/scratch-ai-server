@@ -44,6 +44,18 @@ export interface AdminOverview {
   disabledStudentCount: number
 }
 
+export interface AdminAuditLog {
+  id: string
+  actorUsername: string
+  action: string
+  targetType: string
+  targetId: string
+  targetUsername: string
+  before: Record<string, string>
+  after: Record<string, string>
+  createdAt: string
+}
+
 export interface ManagedStudent {
   id: string
   teacherId: string
@@ -102,6 +114,7 @@ export interface TeacherApiClient {
   listReleases(): Promise<TeacherRelease[]>
   getLiveDashboard(releaseId: string): Promise<LiveDashboardSnapshot>
   getAdminOverview?(): Promise<AdminOverview>
+  listAdminAuditLogs?(): Promise<AdminAuditLog[]>
   listTeachers?(): Promise<ManagedTeacher[]>
   createTeacher?(input: CreateManagedTeacherInput): Promise<ManagedTeacher>
   resetTeacherPassword?(teacherId: string, newPassword: string): Promise<ManagedTeacher>
@@ -263,6 +276,10 @@ export function createFetchTeacherApiClient(options: {
       const payload = await requestAuthedJson<unknown>('/api/admin/overview')
       return normalizeAdminOverview(payload)
     },
+    async listAdminAuditLogs() {
+      const payload = await requestAuthedJson<unknown>('/api/admin/audit-logs')
+      return normalizeAdminAuditLogs(payload)
+    },
     async listTeachers() {
       const payload = await requestAuthedJson<unknown>('/api/admin/teachers')
       return normalizeManagedTeachers(payload)
@@ -384,6 +401,12 @@ function normalizeManagedTeachers(payload: unknown): ManagedTeacher[] {
   )
 }
 
+function normalizeAdminAuditLogs(payload: unknown): AdminAuditLog[] {
+  return normalizeCollection<Record<string, unknown>>(payload).map((item) =>
+    normalizeAdminAuditLog(item),
+  )
+}
+
 function normalizeAdminOverview(payload: unknown): AdminOverview {
   const record = payload && typeof payload === 'object' ? (payload as Record<string, unknown>) : {}
 
@@ -406,6 +429,22 @@ function normalizeManagedTeacher(payload: unknown): ManagedTeacher {
     username: String(record.username ?? ''),
     role: String(record.role ?? 'teacher'),
     status: String(record.status ?? 'active'),
+    createdAt: String(record.createdAt ?? '—'),
+  }
+}
+
+function normalizeAdminAuditLog(payload: unknown): AdminAuditLog {
+  const record = payload && typeof payload === 'object' ? (payload as Record<string, unknown>) : {}
+
+  return {
+    id: String(record.id ?? ''),
+    actorUsername: String(record.actorUsername ?? ''),
+    action: String(record.action ?? ''),
+    targetType: String(record.targetType ?? ''),
+    targetId: String(record.targetId ?? ''),
+    targetUsername: String(record.targetUsername ?? ''),
+    before: normalizeStringMap(record.before),
+    after: normalizeStringMap(record.after),
     createdAt: String(record.createdAt ?? '—'),
   }
 }
@@ -569,6 +608,16 @@ function pickFirstNonEmpty(...values: unknown[]): string {
     }
   }
   return ''
+}
+
+function normalizeStringMap(value: unknown): Record<string, string> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return {}
+  }
+
+  return Object.fromEntries(
+    Object.entries(value).map(([key, entryValue]) => [key, String(entryValue ?? '')]),
+  )
 }
 
 function normalizeProgressValue(value: unknown): number {

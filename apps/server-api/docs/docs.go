@@ -15,6 +15,43 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/admin/audit-logs": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "List recent admin audit logs for sensitive account operations.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "List audit logs",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.AdminAuditLogsResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/admin/overview": {
             "get": {
                 "security": [
@@ -2476,6 +2513,62 @@ const docTemplate = `{
                 },
                 "studentName": {
                     "type": "string"
+                }
+            }
+        },
+        "http.AdminAuditLogItemResponse": {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "example": "teacher.role_change"
+                },
+                "actorUsername": {
+                    "type": "string",
+                    "example": "admin"
+                },
+                "after": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "before": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "createdAt": {
+                    "type": "string",
+                    "example": "2026-06-14T12:00:00Z"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 4
+                },
+                "targetId": {
+                    "type": "integer",
+                    "example": 2
+                },
+                "targetType": {
+                    "type": "string",
+                    "example": "teacher"
+                },
+                "targetUsername": {
+                    "type": "string",
+                    "example": "teacher01"
+                }
+            }
+        },
+        "http.AdminAuditLogsResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/http.AdminAuditLogItemResponse"
+                    }
                 }
             }
         },

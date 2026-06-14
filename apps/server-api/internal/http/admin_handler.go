@@ -30,6 +30,27 @@ func (h *adminHandler) handleAdminOverview(c *gin.Context) {
 	writeJSON(c, 200, h.service.GetOverview())
 }
 
+// handleAdminAuditLogsList godoc
+//
+//	@Summary		List audit logs
+//	@Description	List recent admin audit logs for sensitive account operations.
+//	@Tags			admin
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Success		200	{object}	AdminAuditLogsResponse
+//	@Failure		401	{object}	ErrorResponse
+//	@Failure		403	{object}	ErrorResponse
+//	@Router			/api/admin/audit-logs [get]
+func (h *adminHandler) handleAdminAuditLogsList(c *gin.Context) {
+	if teacherRecord := mustTeacher(c); teacherRecord.ID == 0 {
+		return
+	}
+
+	writeJSON(c, 200, admin.AuditLogsResponse{
+		Items: h.service.ListAuditLogs(),
+	})
+}
+
 // handleAdminTeachersList godoc
 //
 //	@Summary		List teachers
@@ -89,7 +110,8 @@ func (h *adminHandler) handleAdminStudentsList(c *gin.Context) {
 //	@Failure		409		{object}	ErrorResponse
 //	@Router			/api/admin/students [post]
 func (h *adminHandler) handleAdminStudentsCreate(c *gin.Context) {
-	if teacherRecord := mustTeacher(c); teacherRecord.ID == 0 {
+	adminRecord := mustTeacher(c)
+	if adminRecord.ID == 0 {
 		return
 	}
 
@@ -99,7 +121,7 @@ func (h *adminHandler) handleAdminStudentsCreate(c *gin.Context) {
 		return
 	}
 
-	createdStudent, err := h.service.CreateStudent(request)
+	createdStudent, err := h.service.CreateStudent(adminRecord, request)
 	if err != nil {
 		switch {
 		case errors.Is(err, admin.ErrTeacherNotFound):
@@ -131,7 +153,8 @@ func (h *adminHandler) handleAdminStudentsCreate(c *gin.Context) {
 //	@Failure		409		{object}	ErrorResponse
 //	@Router			/api/admin/teachers [post]
 func (h *adminHandler) handleAdminTeachersCreate(c *gin.Context) {
-	if teacherRecord := mustTeacher(c); teacherRecord.ID == 0 {
+	adminRecord := mustTeacher(c)
+	if adminRecord.ID == 0 {
 		return
 	}
 
@@ -141,7 +164,7 @@ func (h *adminHandler) handleAdminTeachersCreate(c *gin.Context) {
 		return
 	}
 
-	createdTeacher, err := h.service.CreateTeacher(request)
+	createdTeacher, err := h.service.CreateTeacher(adminRecord, request)
 	if err != nil {
 		if errors.Is(err, admin.ErrTeacherConflict) {
 			writeJSONError(c, 409, err.Error())
@@ -171,7 +194,8 @@ func (h *adminHandler) handleAdminTeachersCreate(c *gin.Context) {
 //	@Failure		404		{object}	ErrorResponse
 //	@Router			/api/admin/teachers/{id}/reset-password [post]
 func (h *adminHandler) handleAdminTeacherPasswordReset(c *gin.Context) {
-	if teacherRecord := mustTeacher(c); teacherRecord.ID == 0 {
+	adminRecord := mustTeacher(c)
+	if adminRecord.ID == 0 {
 		return
 	}
 
@@ -186,7 +210,7 @@ func (h *adminHandler) handleAdminTeacherPasswordReset(c *gin.Context) {
 		return
 	}
 
-	updatedTeacher, err := h.service.ResetTeacherPassword(teacherID, request.NewPassword)
+	updatedTeacher, err := h.service.ResetTeacherPassword(adminRecord, teacherID, request.NewPassword)
 	if err != nil {
 		if errors.Is(err, admin.ErrTeacherNotFound) {
 			writeJSONError(c, 404, err.Error())
@@ -216,7 +240,8 @@ func (h *adminHandler) handleAdminTeacherPasswordReset(c *gin.Context) {
 //	@Failure		404		{object}	ErrorResponse
 //	@Router			/api/admin/students/{id}/reset-password [post]
 func (h *adminHandler) handleAdminStudentPasswordReset(c *gin.Context) {
-	if teacherRecord := mustTeacher(c); teacherRecord.ID == 0 {
+	adminRecord := mustTeacher(c)
+	if adminRecord.ID == 0 {
 		return
 	}
 
@@ -231,7 +256,7 @@ func (h *adminHandler) handleAdminStudentPasswordReset(c *gin.Context) {
 		return
 	}
 
-	updatedStudent, err := h.service.ResetStudentPassword(studentID, request.NewPassword)
+	updatedStudent, err := h.service.ResetStudentPassword(adminRecord, studentID, request.NewPassword)
 	if err != nil {
 		if errors.Is(err, admin.ErrStudentNotFound) {
 			writeJSONError(c, 404, err.Error())
@@ -259,7 +284,8 @@ func (h *adminHandler) handleAdminStudentPasswordReset(c *gin.Context) {
 //	@Failure		404	{object}	ErrorResponse
 //	@Router			/api/admin/students/{id}/disable [post]
 func (h *adminHandler) handleAdminStudentDisable(c *gin.Context) {
-	if teacherRecord := mustTeacher(c); teacherRecord.ID == 0 {
+	adminRecord := mustTeacher(c)
+	if adminRecord.ID == 0 {
 		return
 	}
 
@@ -268,7 +294,7 @@ func (h *adminHandler) handleAdminStudentDisable(c *gin.Context) {
 		return
 	}
 
-	updatedStudent, err := h.service.DisableStudent(studentID)
+	updatedStudent, err := h.service.DisableStudent(adminRecord, studentID)
 	if err != nil {
 		if errors.Is(err, admin.ErrStudentNotFound) {
 			writeJSONError(c, 404, err.Error())
@@ -296,7 +322,8 @@ func (h *adminHandler) handleAdminStudentDisable(c *gin.Context) {
 //	@Failure		404	{object}	ErrorResponse
 //	@Router			/api/admin/students/{id}/enable [post]
 func (h *adminHandler) handleAdminStudentEnable(c *gin.Context) {
-	if teacherRecord := mustTeacher(c); teacherRecord.ID == 0 {
+	adminRecord := mustTeacher(c)
+	if adminRecord.ID == 0 {
 		return
 	}
 
@@ -305,7 +332,7 @@ func (h *adminHandler) handleAdminStudentEnable(c *gin.Context) {
 		return
 	}
 
-	updatedStudent, err := h.service.EnableStudent(studentID)
+	updatedStudent, err := h.service.EnableStudent(adminRecord, studentID)
 	if err != nil {
 		if errors.Is(err, admin.ErrStudentNotFound) {
 			writeJSONError(c, 404, err.Error())
@@ -344,7 +371,7 @@ func (h *adminHandler) handleAdminTeacherDisable(c *gin.Context) {
 		return
 	}
 
-	updatedTeacher, err := h.service.DisableTeacher(adminRecord.ID, teacherID)
+	updatedTeacher, err := h.service.DisableTeacher(adminRecord, teacherID)
 	if err != nil {
 		switch {
 		case errors.Is(err, admin.ErrTeacherNotFound):
@@ -375,7 +402,8 @@ func (h *adminHandler) handleAdminTeacherDisable(c *gin.Context) {
 //	@Failure		404	{object}	ErrorResponse
 //	@Router			/api/admin/teachers/{id}/enable [post]
 func (h *adminHandler) handleAdminTeacherEnable(c *gin.Context) {
-	if teacherRecord := mustTeacher(c); teacherRecord.ID == 0 {
+	adminRecord := mustTeacher(c)
+	if adminRecord.ID == 0 {
 		return
 	}
 
@@ -384,7 +412,7 @@ func (h *adminHandler) handleAdminTeacherEnable(c *gin.Context) {
 		return
 	}
 
-	updatedTeacher, err := h.service.EnableTeacher(teacherID)
+	updatedTeacher, err := h.service.EnableTeacher(adminRecord, teacherID)
 	if err != nil {
 		if errors.Is(err, admin.ErrTeacherNotFound) {
 			writeJSONError(c, 404, err.Error())
@@ -431,7 +459,7 @@ func (h *adminHandler) handleAdminTeacherRoleUpdate(c *gin.Context) {
 		return
 	}
 
-	updatedTeacher, err := h.service.UpdateTeacherRole(adminRecord.ID, teacherID, request.Role)
+	updatedTeacher, err := h.service.UpdateTeacherRole(adminRecord, teacherID, request.Role)
 	if err != nil {
 		switch {
 		case errors.Is(err, admin.ErrInvalidTeacherRole):

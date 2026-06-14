@@ -70,6 +70,22 @@ type StudentsResponse struct {
 	Items []StudentItem `json:"items"`
 }
 
+type AuditLogItem struct {
+	ID             int64             `json:"id"`
+	ActorUsername  string            `json:"actorUsername"`
+	Action         string            `json:"action"`
+	TargetType     string            `json:"targetType"`
+	TargetID       int64             `json:"targetId"`
+	TargetUsername string            `json:"targetUsername"`
+	Before         map[string]string `json:"before"`
+	After          map[string]string `json:"after"`
+	CreatedAt      string            `json:"createdAt"`
+}
+
+type AuditLogsResponse struct {
+	Items []AuditLogItem `json:"items"`
+}
+
 var (
 	ErrTeacherConflict    = errors.New("teacher username already exists")
 	ErrTeacherNotFound    = errors.New("teacher not found")
@@ -137,7 +153,16 @@ func (s *Service) ListStudents() []StudentItem {
 	return items
 }
 
-func (s *Service) CreateStudent(input CreateStudentInput) (StudentItem, error) {
+func (s *Service) ListAuditLogs() []AuditLogItem {
+	records := s.store.ListAuditLogs()
+	items := make([]AuditLogItem, 0, len(records))
+	for _, record := range records {
+		items = append(items, toAuditLogItem(record))
+	}
+	return items
+}
+
+func (s *Service) CreateStudent(actor memory.Teacher, input CreateStudentInput) (StudentItem, error) {
 	teacher, ok := s.store.GetTeacherByID(input.TeacherID)
 	if !ok || teacher.Role != "teacher" {
 		return StudentItem{}, ErrTeacherNotFound
@@ -160,10 +185,15 @@ func (s *Service) CreateStudent(input CreateStudentInput) (StudentItem, error) {
 		return StudentItem{}, err
 	}
 
-	return s.toStudentItem(student), nil
+	createdStudent := s.toStudentItem(student)
+	if err := s.recordAuditLog(actor, "student.create", "student", student.ID, student.Username, map[string]string{}, studentSnapshot(createdStudent)); err != nil {
+		return StudentItem{}, err
+	}
+
+	return createdStudent, nil
 }
 
-func (s *Service) CreateTeacher(input CreateTeacherInput) (TeacherItem, error) {
+func (s *Service) CreateTeacher(actor memory.Teacher, input CreateTeacherInput) (TeacherItem, error) {
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(input.InitialPassword), bcrypt.DefaultCost)
 	if err != nil {
 		return TeacherItem{}, err
@@ -177,10 +207,15 @@ func (s *Service) CreateTeacher(input CreateTeacherInput) (TeacherItem, error) {
 		return TeacherItem{}, err
 	}
 
-	return toTeacherItem(teacher), nil
+	createdTeacher := toTeacherItem(teacher)
+	if err := s.recordAuditLog(actor, "teacher.create", "teacher", teacher.ID, teacher.Username, map[string]string{}, teacherSnapshot(createdTeacher)); err != nil {
+		return TeacherItem{}, err
+	}
+
+	return createdTeacher, nil
 }
 
-func (s *Service) ResetTeacherPassword(teacherID int64, newPassword string) (TeacherItem, error) {
+func (s *Service) ResetTeacherPassword(actor memory.Teacher, teacherID int64, newPassword string) (TeacherItem, error) {
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
 	if err != nil {
 		return TeacherItem{}, err
@@ -194,12 +229,23 @@ func (s *Service) ResetTeacherPassword(teacherID int64, newPassword string) (Tea
 		return TeacherItem{}, err
 	}
 
-	return toTeacherItem(teacher), nil
+	updatedTeacher := toTeacherItem(teacher)
+	if err := s.recordAuditLog(actor, "teacher.password_reset", "teacher", teacher.ID, teacher.Username, map[string]string{}, map[string]string{
+		"passwordStatus": "updated",
+	}); err != nil {
+		return TeacherItem{}, err
+	}
+
+	return updatedTeacher, nil
 }
 
-func (s *Service) DisableTeacher(adminID int64, teacherID int64) (TeacherItem, error) {
-	if adminID == teacherID {
+func (s *Service) DisableTeacher(actor memory.Teacher, teacherID int64) (TeacherItem, error) {
+	if actor.ID == teacherID {
 		return TeacherItem{}, ErrSelfProtected
+	}
+	beforeTeacher, ok := s.store.GetTeacherByID(teacherID)
+	if !ok {
+		return TeacherItem{}, ErrTeacherNotFound
 	}
 
 	teacher, err := s.store.UpdateTeacherStatus(teacherID, "disabled")
@@ -210,10 +256,24 @@ func (s *Service) DisableTeacher(adminID int64, teacherID int64) (TeacherItem, e
 		return TeacherItem{}, err
 	}
 
-	return toTeacherItem(teacher), nil
+	updatedTeacher := toTeacherItem(teacher)
+	if err := s.recordAuditLog(actor, "teacher.disable", "teacher", teacher.ID, teacher.Username, map[string]string{
+		"status": beforeTeacher.Status,
+	}, map[string]string{
+		"status": teacher.Status,
+	}); err != nil {
+		return TeacherItem{}, err
+	}
+
+	return updatedTeacher, nil
 }
 
-func (s *Service) EnableTeacher(teacherID int64) (TeacherItem, error) {
+func (s *Service) EnableTeacher(actor memory.Teacher, teacherID int64) (TeacherItem, error) {
+	beforeTeacher, ok := s.store.GetTeacherByID(teacherID)
+	if !ok {
+		return TeacherItem{}, ErrTeacherNotFound
+	}
+
 	teacher, err := s.store.UpdateTeacherStatus(teacherID, "active")
 	if err != nil {
 		if errors.Is(err, memory.ErrTeacherNotFound) {
@@ -222,16 +282,29 @@ func (s *Service) EnableTeacher(teacherID int64) (TeacherItem, error) {
 		return TeacherItem{}, err
 	}
 
-	return toTeacherItem(teacher), nil
+	updatedTeacher := toTeacherItem(teacher)
+	if err := s.recordAuditLog(actor, "teacher.enable", "teacher", teacher.ID, teacher.Username, map[string]string{
+		"status": beforeTeacher.Status,
+	}, map[string]string{
+		"status": teacher.Status,
+	}); err != nil {
+		return TeacherItem{}, err
+	}
+
+	return updatedTeacher, nil
 }
 
-func (s *Service) UpdateTeacherRole(adminID int64, teacherID int64, role string) (TeacherItem, error) {
+func (s *Service) UpdateTeacherRole(actor memory.Teacher, teacherID int64, role string) (TeacherItem, error) {
 	nextRole := strings.TrimSpace(role)
 	if nextRole != "teacher" && nextRole != "admin" {
 		return TeacherItem{}, ErrInvalidTeacherRole
 	}
-	if adminID == teacherID && nextRole != "admin" {
+	if actor.ID == teacherID && nextRole != "admin" {
 		return TeacherItem{}, ErrSelfRoleProtected
+	}
+	beforeTeacher, ok := s.store.GetTeacherByID(teacherID)
+	if !ok {
+		return TeacherItem{}, ErrTeacherNotFound
 	}
 
 	teacher, err := s.store.UpdateTeacherRole(teacherID, nextRole)
@@ -242,10 +315,19 @@ func (s *Service) UpdateTeacherRole(adminID int64, teacherID int64, role string)
 		return TeacherItem{}, err
 	}
 
-	return toTeacherItem(teacher), nil
+	updatedTeacher := toTeacherItem(teacher)
+	if err := s.recordAuditLog(actor, "teacher.role_change", "teacher", teacher.ID, teacher.Username, map[string]string{
+		"role": beforeTeacher.Role,
+	}, map[string]string{
+		"role": teacher.Role,
+	}); err != nil {
+		return TeacherItem{}, err
+	}
+
+	return updatedTeacher, nil
 }
 
-func (s *Service) ResetStudentPassword(studentID int64, newPassword string) (StudentItem, error) {
+func (s *Service) ResetStudentPassword(actor memory.Teacher, studentID int64, newPassword string) (StudentItem, error) {
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
 	if err != nil {
 		return StudentItem{}, err
@@ -259,10 +341,22 @@ func (s *Service) ResetStudentPassword(studentID int64, newPassword string) (Stu
 		return StudentItem{}, err
 	}
 
-	return s.toStudentItem(student), nil
+	updatedStudent := s.toStudentItem(student)
+	if err := s.recordAuditLog(actor, "student.password_reset", "student", student.ID, student.Username, map[string]string{}, map[string]string{
+		"passwordStatus": "updated",
+	}); err != nil {
+		return StudentItem{}, err
+	}
+
+	return updatedStudent, nil
 }
 
-func (s *Service) DisableStudent(studentID int64) (StudentItem, error) {
+func (s *Service) DisableStudent(actor memory.Teacher, studentID int64) (StudentItem, error) {
+	beforeStudent, ok := s.store.GetStudentByID(studentID)
+	if !ok {
+		return StudentItem{}, ErrStudentNotFound
+	}
+
 	student, err := s.store.UpdateStudentStatus(studentID, "disabled")
 	if err != nil {
 		if errors.Is(err, memory.ErrStudentNotFound) {
@@ -271,10 +365,24 @@ func (s *Service) DisableStudent(studentID int64) (StudentItem, error) {
 		return StudentItem{}, err
 	}
 
-	return s.toStudentItem(student), nil
+	updatedStudent := s.toStudentItem(student)
+	if err := s.recordAuditLog(actor, "student.disable", "student", student.ID, student.Username, map[string]string{
+		"status": beforeStudent.Status,
+	}, map[string]string{
+		"status": student.Status,
+	}); err != nil {
+		return StudentItem{}, err
+	}
+
+	return updatedStudent, nil
 }
 
-func (s *Service) EnableStudent(studentID int64) (StudentItem, error) {
+func (s *Service) EnableStudent(actor memory.Teacher, studentID int64) (StudentItem, error) {
+	beforeStudent, ok := s.store.GetStudentByID(studentID)
+	if !ok {
+		return StudentItem{}, ErrStudentNotFound
+	}
+
 	student, err := s.store.UpdateStudentStatus(studentID, "active")
 	if err != nil {
 		if errors.Is(err, memory.ErrStudentNotFound) {
@@ -283,7 +391,16 @@ func (s *Service) EnableStudent(studentID int64) (StudentItem, error) {
 		return StudentItem{}, err
 	}
 
-	return s.toStudentItem(student), nil
+	updatedStudent := s.toStudentItem(student)
+	if err := s.recordAuditLog(actor, "student.enable", "student", student.ID, student.Username, map[string]string{
+		"status": beforeStudent.Status,
+	}, map[string]string{
+		"status": student.Status,
+	}); err != nil {
+		return StudentItem{}, err
+	}
+
+	return updatedStudent, nil
 }
 
 func toTeacherItem(teacher memory.Teacher) TeacherItem {
@@ -311,4 +428,69 @@ func (s *Service) toStudentItem(student memory.Student) StudentItem {
 		Status:          student.Status,
 		CreatedAt:       student.CreatedAt.Format(time.RFC3339),
 	}
+}
+
+func toAuditLogItem(record memory.AuditLog) AuditLogItem {
+	return AuditLogItem{
+		ID:             record.ID,
+		ActorUsername:  record.ActorUsername,
+		Action:         record.Action,
+		TargetType:     record.TargetType,
+		TargetID:       record.TargetID,
+		TargetUsername: record.TargetUsername,
+		Before:         cloneStringMap(record.BeforeState),
+		After:          cloneStringMap(record.AfterState),
+		CreatedAt:      record.CreatedAt.Format(time.RFC3339),
+	}
+}
+
+func (s *Service) recordAuditLog(
+	actor memory.Teacher,
+	action string,
+	targetType string,
+	targetID int64,
+	targetUsername string,
+	before map[string]string,
+	after map[string]string,
+) error {
+	_, err := s.store.CreateAuditLog(memory.CreateAuditLogInput{
+		ActorTeacherID: actor.ID,
+		ActorUsername:  actor.Username,
+		Action:         action,
+		TargetType:     targetType,
+		TargetID:       targetID,
+		TargetUsername: targetUsername,
+		BeforeState:    before,
+		AfterState:     after,
+	})
+	return err
+}
+
+func teacherSnapshot(teacher TeacherItem) map[string]string {
+	return map[string]string{
+		"username": teacher.Username,
+		"role":     teacher.Role,
+		"status":   teacher.Status,
+	}
+}
+
+func studentSnapshot(student StudentItem) map[string]string {
+	return map[string]string{
+		"username":        student.Username,
+		"displayName":     student.DisplayName,
+		"status":          student.Status,
+		"teacherUsername": student.TeacherUsername,
+	}
+}
+
+func cloneStringMap(input map[string]string) map[string]string {
+	if len(input) == 0 {
+		return map[string]string{}
+	}
+
+	cloned := make(map[string]string, len(input))
+	for key, value := range input {
+		cloned[key] = value
+	}
+	return cloned
 }

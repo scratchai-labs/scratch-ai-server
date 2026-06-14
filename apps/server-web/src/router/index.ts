@@ -2,6 +2,7 @@ import { createRouter, createWebHistory, type RouteLocationNormalized } from 'vu
 import type { Pinia } from 'pinia'
 import { useSessionStore } from '@/stores/session'
 import AdminOverviewView from '@/views/AdminOverviewView.vue'
+import AdminAuditLogsView from '@/views/AdminAuditLogsView.vue'
 import AdminStudentsView from '@/views/AdminStudentsView.vue'
 import AdminTeachersView from '@/views/AdminTeachersView.vue'
 import DashboardView from '@/views/DashboardView.vue'
@@ -79,6 +80,14 @@ export function createTeacherRouter(pinia: Pinia) {
         path: '/admin/students',
         name: 'admin-students',
         component: AdminStudentsView,
+        meta: {
+          requiresAdmin: true,
+        },
+      },
+      {
+        path: '/admin/audit-logs',
+        name: 'admin-audit-logs',
+        component: AdminAuditLogsView,
         meta: {
           requiresAdmin: true,
         },

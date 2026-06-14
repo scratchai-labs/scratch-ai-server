@@ -312,6 +312,70 @@ describe('createFetchTeacherApiClient', () => {
     )
   })
 
+  it('reads admin audit logs from the admin endpoint', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(
+      createFetchResponse({
+        items: [
+          {
+            id: 9,
+            actorUsername: 'admin',
+            action: 'teacher.role_change',
+            targetType: 'teacher',
+            targetId: 2,
+            targetUsername: 'teacher-1',
+            before: {
+              role: 'teacher',
+            },
+            after: {
+              role: 'admin',
+            },
+            createdAt: '2026-06-14T12:00:00Z',
+          },
+        ],
+      }),
+    )
+    const api = createFetchTeacherApiClient({
+      baseUrl: 'https://teacher.example',
+      fetchImpl,
+      getToken: () => 'admin-token',
+    }) as ReturnType<typeof createFetchTeacherApiClient> & {
+      listAdminAuditLogs?: () => Promise<unknown>
+    }
+
+    expect(api.listAdminAuditLogs).toBeTypeOf('function')
+    if (!api.listAdminAuditLogs) {
+      return
+    }
+
+    await expect(api.listAdminAuditLogs()).resolves.toEqual([
+      {
+        id: '9',
+        actorUsername: 'admin',
+        action: 'teacher.role_change',
+        targetType: 'teacher',
+        targetId: '2',
+        targetUsername: 'teacher-1',
+        before: {
+          role: 'teacher',
+        },
+        after: {
+          role: 'admin',
+        },
+        createdAt: '2026-06-14T12:00:00Z',
+      },
+    ])
+
+    expect(fetchImpl).toHaveBeenCalledWith(
+      'https://teacher.example/api/admin/audit-logs',
+      expect.objectContaining({
+        method: 'GET',
+        headers: {
+          Authorization: 'Bearer admin-token',
+        },
+      }),
+    )
+  })
+
   it('creates a managed student from the admin endpoint', async () => {
     const fetchImpl = vi.fn().mockResolvedValue(
       createFetchResponse({

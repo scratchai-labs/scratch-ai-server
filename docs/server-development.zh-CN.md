@@ -35,7 +35,7 @@ npm run server:api:docs
 
 已落地能力：
 
-- 管理员自举登录、后台总览、教师账号列表、新建、角色切换、重置密码、启停，以及学生账号列表、新建、重置密码、启停
+- 管理员自举登录、后台总览、教师账号列表、新建、角色切换、重置密码、启停，学生账号列表、新建、重置密码、启停，以及管理员操作日志查询
 - 教师注册、登录、退出、`me`
 - 教师单个创建学生、批量创建学生、重置学生密码
 - 学生客户端登录、退出、`me`
@@ -70,7 +70,7 @@ npm run server:api:docs
 
 - 管理员管理教师、学生、管理员账号
 - 新建教师、禁用教师、重置密码、角色切换
-- 后续增加组织、班级、菜单权限、操作日志
+- 后续增加组织、班级、菜单权限
 
 只有在目标明显升级为“完整通用中后台”时，接入开源才更划算。典型信号包括：
 
@@ -393,6 +393,7 @@ Student Client
 - `POST /api/admin/teachers/{id}/disable`
 - `POST /api/admin/teachers/{id}/enable`
 - `POST /api/admin/teachers/{id}/role`
+- `GET /api/admin/audit-logs`
 
 其中 `POST /api/admin/teachers/{id}/role` 用于在 `teacher` / `admin` 之间切换角色，自举管理员账号不能把自己降级为教师。
 
@@ -444,6 +445,16 @@ Student Client
 - `username`
 - `displayName`
 - `initialPassword`
+
+`GET /api/admin/audit-logs` 当前按时间倒序返回管理员对教师/学生账号的敏感操作，MVP 覆盖：
+
+- 教师创建
+- 教师密码重置
+- 教师启停
+- 教师角色切换
+- 学生创建
+- 学生密码重置
+- 学生启停
 
 ### 8.3 教学任务与参考 sb3
 
@@ -664,6 +675,7 @@ Prompt 至少应包含：
 - `/admin`
 - `/admin/teachers`
 - `/admin/students`
+- `/admin/audit-logs`
 - `/students`
 - `/assignments`
 - `/assignments/:id`
@@ -682,6 +694,9 @@ Prompt 至少应包含：
 - `/admin/students`
   - 为指定教师创建学生
   - 全局查看、启停、重置学生密码
+- `/admin/audit-logs`
+  - 查看管理员敏感操作审计日志
+  - 第一阶段先支持按 action 基础筛选
 - `/students`
   - 单个创建、批量创建、重置密码、查看状态
   - 第一阶段不做 `CSV` 导入

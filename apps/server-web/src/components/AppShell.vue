@@ -29,6 +29,10 @@ const navigation = computed(() => [
           label: '学生管理',
           to: '/admin/students',
         },
+        {
+          label: '操作日志',
+          to: '/admin/audit-logs',
+        },
       ]
     : [
         {

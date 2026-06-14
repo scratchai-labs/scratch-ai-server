@@ -119,6 +119,22 @@ type AdminStudentsResponse struct {
 	Items []AdminStudentItemResponse `json:"items"`
 }
 
+type AdminAuditLogItemResponse struct {
+	ID             int64             `json:"id" example:"4"`
+	ActorUsername  string            `json:"actorUsername" example:"admin"`
+	Action         string            `json:"action" example:"teacher.role_change"`
+	TargetType     string            `json:"targetType" example:"teacher"`
+	TargetID       int64             `json:"targetId" example:"2"`
+	TargetUsername string            `json:"targetUsername" example:"teacher01"`
+	Before         map[string]string `json:"before"`
+	After          map[string]string `json:"after"`
+	CreatedAt      string            `json:"createdAt" example:"2026-06-14T12:00:00Z"`
+}
+
+type AdminAuditLogsResponse struct {
+	Items []AdminAuditLogItemResponse `json:"items"`
+}
+
 type TeacherAssignmentsResponse struct {
 	Items []assignment.TeacherAssignmentItem `json:"items"`
 }
