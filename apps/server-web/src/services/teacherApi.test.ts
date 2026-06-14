@@ -527,6 +527,7 @@ describe('createFetchTeacherApiClient', () => {
     await expect(api.listStudents()).resolves.toEqual([
       {
         id: '1',
+        username: '',
         name: 'Ada',
         className: '未分组',
         progress: 0,
@@ -535,14 +536,18 @@ describe('createFetchTeacherApiClient', () => {
         stepSummary: '已经接上方向键事件',
         latestAiHint: '先把事件积木连起来',
         updatedAt: '2026-05-25T12:11:00Z',
+        createdAt: '2026-05-25T12:00:00Z',
       },
     ])
     await expect(api.listReleases()).resolves.toEqual([
       {
         id: '7',
         title: '第一期发布单',
+        goal: '',
+        description: '',
         className: '未分组',
         status: 'published',
+        analysisStatus: 'pending',
         studentCount: 3,
         updatedAt: '2026-05-25T12:10:00Z',
       },
@@ -631,6 +636,7 @@ describe('createFetchTeacherApiClient', () => {
     await expect(api.listStudents()).resolves.toEqual([
       {
         id: '1',
+        username: '',
         name: 'Ada',
         className: '未分组',
         progress: 0,
@@ -639,6 +645,7 @@ describe('createFetchTeacherApiClient', () => {
         stepSummary: '',
         latestAiHint: '等待学生请求提示',
         updatedAt: '2026-05-25T12:00:00Z',
+        createdAt: '2026-05-25T12:00:00Z',
       },
     ])
   })
@@ -694,5 +701,332 @@ describe('createFetchTeacherApiClient', () => {
 
     await expect(api.listStudents()).rejects.toThrow('missing or invalid bearer token')
     expect(onUnauthorized).toHaveBeenCalledTimes(1)
+  })
+
+  it('creates and mutates teacher students from teacher endpoints', async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(
+        createFetchResponse({
+          created: [
+            {
+              id: 5,
+              username: 'student-1',
+              displayName: '小蓝',
+              status: 'active',
+              createdAt: '2026-06-14T12:05:00Z',
+            },
+          ],
+          conflicts: [],
+        }),
+      )
+      .mockResolvedValueOnce(
+        createFetchResponse({
+          id: 5,
+          username: 'student-1',
+          displayName: '小蓝',
+          status: 'active',
+          createdAt: '2026-06-14T12:05:00Z',
+        }),
+      )
+    const api = createFetchTeacherApiClient({
+      baseUrl: 'https://teacher.example',
+      fetchImpl,
+      getToken: () => 'teacher-token',
+    }) as ReturnType<typeof createFetchTeacherApiClient> & {
+      createStudent?: (input: {
+        username: string
+        displayName: string
+        initialPassword: string
+      }) => Promise<unknown>
+      resetStudentPassword?: (studentId: string, newPassword: string) => Promise<unknown>
+    }
+
+    expect(api.createStudent).toBeTypeOf('function')
+    expect(api.resetStudentPassword).toBeTypeOf('function')
+    if (!api.createStudent || !api.resetStudentPassword) {
+      return
+    }
+
+    await expect(
+      api.createStudent({
+        username: 'student-1',
+        displayName: '小蓝',
+        initialPassword: 'abc12345',
+      }),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        id: '5',
+        username: 'student-1',
+        name: '小蓝',
+      }),
+    )
+
+    await expect(api.resetStudentPassword('5', 'updated123')).resolves.toEqual(
+      expect.objectContaining({
+        id: '5',
+        username: 'student-1',
+        name: '小蓝',
+      }),
+    )
+
+    expect(fetchImpl).toHaveBeenNthCalledWith(
+      1,
+      'https://teacher.example/api/teacher/students',
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer teacher-token',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: 'student-1',
+          displayName: '小蓝',
+          initialPassword: 'abc12345',
+        }),
+      }),
+    )
+    expect(fetchImpl).toHaveBeenNthCalledWith(
+      2,
+      'https://teacher.example/api/teacher/students/5/reset-password',
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer teacher-token',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          newPassword: 'updated123',
+        }),
+      }),
+    )
+  })
+
+  it('uploads and manages teacher releases from teacher endpoints', async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(
+        createFetchResponse({
+          id: 9,
+          title: '迷宫任务',
+          goal: '让角色移动起来',
+          description: '第一课任务',
+          status: 'draft',
+          analysisStatus: 'pending',
+        }),
+      )
+      .mockResolvedValueOnce(
+        createFetchResponse({
+          id: 9,
+          title: '迷宫任务',
+          goal: '让角色移动起来',
+          description: '第一课任务',
+          status: 'draft',
+          analysisStatus: 'ready',
+          roleNames: ['Stage'],
+          scriptCounts: { Stage: 1 },
+          blockCounts: { event_whenflagclicked: 1 },
+          categoryCounts: { event: 1 },
+          broadcastMessages: ['开始'],
+          variableNames: ['score'],
+          listNames: ['targets'],
+          extensions: ['pen'],
+          teachingPoints: ['先搭好事件入口'],
+          assignedStudents: [],
+          updatedAt: '2026-06-14T12:06:00Z',
+        }),
+      )
+      .mockResolvedValueOnce(
+        createFetchResponse({
+          assignmentId: 9,
+          analysisStatus: 'ready',
+          analysisErrorMessage: '',
+          roleNames: ['Stage'],
+          scriptCounts: { Stage: 1 },
+          blockCounts: { event_whenflagclicked: 1 },
+          categoryCounts: { event: 1 },
+          broadcastMessages: ['开始'],
+          variableNames: ['score'],
+          listNames: ['targets'],
+          extensions: ['pen'],
+          teachingPoints: ['先搭好事件入口'],
+        }),
+      )
+      .mockResolvedValueOnce(
+        createFetchResponse({
+          assignmentId: 9,
+          studentIds: [1, 2],
+          assignedCount: 2,
+        }),
+      )
+      .mockResolvedValueOnce(
+        createFetchResponse({
+          id: 9,
+          title: '迷宫任务',
+          status: 'published',
+          analysisStatus: 'ready',
+        }),
+      )
+      .mockResolvedValueOnce(
+        createFetchResponse({
+          id: 9,
+          title: '迷宫任务',
+          status: 'archived',
+          analysisStatus: 'ready',
+        }),
+      )
+    const api = createFetchTeacherApiClient({
+      baseUrl: 'https://teacher.example',
+      fetchImpl,
+      getToken: () => 'teacher-token',
+    }) as ReturnType<typeof createFetchTeacherApiClient> & {
+      createRelease?: (input: {
+        title: string
+        goal: string
+        description: string
+        file: File
+      }) => Promise<unknown>
+      getReleaseDetail?: (releaseId: string) => Promise<unknown>
+      getReleaseAnalysis?: (releaseId: string) => Promise<unknown>
+      assignStudentsToRelease?: (releaseId: string, studentIds: string[]) => Promise<unknown>
+      publishRelease?: (releaseId: string) => Promise<unknown>
+      archiveRelease?: (releaseId: string) => Promise<unknown>
+    }
+    const file = new File(['fake-sb3'], 'maze.sb3', {
+      type: 'application/zip',
+    })
+
+    expect(api.createRelease).toBeTypeOf('function')
+    expect(api.getReleaseDetail).toBeTypeOf('function')
+    expect(api.getReleaseAnalysis).toBeTypeOf('function')
+    expect(api.assignStudentsToRelease).toBeTypeOf('function')
+    expect(api.publishRelease).toBeTypeOf('function')
+    expect(api.archiveRelease).toBeTypeOf('function')
+    if (
+      !api.createRelease
+      || !api.getReleaseDetail
+      || !api.getReleaseAnalysis
+      || !api.assignStudentsToRelease
+      || !api.publishRelease
+      || !api.archiveRelease
+    ) {
+      return
+    }
+
+    await expect(
+      api.createRelease({
+        title: '迷宫任务',
+        goal: '让角色移动起来',
+        description: '第一课任务',
+        file,
+      }),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        id: '9',
+        title: '迷宫任务',
+        analysisStatus: 'pending',
+      }),
+    )
+    await expect(api.getReleaseDetail('9')).resolves.toEqual(
+      expect.objectContaining({
+        id: '9',
+        roleNames: ['Stage'],
+      }),
+    )
+    await expect(api.getReleaseAnalysis('9')).resolves.toEqual(
+      expect.objectContaining({
+        assignmentId: '9',
+        roleNames: ['Stage'],
+      }),
+    )
+    await expect(api.assignStudentsToRelease('9', ['1', '2'])).resolves.toEqual({
+      assignmentId: '9',
+      studentIds: ['1', '2'],
+      assignedCount: 2,
+    })
+    await expect(api.publishRelease('9')).resolves.toEqual(
+      expect.objectContaining({
+        id: '9',
+        status: 'published',
+      }),
+    )
+    await expect(api.archiveRelease('9')).resolves.toEqual(
+      expect.objectContaining({
+        id: '9',
+        status: 'archived',
+      }),
+    )
+
+    const createReleaseCall = fetchImpl.mock.calls[0]
+    expect(createReleaseCall[0]).toBe('https://teacher.example/api/teacher/assignments')
+    expect(createReleaseCall[1]).toEqual(
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer teacher-token',
+        },
+      }),
+    )
+    expect(createReleaseCall[1]?.body).toBeInstanceOf(FormData)
+    const releaseBody = createReleaseCall[1]?.body as FormData
+    expect(releaseBody.get('title')).toBe('迷宫任务')
+    expect(releaseBody.get('goal')).toBe('让角色移动起来')
+    expect(releaseBody.get('description')).toBe('第一课任务')
+    expect(releaseBody.get('sb3')).toBe(file)
+
+    expect(fetchImpl).toHaveBeenNthCalledWith(
+      2,
+      'https://teacher.example/api/teacher/assignments/9',
+      expect.objectContaining({
+        method: 'GET',
+        headers: {
+          Authorization: 'Bearer teacher-token',
+        },
+      }),
+    )
+    expect(fetchImpl).toHaveBeenNthCalledWith(
+      3,
+      'https://teacher.example/api/teacher/assignments/9/analysis',
+      expect.objectContaining({
+        method: 'GET',
+        headers: {
+          Authorization: 'Bearer teacher-token',
+        },
+      }),
+    )
+    expect(fetchImpl).toHaveBeenNthCalledWith(
+      4,
+      'https://teacher.example/api/teacher/assignments/9/assign-students',
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer teacher-token',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          studentIds: [1, 2],
+        }),
+      }),
+    )
+    expect(fetchImpl).toHaveBeenNthCalledWith(
+      5,
+      'https://teacher.example/api/teacher/assignments/9/publish',
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer teacher-token',
+        },
+      }),
+    )
+    expect(fetchImpl).toHaveBeenNthCalledWith(
+      6,
+      'https://teacher.example/api/teacher/assignments/9/archive',
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer teacher-token',
+        },
+      }),
+    )
   })
 })

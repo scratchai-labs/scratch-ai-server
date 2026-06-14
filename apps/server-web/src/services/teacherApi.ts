@@ -34,6 +34,12 @@ export interface CreateManagedStudentInput {
   initialPassword: string
 }
 
+export interface CreateTeacherStudentInput {
+  username: string
+  displayName: string
+  initialPassword: string
+}
+
 export interface AdminOverview {
   adminCount: number
   teacherCount: number
@@ -68,6 +74,7 @@ export interface ManagedStudent {
 
 export interface TeacherStudent {
   id: string
+  username: string
   name: string
   className: string
   progress: number
@@ -76,6 +83,7 @@ export interface TeacherStudent {
   stepSummary?: string
   latestAiHint: string
   updatedAt: string
+  createdAt: string
 }
 
 export type TeacherReleaseStatus = 'draft' | 'published' | 'archived'
@@ -83,10 +91,69 @@ export type TeacherReleaseStatus = 'draft' | 'published' | 'archived'
 export interface TeacherRelease {
   id: string
   title: string
+  goal: string
+  description: string
   className: string
   status: TeacherReleaseStatus
+  analysisStatus: string
   studentCount: number
   updatedAt: string
+}
+
+export interface CreateTeacherReleaseInput {
+  title: string
+  goal: string
+  description: string
+  file: File
+}
+
+export interface TeacherReleaseAssignedStudent {
+  id: string
+  username: string
+  displayName: string
+  status: string
+}
+
+interface TeacherReleaseAnalysisSummary {
+  roleNames: string[]
+  scriptCounts: Record<string, number>
+  blockCounts: Record<string, number>
+  categoryCounts: Record<string, number>
+  broadcastMessages: string[]
+  variableNames: string[]
+  listNames: string[]
+  extensions: string[]
+  teachingPoints: string[]
+}
+
+export interface TeacherReleaseDetail extends TeacherReleaseAnalysisSummary {
+  id: string
+  title: string
+  goal: string
+  description: string
+  status: TeacherReleaseStatus
+  analysisStatus: string
+  assignedStudents: TeacherReleaseAssignedStudent[]
+  updatedAt: string
+}
+
+export interface TeacherReleaseAnalysis extends TeacherReleaseAnalysisSummary {
+  assignmentId: string
+  analysisStatus: string
+  analysisErrorMessage: string
+}
+
+export interface TeacherReleaseAssignmentResult {
+  assignmentId: string
+  studentIds: string[]
+  assignedCount: number
+}
+
+export interface TeacherReleaseMutationResult {
+  id: string
+  title: string
+  status: TeacherReleaseStatus
+  analysisStatus: string
 }
 
 export interface LiveStudentSnapshot {
@@ -111,7 +178,18 @@ export interface TeacherApiClient {
   login(input: TeacherLoginInput): Promise<TeacherSession>
   logout?(): Promise<void>
   listStudents(): Promise<TeacherStudent[]>
+  createStudent?(input: CreateTeacherStudentInput): Promise<TeacherStudent>
+  resetStudentPassword?(studentId: string, newPassword: string): Promise<TeacherStudent>
   listReleases(): Promise<TeacherRelease[]>
+  createRelease?(input: CreateTeacherReleaseInput): Promise<TeacherReleaseMutationResult>
+  getReleaseDetail?(releaseId: string): Promise<TeacherReleaseDetail>
+  getReleaseAnalysis?(releaseId: string): Promise<TeacherReleaseAnalysis>
+  assignStudentsToRelease?(
+    releaseId: string,
+    studentIds: string[],
+  ): Promise<TeacherReleaseAssignmentResult>
+  publishRelease?(releaseId: string): Promise<TeacherReleaseMutationResult>
+  archiveRelease?(releaseId: string): Promise<TeacherReleaseMutationResult>
   getLiveDashboard(releaseId: string): Promise<LiveDashboardSnapshot>
   getAdminOverview?(): Promise<AdminOverview>
   listAdminAuditLogs?(): Promise<AdminAuditLog[]>
@@ -262,9 +340,73 @@ export function createFetchTeacherApiClient(options: {
         .map((student, index) => applyStudentHistory(student, histories[index] ?? []))
         .sort(compareStudentsByUpdatedAt)
     },
+    async createStudent(input) {
+      const payload = await requestAuthedMutation<unknown>('/api/teacher/students', input)
+      return normalizeCreatedTeacherStudent(payload)
+    },
+    async resetStudentPassword(studentId, newPassword) {
+      const payload = await requestAuthedMutation<unknown>(
+        `/api/teacher/students/${studentId}/reset-password`,
+        { newPassword },
+      )
+      return normalizeTeacherStudentRecord(payload)
+    },
     async listReleases() {
       const payload = await requestAuthedJson<unknown>('/api/teacher/assignments')
       return normalizeReleases(payload)
+    },
+    async createRelease(input) {
+      const body = new FormData()
+      body.append('title', input.title)
+      body.append('goal', input.goal)
+      body.append('description', input.description)
+      body.append('sb3', input.file)
+      const payload = await requestJson<unknown>(
+        fetchImpl,
+        buildApiUrl(baseUrl, '/api/teacher/assignments'),
+        {
+          method: 'POST',
+          headers: buildAuthHeaders(getToken),
+          body,
+        },
+        {
+          onUnauthorized,
+        },
+      )
+      return normalizeTeacherReleaseMutation(payload)
+    },
+    async getReleaseDetail(releaseId) {
+      const payload = await requestAuthedJson<unknown>(
+        `/api/teacher/assignments/${releaseId}`,
+      )
+      return normalizeReleaseDetail(payload)
+    },
+    async getReleaseAnalysis(releaseId) {
+      const payload = await requestAuthedJson<unknown>(
+        `/api/teacher/assignments/${releaseId}/analysis`,
+      )
+      return normalizeReleaseAnalysis(payload)
+    },
+    async assignStudentsToRelease(releaseId, studentIds) {
+      const payload = await requestAuthedMutation<unknown>(
+        `/api/teacher/assignments/${releaseId}/assign-students`,
+        {
+          studentIds: studentIds.map((studentId) => Number(studentId)),
+        },
+      )
+      return normalizeTeacherReleaseAssignmentResult(payload)
+    },
+    async publishRelease(releaseId) {
+      const payload = await requestAuthedMutation<unknown>(
+        `/api/teacher/assignments/${releaseId}/publish`,
+      )
+      return normalizeTeacherReleaseMutation(payload)
+    },
+    async archiveRelease(releaseId) {
+      const payload = await requestAuthedMutation<unknown>(
+        `/api/teacher/assignments/${releaseId}/archive`,
+      )
+      return normalizeTeacherReleaseMutation(payload)
     },
     async getLiveDashboard(releaseId) {
       const payload = await requestAuthedJson<unknown>(
@@ -382,17 +524,44 @@ function buildAuthHeaders(getToken: (() => string) | undefined): HeadersInit | u
 }
 
 function normalizeStudents(payload: unknown): TeacherStudent[] {
-  return normalizeCollection<Record<string, unknown>>(payload).map((item) => ({
-    id: String(item.id ?? ''),
-    name: String(item.displayName ?? item.name ?? ''),
+  return normalizeCollection<Record<string, unknown>>(payload).map((item) =>
+    normalizeTeacherStudentRecord(item),
+  )
+}
+
+function normalizeCreatedTeacherStudent(payload: unknown): TeacherStudent {
+  const record = payload && typeof payload === 'object' ? (payload as Record<string, unknown>) : {}
+  const created = Array.isArray(record.created) ? record.created : []
+  const conflicts = Array.isArray(record.conflicts) ? record.conflicts : []
+
+  if (created[0]) {
+    return normalizeTeacherStudentRecord(created[0])
+  }
+
+  if (conflicts.length) {
+    throw new TeacherApiError(`学生账号冲突：${conflicts.join('、')}`, 409)
+  }
+
+  throw new Error('学生创建响应无结果')
+}
+
+function normalizeTeacherStudentRecord(payload: unknown): TeacherStudent {
+  const record = payload && typeof payload === 'object' ? (payload as Record<string, unknown>) : {}
+  const createdAt = String(record.createdAt ?? record.updatedAt ?? '—')
+
+  return {
+    id: String(record.id ?? ''),
+    username: String(record.username ?? ''),
+    name: String(record.displayName ?? record.name ?? ''),
     className: '未分组',
     progress: 0,
     status: '',
     currentTarget: '',
     stepSummary: '',
     latestAiHint: '等待学生请求提示',
-    updatedAt: String(item.createdAt ?? item.updatedAt ?? '—'),
-  }))
+    updatedAt: createdAt,
+    createdAt,
+  }
 }
 
 function normalizeManagedTeachers(payload: unknown): ManagedTeacher[] {
@@ -533,11 +702,94 @@ function normalizeReleases(payload: unknown): TeacherRelease[] {
   return normalizeCollection<Record<string, unknown>>(payload).map((item) => ({
     id: String(item.id ?? ''),
     title: String(item.title ?? ''),
+    goal: String(item.goal ?? ''),
+    description: String(item.description ?? ''),
     className: '未分组',
     status: normalizeReleaseStatus(item.status),
+    analysisStatus: String(item.analysisStatus ?? 'pending'),
     studentCount: Number(item.studentCount ?? 0),
     updatedAt: String(item.updatedAt ?? '—'),
   }))
+}
+
+function normalizeReleaseDetail(payload: unknown): TeacherReleaseDetail {
+  const record = payload && typeof payload === 'object' ? (payload as Record<string, unknown>) : {}
+
+  return {
+    id: String(record.id ?? ''),
+    title: String(record.title ?? ''),
+    goal: String(record.goal ?? ''),
+    description: String(record.description ?? ''),
+    status: normalizeReleaseStatus(record.status),
+    analysisStatus: String(record.analysisStatus ?? 'pending'),
+    roleNames: normalizeStringArray(record.roleNames),
+    scriptCounts: normalizeNumberMap(record.scriptCounts),
+    blockCounts: normalizeNumberMap(record.blockCounts),
+    categoryCounts: normalizeNumberMap(record.categoryCounts),
+    broadcastMessages: normalizeStringArray(record.broadcastMessages),
+    variableNames: normalizeStringArray(record.variableNames),
+    listNames: normalizeStringArray(record.listNames),
+    extensions: normalizeStringArray(record.extensions),
+    teachingPoints: normalizeStringArray(record.teachingPoints),
+    assignedStudents: normalizeAssignedStudents(record.assignedStudents),
+    updatedAt: String(record.updatedAt ?? '—'),
+  }
+}
+
+function normalizeReleaseAnalysis(payload: unknown): TeacherReleaseAnalysis {
+  const record = payload && typeof payload === 'object' ? (payload as Record<string, unknown>) : {}
+
+  return {
+    assignmentId: String(record.assignmentId ?? ''),
+    analysisStatus: String(record.analysisStatus ?? 'pending'),
+    analysisErrorMessage: String(record.analysisErrorMessage ?? ''),
+    roleNames: normalizeStringArray(record.roleNames),
+    scriptCounts: normalizeNumberMap(record.scriptCounts),
+    blockCounts: normalizeNumberMap(record.blockCounts),
+    categoryCounts: normalizeNumberMap(record.categoryCounts),
+    broadcastMessages: normalizeStringArray(record.broadcastMessages),
+    variableNames: normalizeStringArray(record.variableNames),
+    listNames: normalizeStringArray(record.listNames),
+    extensions: normalizeStringArray(record.extensions),
+    teachingPoints: normalizeStringArray(record.teachingPoints),
+  }
+}
+
+function normalizeAssignedStudents(payload: unknown): TeacherReleaseAssignedStudent[] {
+  if (!Array.isArray(payload)) {
+    return []
+  }
+
+  return payload
+    .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === 'object')
+    .map((item) => ({
+      id: String(item.id ?? ''),
+      username: String(item.username ?? ''),
+      displayName: String(item.displayName ?? ''),
+      status: String(item.status ?? ''),
+    }))
+}
+
+function normalizeTeacherReleaseAssignmentResult(payload: unknown): TeacherReleaseAssignmentResult {
+  const record = payload && typeof payload === 'object' ? (payload as Record<string, unknown>) : {}
+  const studentIds = Array.isArray(record.studentIds) ? record.studentIds : []
+
+  return {
+    assignmentId: String(record.assignmentId ?? ''),
+    studentIds: studentIds.map((studentId) => String(studentId ?? '')),
+    assignedCount: Number(record.assignedCount ?? studentIds.length ?? 0),
+  }
+}
+
+function normalizeTeacherReleaseMutation(payload: unknown): TeacherReleaseMutationResult {
+  const record = payload && typeof payload === 'object' ? (payload as Record<string, unknown>) : {}
+
+  return {
+    id: String(record.id ?? ''),
+    title: String(record.title ?? ''),
+    status: normalizeReleaseStatus(record.status),
+    analysisStatus: String(record.analysisStatus ?? 'pending'),
+  }
 }
 
 function normalizeLiveDashboard(payload: unknown): LiveDashboardSnapshot {
@@ -617,6 +869,24 @@ function normalizeStringMap(value: unknown): Record<string, string> {
 
   return Object.fromEntries(
     Object.entries(value).map(([key, entryValue]) => [key, String(entryValue ?? '')]),
+  )
+}
+
+function normalizeStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return value.map((entry) => String(entry ?? ''))
+}
+
+function normalizeNumberMap(value: unknown): Record<string, number> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return {}
+  }
+
+  return Object.fromEntries(
+    Object.entries(value).map(([key, entryValue]) => [key, Number(entryValue ?? 0)]),
   )
 }
 

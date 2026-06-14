@@ -8,6 +8,8 @@ import {
   type ManagedTeacherRole,
   type TeacherApiClient,
   type TeacherLoginInput,
+  type TeacherReleaseAnalysis,
+  type TeacherReleaseDetail,
   type TeacherRelease,
   type TeacherSession,
   type TeacherStudent,
@@ -28,27 +30,33 @@ const demoAdminSession: TeacherSession = {
 const demoStudents: TeacherStudent[] = [
   {
     id: 'stu-1',
+    username: 'student-ada',
     name: 'Ada',
     className: '四年级一班',
     progress: 72,
     latestAiHint: '补上广播消息后再测试一次',
     updatedAt: '2026-05-07 09:20',
+    createdAt: '2026-05-07 09:20',
   },
   {
     id: 'stu-2',
+    username: 'student-alan',
     name: 'Alan',
     className: '四年级二班',
     progress: 38,
     latestAiHint: '先把重复积木整理成三个步骤',
     updatedAt: '2026-05-07 09:24',
+    createdAt: '2026-05-07 09:24',
   },
   {
     id: 'stu-3',
+    username: 'student-mia',
     name: 'Mia',
     className: '四年级一班',
     progress: 55,
     latestAiHint: '把下一步提示做成可复用流程',
     updatedAt: '2026-05-07 09:27',
+    createdAt: '2026-05-07 09:27',
   },
 ]
 
@@ -56,20 +64,87 @@ const demoReleases: TeacherRelease[] = [
   {
     id: 'rel-1',
     title: '第一期发布单',
+    goal: '让角色按事件响应',
+    description: '第一节课任务',
     className: '四年级一班',
     status: 'published',
+    analysisStatus: 'ready',
     studentCount: 24,
     updatedAt: '2026-05-07 09:10',
   },
   {
     id: 'rel-2',
     title: '第二期发布单',
+    goal: '补齐广播与重复执行',
+    description: '第二节课任务',
     className: '四年级二班',
     status: 'draft',
+    analysisStatus: 'ready',
     studentCount: 18,
     updatedAt: '2026-05-07 09:30',
   },
 ]
+
+const demoReleaseDetails: Record<string, TeacherReleaseDetail> = {
+  'rel-1': {
+    id: 'rel-1',
+    title: '第一期发布单',
+    goal: '让角色按事件响应',
+    description: '第一节课任务',
+    status: 'published',
+    analysisStatus: 'ready',
+    roleNames: ['Stage', 'Cat'],
+    scriptCounts: { Stage: 1, Cat: 2 },
+    blockCounts: { event_whenflagclicked: 1, motion_movesteps: 1 },
+    categoryCounts: { event: 1, motion: 1 },
+    broadcastMessages: ['开始'],
+    variableNames: ['score'],
+    listNames: ['targets'],
+    extensions: ['pen'],
+    teachingPoints: ['先搭好事件入口', '再补动作流程'],
+    assignedStudents: [
+      {
+        id: 'stu-1',
+        username: 'student-ada',
+        displayName: 'Ada',
+        status: 'active',
+      },
+      {
+        id: 'stu-2',
+        username: 'student-alan',
+        displayName: 'Alan',
+        status: 'active',
+      },
+    ],
+    updatedAt: '2026-05-07 09:10',
+  },
+  'rel-2': {
+    id: 'rel-2',
+    title: '第二期发布单',
+    goal: '补齐广播与重复执行',
+    description: '第二节课任务',
+    status: 'draft',
+    analysisStatus: 'ready',
+    roleNames: ['Stage', 'Mia'],
+    scriptCounts: { Stage: 1, Mia: 1 },
+    blockCounts: { event_whenflagclicked: 1, control_repeat: 1 },
+    categoryCounts: { event: 1, control: 1 },
+    broadcastMessages: ['准备'],
+    variableNames: [],
+    listNames: [],
+    extensions: [],
+    teachingPoints: ['先确认广播名', '再把重复动作拆成循环'],
+    assignedStudents: [
+      {
+        id: 'stu-3',
+        username: 'student-mia',
+        displayName: 'Mia',
+        status: 'active',
+      },
+    ],
+    updatedAt: '2026-05-07 09:30',
+  },
+}
 
 const demoSnapshots: Record<string, LiveDashboardSnapshot[]> = {
   'rel-1': [
@@ -231,6 +306,9 @@ const initialAuditLogs: AdminAuditLog[] = [
 export function createMockTeacherApiClient(): TeacherApiClient {
   const cursorByRelease = new Map<string, number>()
   const teachers = clone(managedTeachers)
+  const teacherStudents = clone(demoStudents)
+  const releases = clone(demoReleases)
+  const releaseDetails = clone(demoReleaseDetails)
   const students = clone(managedStudents)
   const auditLogs = clone(initialAuditLogs)
 
@@ -249,10 +327,149 @@ export function createMockTeacherApiClient(): TeacherApiClient {
       return undefined
     },
     async listStudents() {
-      return clone(demoStudents)
+      return clone(teacherStudents)
+    },
+    async createStudent(input) {
+      const nextStudent = {
+        id: `stu-${teacherStudents.length + 1}`,
+        username: input.username,
+        name: input.displayName,
+        className: '未分组',
+        progress: 0,
+        status: '',
+        currentTarget: '',
+        stepSummary: '',
+        latestAiHint: '等待学生请求提示',
+        updatedAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+      } satisfies TeacherStudent
+      teacherStudents.push(nextStudent)
+      return clone(nextStudent)
+    },
+    async resetStudentPassword(studentId) {
+      const target = teacherStudents.find((student) => student.id === studentId)
+      if (!target) {
+        throw new TeacherApiError('student not found', 404)
+      }
+      return clone(target)
     },
     async listReleases() {
-      return clone(demoReleases)
+      return clone(releases)
+    },
+    async createRelease(input) {
+      const releaseId = `rel-${releases.length + 1}`
+      const updatedAt = new Date().toISOString()
+      const nextRelease = {
+        id: releaseId,
+        title: input.title,
+        goal: input.goal,
+        description: input.description,
+        className: '未分组',
+        status: 'draft',
+        analysisStatus: 'pending',
+        studentCount: 0,
+        updatedAt,
+      } satisfies TeacherRelease
+      releases.push(nextRelease)
+      releaseDetails[releaseId] = {
+        id: releaseId,
+        title: input.title,
+        goal: input.goal,
+        description: input.description,
+        status: 'draft',
+        analysisStatus: 'pending',
+        roleNames: [],
+        scriptCounts: {},
+        blockCounts: {},
+        categoryCounts: {},
+        broadcastMessages: [],
+        variableNames: [],
+        listNames: [],
+        extensions: [],
+        teachingPoints: [],
+        assignedStudents: [],
+        updatedAt,
+      }
+      return {
+        id: releaseId,
+        title: input.title,
+        status: 'draft',
+        analysisStatus: 'pending',
+      }
+    },
+    async getReleaseDetail(releaseId) {
+      const detail = releaseDetails[releaseId]
+      if (!detail) {
+        throw new TeacherApiError('assignment not found', 404)
+      }
+      return clone(detail)
+    },
+    async getReleaseAnalysis(releaseId) {
+      const detail = releaseDetails[releaseId]
+      if (!detail) {
+        throw new TeacherApiError('assignment not found', 404)
+      }
+      return clone(toReleaseAnalysis(detail))
+    },
+    async assignStudentsToRelease(releaseId, studentIds) {
+      const detail = releaseDetails[releaseId]
+      const release = releases.find((item) => item.id === releaseId)
+      if (!detail || !release) {
+        throw new TeacherApiError('assignment not found', 404)
+      }
+      detail.assignedStudents = teacherStudents
+        .filter((student) => studentIds.includes(student.id))
+        .map((student) => ({
+          id: student.id,
+          username: student.username,
+          displayName: student.name,
+          status: student.status || 'active',
+        }))
+      detail.updatedAt = new Date().toISOString()
+      release.studentCount = detail.assignedStudents.length
+      release.updatedAt = detail.updatedAt
+      return {
+        assignmentId: releaseId,
+        studentIds,
+        assignedCount: studentIds.length,
+      }
+    },
+    async publishRelease(releaseId) {
+      const detail = releaseDetails[releaseId]
+      const release = releases.find((item) => item.id === releaseId)
+      if (!detail || !release) {
+        throw new TeacherApiError('assignment not found', 404)
+      }
+      if (detail.analysisStatus !== 'ready') {
+        throw new TeacherApiError('assignment analysis not ready', 409)
+      }
+      detail.status = 'published'
+      detail.updatedAt = new Date().toISOString()
+      release.status = 'published'
+      release.updatedAt = detail.updatedAt
+      return {
+        id: release.id,
+        title: release.title,
+        status: release.status,
+        analysisStatus: detail.analysisStatus,
+      }
+    },
+    async archiveRelease(releaseId) {
+      const detail = releaseDetails[releaseId]
+      const release = releases.find((item) => item.id === releaseId)
+      if (!detail || !release) {
+        throw new TeacherApiError('assignment not found', 404)
+      }
+      detail.status = 'archived'
+      detail.updatedAt = new Date().toISOString()
+      release.status = 'archived'
+      release.updatedAt = detail.updatedAt
+      return {
+        id: release.id,
+        title: release.title,
+        status: release.status,
+        analysisStatus: detail.analysisStatus,
+      }
     },
     async getLiveDashboard(releaseId: string) {
       const fallbackSnapshots = demoSnapshots['rel-1']!
@@ -448,6 +665,23 @@ export function createMockTeacherApiClient(): TeacherApiClient {
       })
       return clone(target)
     },
+  }
+}
+
+function toReleaseAnalysis(detail: TeacherReleaseDetail): TeacherReleaseAnalysis {
+  return {
+    assignmentId: detail.id,
+    analysisStatus: detail.analysisStatus,
+    analysisErrorMessage: '',
+    roleNames: detail.roleNames,
+    scriptCounts: detail.scriptCounts,
+    blockCounts: detail.blockCounts,
+    categoryCounts: detail.categoryCounts,
+    broadcastMessages: detail.broadcastMessages,
+    variableNames: detail.variableNames,
+    listNames: detail.listNames,
+    extensions: detail.extensions,
+    teachingPoints: detail.teachingPoints,
   }
 }
 

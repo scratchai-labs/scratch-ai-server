@@ -63,4 +63,79 @@ describe('StudentsView', () => {
     expect(wrapper.text()).toContain('让 Alan 的角色先说一句话')
     expect(wrapper.text()).toContain('已经放上开始事件，但还没接外观积木')
   })
+
+  it('creates a student account and resets student password', async () => {
+    const api = {
+      listStudents: vi.fn().mockResolvedValue([
+        {
+          id: 'stu-1',
+          username: 'student-01',
+          name: 'Ada',
+          className: '未分组',
+          progress: 0,
+          status: '',
+          latestAiHint: '等待学生请求提示',
+          updatedAt: '2026-05-07 09:20',
+        },
+      ]),
+      createStudent: vi.fn().mockResolvedValue({
+        id: 'stu-2',
+        username: 'student-02',
+        name: 'Mia',
+        className: '未分组',
+        progress: 0,
+        status: '',
+        latestAiHint: '等待学生请求提示',
+        updatedAt: '2026-05-07 09:30',
+      }),
+      resetStudentPassword: vi.fn().mockResolvedValue({
+        id: 'stu-1',
+        username: 'student-01',
+        name: 'Ada',
+        className: '未分组',
+        progress: 0,
+        status: '',
+        latestAiHint: '等待学生请求提示',
+        updatedAt: '2026-05-07 09:20',
+      }),
+      listReleases: vi.fn(),
+      getLiveDashboard: vi.fn(),
+      login: vi.fn(),
+    }
+    const router = createRouterForTest()
+    router.push('/students')
+    await router.isReady()
+
+    const wrapper = mount(StudentsView, {
+      global: {
+        plugins: [createPinia(), router],
+        provide: {
+          [teacherApiKey as symbol]: api,
+        },
+      },
+    })
+
+    await flushPromises()
+
+    await wrapper.get('input[name="student-username"]').setValue('student-02')
+    await wrapper.get('input[name="student-display-name"]').setValue('Mia')
+    await wrapper.get('input[name="student-password"]').setValue('abc12345')
+    await wrapper.get('[data-testid="create-student-form"]').trigger('submit')
+    await flushPromises()
+
+    expect(api.createStudent).toHaveBeenCalledWith({
+      username: 'student-02',
+      displayName: 'Mia',
+      initialPassword: 'abc12345',
+    })
+    expect(wrapper.text()).toContain('已创建学生账号 student-02')
+    expect(wrapper.text()).toContain('student-02')
+
+    await wrapper.get('input[name="reset-student-password-stu-1"]').setValue('updated123')
+    await wrapper.get('[data-testid="student-reset-stu-1"]').trigger('click')
+    await flushPromises()
+
+    expect(api.resetStudentPassword).toHaveBeenCalledWith('stu-1', 'updated123')
+    expect(wrapper.text()).toContain('已重置 student-01 的密码')
+  })
 })
