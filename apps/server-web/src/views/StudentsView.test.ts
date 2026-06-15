@@ -200,6 +200,12 @@ describe('StudentsView', () => {
 
     await flushPromises()
 
+    const templateLink = wrapper.get('[data-testid="batch-template-download"]')
+    expect(templateLink.attributes('href')).toBe('/student-batch-template.xlsx')
+    expect(templateLink.attributes('download')).toBe('学生批量导入模板.xlsx')
+    expect(wrapper.text()).toContain('从第 8 行开始填写')
+    expect(wrapper.text()).toContain('只复制 A 到 C 列')
+
     await wrapper.get('input[name="batch-student-password"]').setValue('abc12345')
     await wrapper
       .get('textarea[name="batch-student-paste"]')

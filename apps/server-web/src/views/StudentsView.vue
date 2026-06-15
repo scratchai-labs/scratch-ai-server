@@ -5,7 +5,7 @@ import StatusBadge from '@/components/StatusBadge.vue'
 import { studentStatusLabel, studentStatusTone } from '@/presenters/studentStatus'
 import {
   buildStudentBatchCreateInputs,
-  buildStudentBatchTemplateCsv,
+  studentBatchTemplate,
 } from '@/services/studentBatchImport'
 import { useTeacherApiClient } from '@/services/teacherApi'
 import { useTeacherDirectoryStore } from '@/stores/teacherDirectory'
@@ -29,6 +29,52 @@ const saving = ref(false)
 const actionScope = ref<'single' | 'batch' | 'reset'>('single')
 const actionError = ref<string | null>(null)
 const actionFeedback = ref('')
+const batchGuideRows = [
+  {
+    rowNumber: 1,
+    tone: 'title',
+    values: ['学生批量导入模板', '', ''],
+  },
+  {
+    rowNumber: 2,
+    tone: 'info',
+    values: [`从第 ${studentBatchTemplate.firstDataRow} 行开始填写学生数据`, '', ''],
+  },
+  {
+    rowNumber: 3,
+    tone: 'warning',
+    values: [`复制时，只复制 ${studentBatchTemplate.copyColumnsLabel} 的已填写单元格`, '', ''],
+  },
+  {
+    rowNumber: 4,
+    tone: 'success',
+    values: ['回到教师后台后，直接粘贴到下方输入框', '', ''],
+  },
+  {
+    rowNumber: 5,
+    tone: 'warning',
+    values: [`只复制第 ${studentBatchTemplate.firstDataRow} 行及以下已填写行（${studentBatchTemplate.copyColumnsLabel}）`, '', ''],
+  },
+  {
+    rowNumber: 6,
+    tone: 'header',
+    values: ['姓名', '账号（可选）', '初始密码（可选）'],
+  },
+  {
+    rowNumber: 7,
+    tone: 'sample',
+    values: [
+      `从第 ${studentBatchTemplate.firstDataRow} 行开始填姓名`,
+      '可留空，系统会自动生成账号',
+      '可留空，将使用统一初始密码',
+    ],
+  },
+  {
+    rowNumber: 8,
+    tone: 'empty',
+    values: ['小明', '', ''],
+  },
+]
 
 async function reloadStudents() {
   await directoryStore.loadStudents(apiClient)
@@ -104,15 +150,10 @@ async function submitResetStudentPassword(studentId: string) {
 }
 
 function downloadBatchTemplate() {
-  const templateBlob = new Blob([buildStudentBatchTemplateCsv()], {
-    type: 'text/csv;charset=utf-8;',
-  })
-  const downloadUrl = URL.createObjectURL(templateBlob)
   const link = document.createElement('a')
-  link.href = downloadUrl
-  link.download = '学生批量导入模板.csv'
+  link.href = studentBatchTemplate.href
+  link.download = studentBatchTemplate.downloadName
   link.click()
-  URL.revokeObjectURL(downloadUrl)
 }
 
 async function submitBatchCreateStudents() {
@@ -238,44 +279,90 @@ onMounted(() => {
       <div class="panel__head">
         <div>
           <h2 class="panel__title">批量导入学生</h2>
-          <p class="panel__meta">下载 Excel 可打开的模板后填入姓名，再把表格内容粘贴回来即可批量创建。</p>
+          <p class="panel__meta">下载真实 Excel 模板后，按表内彩色提示填写，再把表格内容粘贴回来即可批量创建。</p>
         </div>
-        <button class="button button--ghost" type="button" @click="downloadBatchTemplate">
-          下载 Excel 模板
-        </button>
+        <a
+          class="button button--ghost"
+          :href="studentBatchTemplate.href"
+          :download="studentBatchTemplate.downloadName"
+          data-testid="batch-template-download"
+          @click.prevent="downloadBatchTemplate"
+        >
+          下载 Excel 模板（.xlsx）
+        </a>
       </div>
 
-      <form class="form-grid" data-testid="batch-create-students-form" @submit.prevent="submitBatchCreateStudents">
-        <label class="field">
-          <span>统一初始密码</span>
-          <input
-            v-model="batchForm.defaultPassword"
-            class="input"
-            name="batch-student-password"
-            type="password"
-            autocomplete="new-password"
-            placeholder="abc12345"
-          />
-        </label>
+      <div class="batch-import-layout">
+        <div class="batch-template-preview" aria-hidden="true">
+          <div class="batch-template-preview__meta">
+            <span class="status-badge status-badge--info">模板内已拉宽账号/密码列</span>
+            <span class="status-badge status-badge--success">表内颜色直接标出填写和复制范围</span>
+          </div>
+          <div class="batch-template-preview__sheet">
+            <table class="batch-template-table">
+              <colgroup>
+                <col class="batch-template-table__rownum" />
+                <col class="batch-template-table__name" />
+                <col class="batch-template-table__account" />
+                <col class="batch-template-table__password" />
+              </colgroup>
+              <tbody>
+                <tr
+                  v-for="row in batchGuideRows"
+                  :key="row.rowNumber"
+                  :class="`batch-template-table__row batch-template-table__row--${row.tone}`"
+                >
+                  <th>{{ row.rowNumber }}</th>
+                  <td>{{ row.values[0] }}</td>
+                  <td>{{ row.values[1] }}</td>
+                  <td>{{ row.values[2] }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
 
-        <label class="field">
-          <span>粘贴表格数据</span>
-          <textarea
-            v-model="batchForm.pastedText"
-            class="input"
-            name="batch-student-paste"
-            rows="6"
-            placeholder="姓名\t账号\t初始密码&#10;小明\t\t&#10;小红\t\t"
-          />
-        </label>
+        <div class="stack">
+          <div class="batch-import-copy-guide">
+            <p class="batch-import-copy-guide__title">复制规则</p>
+            <p class="batch-import-copy-guide__text">
+              在模板里从第 {{ studentBatchTemplate.firstDataRow }} 行开始填写，只复制 {{ studentBatchTemplate.copyColumnsLabel }} 的已填写行，不要复制上方彩色说明。
+            </p>
+          </div>
 
-        <button class="button button--primary" type="submit" :disabled="saving">
-          批量创建学生
-        </button>
-      </form>
+          <form class="form-grid" data-testid="batch-create-students-form" @submit.prevent="submitBatchCreateStudents">
+            <label class="field">
+              <span>统一初始密码</span>
+              <input
+                v-model="batchForm.defaultPassword"
+                class="input"
+                name="batch-student-password"
+                type="password"
+                autocomplete="new-password"
+                placeholder="abc12345"
+              />
+            </label>
+
+            <label class="field">
+              <span>粘贴表格数据</span>
+              <textarea
+                v-model="batchForm.pastedText"
+                class="input"
+                name="batch-student-paste"
+                rows="7"
+                placeholder="姓名&#10;小明&#10;小红"
+              />
+            </label>
+
+            <button class="button button--primary" type="submit" :disabled="saving">
+              批量创建学生
+            </button>
+          </form>
+        </div>
+      </div>
 
       <p class="helper-text">
-        支持直接粘贴 Excel / Numbers / WPS 表格。第一列填姓名即可；账号留空时会自动生成，密码留空时会使用上方统一初始密码。
+        支持直接粘贴 Excel / Numbers / WPS 表格。第一列填姓名即可，账号留空会自动生成，密码留空会使用上方统一初始密码。
       </p>
 
       <p v-if="actionScope === 'batch' && actionError" role="alert" class="feedback feedback--error">

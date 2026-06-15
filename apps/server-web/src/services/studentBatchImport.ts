@@ -1,5 +1,12 @@
 import type { CreateTeacherStudentInput } from './teacherApi'
 
+export const studentBatchTemplate = {
+  href: '/student-batch-template.xlsx',
+  downloadName: '学生批量导入模板.xlsx',
+  firstDataRow: 8,
+  copyColumnsLabel: 'A 到 C 列',
+} as const
+
 export interface StudentBatchPasteRow {
   displayName: string
   username: string
@@ -10,10 +17,6 @@ export interface StudentBatchCreateInputOptions {
   pastedText: string
   defaultPassword: string
   existingUsernames: string[]
-}
-
-export function buildStudentBatchTemplateCsv(): string {
-  return '\uFEFF姓名,账号（可选）,初始密码（可选）\n小明,,\n小红,,\n'
 }
 
 export function parseStudentBatchPaste(text: string): StudentBatchPasteRow[] {

@@ -1,16 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildStudentBatchCreateInputs,
-  buildStudentBatchTemplateCsv,
   parseStudentBatchPaste,
+  studentBatchTemplate,
 } from './studentBatchImport'
 
 describe('studentBatchImport', () => {
-  it('builds an excel-friendly csv template', () => {
-    const csv = buildStudentBatchTemplateCsv()
-
-    expect(csv.startsWith('\uFEFF')).toBe(true)
-    expect(csv).toContain('姓名,账号（可选）,初始密码（可选）')
+  it('exposes the xlsx template download metadata', () => {
+    expect(studentBatchTemplate.href).toBe('/student-batch-template.xlsx')
+    expect(studentBatchTemplate.downloadName).toBe('学生批量导入模板.xlsx')
+    expect(studentBatchTemplate.firstDataRow).toBe(8)
   })
 
   it('parses pasted spreadsheet rows with an optional header', () => {
