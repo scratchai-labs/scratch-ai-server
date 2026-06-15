@@ -205,6 +205,8 @@ describe('StudentsView', () => {
     expect(templateLink.attributes('download')).toBe('学生批量导入模板.xlsx')
     expect(wrapper.text()).toContain('从第 8 行开始填写')
     expect(wrapper.text()).toContain('只复制 A 到 C 列')
+    expect(wrapper.find('.batch-import-guide').exists()).toBe(true)
+    expect(wrapper.find('.batch-template-table').exists()).toBe(false)
 
     await wrapper.get('input[name="batch-student-password"]').setValue('abc12345')
     await wrapper

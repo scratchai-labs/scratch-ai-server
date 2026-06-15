@@ -4,6 +4,7 @@
 
 ## 已完成
 
+- 2026-06-15：继续收口教师端批量导入学生体验：已移除页面里的 Excel 表格预览，仅保留下载与粘贴导入说明；真实 `xlsx` 模板 C 列已加宽到 `40`；并通过截图验证确认批量导入区与周围 `panel` 风格已基本统一。验证产物：`.artifacts/playwright/students-batch-import-2026-06-15.png`；已通过 `npm run test --workspace=@scratch-ai/server-web`、`VITE_SERVER_WEB_API_MODE=real VITE_SERVER_WEB_API_BASE_URL=https://api.example.com npm run build --workspace=@scratch-ai/server-web`、`npm run smoke:mock --workspace=@scratch-ai/server-web`。
 - 2026-06-15：收口教师端批量导入学生模板体验：模板从 `CSV` 改为真实 Excel `xlsx` 文件，已拉宽账号/密码列宽，并在模板与页面预览中用颜色明确“从第 8 行开始填写、只复制 A 到 C 列、如何粘贴导入”；已通过 `npm run test --workspace=@scratch-ai/server-web`、`VITE_SERVER_WEB_API_MODE=real VITE_SERVER_WEB_API_BASE_URL=https://api.example.com npm run build --workspace=@scratch-ai/server-web`。
 - 2026-06-15：新增教师端“批量增加学生”能力：学生页新增 Excel 可打开的模板下载入口、表格粘贴导入面板与统一初始密码输入，支持教师只填姓名后批量创建学生；前端会自动补全缺省账号并复用 `/api/teacher/students/batch` 完成导入。已通过 `npm run test --workspace=@scratch-ai/server-web`、`VITE_SERVER_WEB_API_MODE=real VITE_SERVER_WEB_API_BASE_URL=https://api.example.com npm run build --workspace=@scratch-ai/server-web`。
 - 2026-06-14：维护教师端阶段性收尾文档，收口教师操作链路、real-mode 冒烟脚本和当前页面路由口径；已同步根 README、中英文索引、`server-web` README、部署说明、开发说明与 real smoke 说明文档。
