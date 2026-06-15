@@ -802,6 +802,100 @@ describe('createFetchTeacherApiClient', () => {
     )
   })
 
+  it('batch creates teacher students from the teacher batch endpoint', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(
+      createFetchResponse({
+        created: [
+          {
+            id: 5,
+            username: 'student-02',
+            displayName: '小蓝',
+            status: 'active',
+            createdAt: '2026-06-14T12:05:00Z',
+          },
+          {
+            id: 6,
+            username: 'student-03',
+            displayName: '小绿',
+            status: 'active',
+            createdAt: '2026-06-14T12:06:00Z',
+          },
+        ],
+        conflicts: ['student-04'],
+      }),
+    )
+    const api = createFetchTeacherApiClient({
+      baseUrl: 'https://teacher.example',
+      fetchImpl,
+      getToken: () => 'teacher-token',
+    }) as ReturnType<typeof createFetchTeacherApiClient> & {
+      batchCreateStudents?: (input: {
+        username: string
+        displayName: string
+        initialPassword: string
+      }[]) => Promise<unknown>
+    }
+
+    expect(api.batchCreateStudents).toBeTypeOf('function')
+    if (!api.batchCreateStudents) {
+      return
+    }
+
+    await expect(
+      api.batchCreateStudents([
+        {
+          username: 'student-02',
+          displayName: '小蓝',
+          initialPassword: 'abc12345',
+        },
+        {
+          username: 'student-03',
+          displayName: '小绿',
+          initialPassword: 'abc12345',
+        },
+      ]),
+    ).resolves.toEqual({
+      created: [
+        expect.objectContaining({
+          id: '5',
+          username: 'student-02',
+          name: '小蓝',
+        }),
+        expect.objectContaining({
+          id: '6',
+          username: 'student-03',
+          name: '小绿',
+        }),
+      ],
+      conflicts: ['student-04'],
+    })
+
+    expect(fetchImpl).toHaveBeenCalledWith(
+      'https://teacher.example/api/teacher/students/batch',
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer teacher-token',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          students: [
+            {
+              username: 'student-02',
+              displayName: '小蓝',
+              initialPassword: 'abc12345',
+            },
+            {
+              username: 'student-03',
+              displayName: '小绿',
+              initialPassword: 'abc12345',
+            },
+          ],
+        }),
+      }),
+    )
+  })
+
   it('uploads and manages teacher releases from teacher endpoints', async () => {
     const fetchImpl = vi
       .fn()

@@ -138,4 +138,89 @@ describe('StudentsView', () => {
     expect(api.resetStudentPassword).toHaveBeenCalledWith('stu-1', 'updated123')
     expect(wrapper.text()).toContain('已重置 student-01 的密码')
   })
+
+  it('batch imports students from pasted spreadsheet rows', async () => {
+    const api = {
+      listStudents: vi.fn().mockResolvedValue([
+        {
+          id: 'stu-1',
+          username: 'student-01',
+          name: 'Ada',
+          className: '未分组',
+          progress: 0,
+          status: '',
+          latestAiHint: '等待学生请求提示',
+          updatedAt: '2026-05-07 09:20',
+          createdAt: '2026-05-07 09:20',
+        },
+      ]),
+      batchCreateStudents: vi.fn().mockResolvedValue({
+        created: [
+          {
+            id: 'stu-2',
+            username: 'student-02',
+            name: '小明',
+            className: '未分组',
+            progress: 0,
+            status: '',
+            latestAiHint: '等待学生请求提示',
+            updatedAt: '2026-05-07 09:30',
+            createdAt: '2026-05-07 09:30',
+          },
+          {
+            id: 'stu-3',
+            username: 'student-03',
+            name: '小红',
+            className: '未分组',
+            progress: 0,
+            status: '',
+            latestAiHint: '等待学生请求提示',
+            updatedAt: '2026-05-07 09:31',
+            createdAt: '2026-05-07 09:31',
+          },
+        ],
+        conflicts: [],
+      }),
+      listReleases: vi.fn(),
+      getLiveDashboard: vi.fn(),
+      login: vi.fn(),
+    }
+    const router = createRouterForTest()
+    router.push('/students')
+    await router.isReady()
+
+    const wrapper = mount(StudentsView, {
+      global: {
+        plugins: [createPinia(), router],
+        provide: {
+          [teacherApiKey as symbol]: api,
+        },
+      },
+    })
+
+    await flushPromises()
+
+    await wrapper.get('input[name="batch-student-password"]').setValue('abc12345')
+    await wrapper
+      .get('textarea[name="batch-student-paste"]')
+      .setValue('姓名\n小明\n小红')
+    await wrapper.get('[data-testid="batch-create-students-form"]').trigger('submit')
+    await flushPromises()
+
+    expect(api.batchCreateStudents).toHaveBeenCalledWith([
+      {
+        username: 'student-02',
+        displayName: '小明',
+        initialPassword: 'abc12345',
+      },
+      {
+        username: 'student-03',
+        displayName: '小红',
+        initialPassword: 'abc12345',
+      },
+    ])
+    expect(wrapper.text()).toContain('已批量创建 2 名学生')
+    expect(wrapper.text()).toContain('student-02')
+    expect(wrapper.text()).toContain('student-03')
+  })
 })

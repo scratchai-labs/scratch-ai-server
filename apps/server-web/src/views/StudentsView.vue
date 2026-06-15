@@ -3,6 +3,10 @@ import { computed, onMounted, ref } from 'vue'
 import AppShell from '@/components/AppShell.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 import { studentStatusLabel, studentStatusTone } from '@/presenters/studentStatus'
+import {
+  buildStudentBatchCreateInputs,
+  buildStudentBatchTemplateCsv,
+} from '@/services/studentBatchImport'
 import { useTeacherApiClient } from '@/services/teacherApi'
 import { useTeacherDirectoryStore } from '@/stores/teacherDirectory'
 import { toErrorMessage } from '@/stores/storeUtils'
@@ -16,8 +20,13 @@ const createForm = ref({
   displayName: '',
   initialPassword: '',
 })
+const batchForm = ref({
+  defaultPassword: '',
+  pastedText: '',
+})
 const resetPasswords = ref<Record<string, string>>({})
 const saving = ref(false)
+const actionScope = ref<'single' | 'batch' | 'reset'>('single')
 const actionError = ref<string | null>(null)
 const actionFeedback = ref('')
 
@@ -27,12 +36,14 @@ async function reloadStudents() {
 
 async function submitCreateStudent() {
   if (!apiClient.createStudent) {
+    actionScope.value = 'single'
     actionError.value = '当前环境暂不支持创建学生'
     actionFeedback.value = ''
     return
   }
 
   saving.value = true
+  actionScope.value = 'single'
   actionError.value = null
   actionFeedback.value = ''
 
@@ -64,12 +75,14 @@ async function submitResetStudentPassword(studentId: string) {
   }
 
   if (!apiClient.resetStudentPassword) {
+    actionScope.value = 'reset'
     actionError.value = '当前环境暂不支持重置学生密码'
     actionFeedback.value = ''
     return
   }
 
   saving.value = true
+  actionScope.value = 'reset'
   actionError.value = null
   actionFeedback.value = ''
 
@@ -85,6 +98,59 @@ async function submitResetStudentPassword(studentId: string) {
     actionFeedback.value = `已重置 ${updatedStudent.username} 的密码`
   } catch (error) {
     actionError.value = toErrorMessage(error, '重置学生密码失败')
+  } finally {
+    saving.value = false
+  }
+}
+
+function downloadBatchTemplate() {
+  const templateBlob = new Blob([buildStudentBatchTemplateCsv()], {
+    type: 'text/csv;charset=utf-8;',
+  })
+  const downloadUrl = URL.createObjectURL(templateBlob)
+  const link = document.createElement('a')
+  link.href = downloadUrl
+  link.download = '学生批量导入模板.csv'
+  link.click()
+  URL.revokeObjectURL(downloadUrl)
+}
+
+async function submitBatchCreateStudents() {
+  if (!apiClient.batchCreateStudents) {
+    actionScope.value = 'batch'
+    actionError.value = '当前环境暂不支持批量创建学生'
+    actionFeedback.value = ''
+    return
+  }
+
+  let studentsToCreate: ReturnType<typeof buildStudentBatchCreateInputs>
+  try {
+    studentsToCreate = buildStudentBatchCreateInputs({
+      pastedText: batchForm.value.pastedText,
+      defaultPassword: batchForm.value.defaultPassword,
+      existingUsernames: directoryStore.students.map((student) => student.username),
+    })
+  } catch (error) {
+    actionScope.value = 'batch'
+    actionError.value = toErrorMessage(error, '批量导入学生失败')
+    actionFeedback.value = ''
+    return
+  }
+
+  saving.value = true
+  actionScope.value = 'batch'
+  actionError.value = null
+  actionFeedback.value = ''
+
+  try {
+    const result = await apiClient.batchCreateStudents(studentsToCreate)
+    directoryStore.students = [...directoryStore.students, ...result.created]
+    batchForm.value.pastedText = ''
+    actionFeedback.value = result.conflicts.length
+      ? `已批量创建 ${result.created.length} 名学生，冲突账号：${result.conflicts.join('、')}`
+      : `已批量创建 ${result.created.length} 名学生`
+  } catch (error) {
+    actionError.value = toErrorMessage(error, '批量导入学生失败')
   } finally {
     saving.value = false
   }
@@ -156,10 +222,70 @@ onMounted(() => {
         </button>
       </form>
 
-      <p v-if="actionError" role="alert" class="feedback feedback--error">
+      <p v-if="actionScope === 'single' && actionError" role="alert" class="feedback feedback--error">
         {{ actionError }}
       </p>
-      <p v-else-if="actionFeedback" role="status" class="feedback feedback--success">
+      <p
+        v-else-if="actionScope === 'single' && actionFeedback"
+        role="status"
+        class="feedback feedback--success"
+      >
+        {{ actionFeedback }}
+      </p>
+    </section>
+
+    <section class="panel">
+      <div class="panel__head">
+        <div>
+          <h2 class="panel__title">批量导入学生</h2>
+          <p class="panel__meta">下载 Excel 可打开的模板后填入姓名，再把表格内容粘贴回来即可批量创建。</p>
+        </div>
+        <button class="button button--ghost" type="button" @click="downloadBatchTemplate">
+          下载 Excel 模板
+        </button>
+      </div>
+
+      <form class="form-grid" data-testid="batch-create-students-form" @submit.prevent="submitBatchCreateStudents">
+        <label class="field">
+          <span>统一初始密码</span>
+          <input
+            v-model="batchForm.defaultPassword"
+            class="input"
+            name="batch-student-password"
+            type="password"
+            autocomplete="new-password"
+            placeholder="abc12345"
+          />
+        </label>
+
+        <label class="field">
+          <span>粘贴表格数据</span>
+          <textarea
+            v-model="batchForm.pastedText"
+            class="input"
+            name="batch-student-paste"
+            rows="6"
+            placeholder="姓名\t账号\t初始密码&#10;小明\t\t&#10;小红\t\t"
+          />
+        </label>
+
+        <button class="button button--primary" type="submit" :disabled="saving">
+          批量创建学生
+        </button>
+      </form>
+
+      <p class="helper-text">
+        支持直接粘贴 Excel / Numbers / WPS 表格。第一列填姓名即可；账号留空时会自动生成，密码留空时会使用上方统一初始密码。
+      </p>
+
+      <p v-if="actionScope === 'batch' && actionError" role="alert" class="feedback feedback--error">
+        {{ actionError }}
+      </p>
+      <p
+        v-else-if="actionScope === 'batch' && actionFeedback"
+        role="status"
+        class="feedback feedback--success"
+      >
         {{ actionFeedback }}
       </p>
     </section>
@@ -174,6 +300,12 @@ onMounted(() => {
 
       <p v-if="directoryStore.studentsError" role="alert" class="feedback feedback--error">
         {{ directoryStore.studentsError }}
+      </p>
+      <p v-else-if="actionScope === 'reset' && actionError" role="alert" class="feedback feedback--error">
+        {{ actionError }}
+      </p>
+      <p v-else-if="actionScope === 'reset' && actionFeedback" role="status" class="feedback feedback--success">
+        {{ actionFeedback }}
       </p>
 
       <div v-if="!directoryStore.studentsLoading && !students.length" class="empty-state">

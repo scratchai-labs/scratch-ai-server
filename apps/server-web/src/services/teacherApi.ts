@@ -40,6 +40,11 @@ export interface CreateTeacherStudentInput {
   initialPassword: string
 }
 
+export interface BatchCreateTeacherStudentsResult {
+  created: TeacherStudent[]
+  conflicts: string[]
+}
+
 export interface AdminOverview {
   adminCount: number
   teacherCount: number
@@ -179,6 +184,9 @@ export interface TeacherApiClient {
   logout?(): Promise<void>
   listStudents(): Promise<TeacherStudent[]>
   createStudent?(input: CreateTeacherStudentInput): Promise<TeacherStudent>
+  batchCreateStudents?(
+    input: CreateTeacherStudentInput[],
+  ): Promise<BatchCreateTeacherStudentsResult>
   resetStudentPassword?(studentId: string, newPassword: string): Promise<TeacherStudent>
   listReleases(): Promise<TeacherRelease[]>
   createRelease?(input: CreateTeacherReleaseInput): Promise<TeacherReleaseMutationResult>
@@ -343,6 +351,12 @@ export function createFetchTeacherApiClient(options: {
     async createStudent(input) {
       const payload = await requestAuthedMutation<unknown>('/api/teacher/students', input)
       return normalizeCreatedTeacherStudent(payload)
+    },
+    async batchCreateStudents(input) {
+      const payload = await requestAuthedMutation<unknown>('/api/teacher/students/batch', {
+        students: input,
+      })
+      return normalizeTeacherStudentBatchResult(payload)
     },
     async resetStudentPassword(studentId, newPassword) {
       const payload = await requestAuthedMutation<unknown>(
@@ -530,19 +544,27 @@ function normalizeStudents(payload: unknown): TeacherStudent[] {
 }
 
 function normalizeCreatedTeacherStudent(payload: unknown): TeacherStudent {
+  const result = normalizeTeacherStudentBatchResult(payload)
+  if (result.created[0]) {
+    return result.created[0]
+  }
+
+  if (result.conflicts.length) {
+    throw new TeacherApiError(`学生账号冲突：${result.conflicts.join('、')}`, 409)
+  }
+
+  throw new Error('学生创建响应无结果')
+}
+
+function normalizeTeacherStudentBatchResult(payload: unknown): BatchCreateTeacherStudentsResult {
   const record = payload && typeof payload === 'object' ? (payload as Record<string, unknown>) : {}
   const created = Array.isArray(record.created) ? record.created : []
   const conflicts = Array.isArray(record.conflicts) ? record.conflicts : []
 
-  if (created[0]) {
-    return normalizeTeacherStudentRecord(created[0])
+  return {
+    created: created.map((item) => normalizeTeacherStudentRecord(item)),
+    conflicts: conflicts.map((conflict) => String(conflict)),
   }
-
-  if (conflicts.length) {
-    throw new TeacherApiError(`学生账号冲突：${conflicts.join('、')}`, 409)
-  }
-
-  throw new Error('学生创建响应无结果')
 }
 
 function normalizeTeacherStudentRecord(payload: unknown): TeacherStudent {

@@ -1,6 +1,8 @@
 import {
   type AdminAuditLog,
   type AdminOverview,
+  type BatchCreateTeacherStudentsResult,
+  type CreateTeacherStudentInput,
   TeacherApiError,
   type LiveDashboardSnapshot,
   type ManagedStudent,
@@ -303,6 +305,57 @@ const initialAuditLogs: AdminAuditLog[] = [
   },
 ]
 
+function nextTeacherStudentId(students: TeacherStudent[]): string {
+  return `stu-${students.length + 1}`
+}
+
+function buildTeacherStudentRecord(
+  students: TeacherStudent[],
+  input: CreateTeacherStudentInput,
+): TeacherStudent {
+  const now = new Date().toISOString()
+
+  return {
+    id: nextTeacherStudentId(students),
+    username: input.username,
+    name: input.displayName,
+    className: '未分组',
+    progress: 0,
+    status: '',
+    currentTarget: '',
+    stepSummary: '',
+    latestAiHint: '等待学生请求提示',
+    updatedAt: now,
+    createdAt: now,
+  }
+}
+
+function batchCreateTeacherStudents(
+  students: TeacherStudent[],
+  inputs: CreateTeacherStudentInput[],
+): BatchCreateTeacherStudentsResult {
+  const takenUsernames = new Set(students.map((student) => student.username))
+  const created: TeacherStudent[] = []
+  const conflicts: string[] = []
+
+  for (const input of inputs) {
+    if (takenUsernames.has(input.username)) {
+      conflicts.push(input.username)
+      continue
+    }
+
+    const nextStudent = buildTeacherStudentRecord(students, input)
+    students.push(nextStudent)
+    takenUsernames.add(input.username)
+    created.push(clone(nextStudent))
+  }
+
+  return {
+    created,
+    conflicts,
+  }
+}
+
 export function createMockTeacherApiClient(): TeacherApiClient {
   const cursorByRelease = new Map<string, number>()
   const teachers = clone(managedTeachers)
@@ -330,21 +383,15 @@ export function createMockTeacherApiClient(): TeacherApiClient {
       return clone(teacherStudents)
     },
     async createStudent(input) {
-      const nextStudent = {
-        id: `stu-${teacherStudents.length + 1}`,
-        username: input.username,
-        name: input.displayName,
-        className: '未分组',
-        progress: 0,
-        status: '',
-        currentTarget: '',
-        stepSummary: '',
-        latestAiHint: '等待学生请求提示',
-        updatedAt: new Date().toISOString(),
-        createdAt: new Date().toISOString(),
-      } satisfies TeacherStudent
-      teacherStudents.push(nextStudent)
-      return clone(nextStudent)
+      const result = batchCreateTeacherStudents(teacherStudents, [input])
+      const createdStudent = result.created[0]
+      if (!createdStudent) {
+        throw new TeacherApiError(`学生账号冲突：${result.conflicts.join('、')}`, 409)
+      }
+      return clone(createdStudent)
+    },
+    async batchCreateStudents(input) {
+      return batchCreateTeacherStudents(teacherStudents, input)
     },
     async resetStudentPassword(studentId) {
       const target = teacherStudents.find((student) => student.id === studentId)

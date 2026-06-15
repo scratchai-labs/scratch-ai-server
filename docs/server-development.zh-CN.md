@@ -134,7 +134,6 @@ npm run server:dev
 
 - 学生自助注册
 - 班级 / 课程 / 学期多层模型
-- `CSV` / Excel 批量导入学生
 - 浏览器端直接调用 DeepSeek
 - 学生客户端直接持有 DeepSeek API Key
 - WebSocket / SSE 强推送
@@ -421,7 +420,7 @@ Student Client
 }
 ```
 
-第一阶段不做 `CSV` 或 Excel 导入。教师 Web 只对接这个 JSON 批量接口。
+教师 Web 当前已支持“下载 Excel 可打开的模板 + 粘贴表格数据”的批量导入交互；底层仍复用这个 JSON 批量接口，不额外新增文件上传型 API。
 
 返回建议包含：
 
@@ -698,7 +697,7 @@ Prompt 至少应包含：
   - 第一阶段先支持按 action 基础筛选
 - `/students`
   - 单个创建、重置密码、查看状态
-  - 批量创建仍走 API / Swagger，第一阶段不做 `CSV` 导入
+  - 支持下载 Excel 可打开的模板、粘贴表格数据并批量创建学生
 - `/releases`
   - 上传 `sb3`、创建任务
   - 在同页查看详情与分析结果
