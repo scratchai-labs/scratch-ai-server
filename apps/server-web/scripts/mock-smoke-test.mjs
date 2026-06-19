@@ -75,78 +75,67 @@ async function runBrowserSmoke(baseUrl) {
     await page.getByLabel('账号').fill('teacher')
     await page.getByLabel('密码').fill('teach123')
     await Promise.all([
-      page.waitForURL((url) => url.pathname === '/dashboard'),
+      page.waitForURL((url) => url.pathname === '/classes'),
       page.getByRole('button', { name: '登录' }).click(),
     ])
 
     await waitForBodyIncludes(page, [
-      '欢迎 王老师',
-      '在册学生',
-      '1 / 2',
-      '0 / 3',
-      '最新学生状态',
-      'Ada',
-      '补上广播消息后再测试一次',
-      '最新发布单',
-      '第一期发布单',
-      '已发布',
-    ])
-
-    await Promise.all([
-      page.waitForURL((url) => url.pathname === '/students'),
-      page.getByRole('link', { name: '学生管理' }).click(),
-    ])
-    await waitForBodyIncludes(page, [
-      '学生列表',
-      'Ada',
-      'Alan',
-      'Mia',
+      '班级管理',
+      '新建班级',
+      '班级列表',
       '四年级一班',
       '四年级二班',
-      '72%',
-      '38%',
-      '55%',
     ])
 
     await Promise.all([
-      page.waitForURL((url) => url.pathname === '/releases'),
-      page.getByRole('link', { name: '发布单管理' }).click(),
+      page.waitForURL((url) => url.pathname === '/dashboard'),
+      page.getByRole('link', { name: '实时总览' }).click(),
     ])
     await waitForBodyIncludes(page, [
-      '发布单列表',
-      '第一期发布单',
-      '第二期发布单',
-      '已发布',
-      '草稿',
-      '24',
-      '18',
-    ])
-
-    await Promise.all([
-      page.waitForURL((url) => url.pathname === '/releases/rel-1/live'),
-      page.getByRole('link', { name: '查看实时看板' }).first().click(),
-    ])
-    await waitForBodyIncludes(page, [
-      '实时看板',
-      '第一期发布单',
+      '欢迎 王老师',
+      '在册学生',
+      '最新学生状态',
       'Ada',
-      'Alan',
-      '42%',
-      '33%',
-      '先把绿旗事件连起来',
-      '先整理重复执行的脚本块',
+      '72%',
+      '最新发布单',
+      '第一期发布单',
     ])
-    await waitForBodyIncludes(
-      page,
-      [
-        '轮询中',
-        '68%',
-        '51%',
-        '现在补上角色切换逻辑',
-        '把等待和广播组合起来',
-      ],
-      9000,
-    )
+
+    await Promise.all([
+      page.waitForURL((url) => url.pathname === '/classes'),
+      page.getByRole('link', { name: '班级管理' }).click(),
+    ])
+    await waitForBodyIncludes(page, [
+      '班级列表',
+      '四年级一班',
+      '四年级二班',
+      '2 名学生 · 1 个项目',
+      '1 名学生 · 1 个项目',
+    ])
+
+    await Promise.all([
+      page.waitForURL((url) => url.pathname === '/classes/class-1'),
+      page.getByRole('link', { name: '进入班级' }).first().click(),
+    ])
+    await waitForBodyIncludes(page, [
+      '学生管理',
+      '项目管理',
+      'Ada',
+      '迷宫项目',
+      '查看项目详情',
+    ])
+
+    await Promise.all([
+      page.waitForURL((url) => url.pathname === '/projects/rel-1'),
+      page.getByRole('link', { name: '查看项目详情' }).first().click(),
+    ])
+    await waitForBodyIncludes(page, [
+      '迷宫项目',
+      '项目概览',
+      '学生当前进度与提示',
+      'Ada',
+      '先把绿旗事件连起来',
+    ])
 
     if (pageErrors.length) {
       throw new Error(`Smoke test found page errors:\n${pageErrors.join('\n')}`)

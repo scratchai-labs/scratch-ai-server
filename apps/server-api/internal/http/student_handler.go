@@ -144,6 +144,22 @@ func (h *studentHandler) handleTeacherClassStudentsList(c *gin.Context) {
 	})
 }
 
+// handleTeacherClassStudentCreate godoc
+//
+//	@Summary		Create one student in classroom
+//	@Description	Create a single student under one classroom for the current teacher.
+//	@Tags			students
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id		path		int64					true	"Classroom ID"
+//	@Param			payload	body		student.BatchCreateInput	true	"Single student create payload"
+//	@Success		201		{object}	student.BatchCreateResult
+//	@Failure		400		{object}	ErrorResponse
+//	@Failure		401		{object}	ErrorResponse
+//	@Failure		404		{object}	ErrorResponse
+//	@Failure		500		{object}	ErrorResponse
+//	@Router			/api/teacher/classes/{id}/students [post]
 func (h *studentHandler) handleTeacherClassStudentCreate(c *gin.Context) {
 	teacherRecord := mustTeacher(c)
 	if teacherRecord.ID == 0 {
@@ -176,6 +192,22 @@ func (h *studentHandler) handleTeacherClassStudentCreate(c *gin.Context) {
 	writeJSON(c, 201, result)
 }
 
+// handleTeacherClassStudentsBatch godoc
+//
+//	@Summary		Batch create students in classroom
+//	@Description	Create multiple students under one classroom and report conflicts without failing the entire request.
+//	@Tags			students
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id		path		int64						true	"Classroom ID"
+//	@Param			payload	body		student.BatchCreateRequest	true	"Batch create payload"
+//	@Success		201		{object}	student.BatchCreateResult
+//	@Failure		400		{object}	ErrorResponse
+//	@Failure		401		{object}	ErrorResponse
+//	@Failure		404		{object}	ErrorResponse
+//	@Failure		500		{object}	ErrorResponse
+//	@Router			/api/teacher/classes/{id}/students/batch [post]
 func (h *studentHandler) handleTeacherClassStudentsBatch(c *gin.Context) {
 	teacherRecord := mustTeacher(c)
 	if teacherRecord.ID == 0 {
@@ -206,6 +238,24 @@ func (h *studentHandler) handleTeacherClassStudentsBatch(c *gin.Context) {
 	writeJSON(c, 201, result)
 }
 
+// handleTeacherClassStudentUpdate godoc
+//
+//	@Summary		Update classroom student
+//	@Description	Update one student under one classroom for the current teacher.
+//	@Tags			students
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id			path		int64				true	"Classroom ID"
+//	@Param			studentId	path		int64				true	"Student ID"
+//	@Param			payload		body		student.UpdateInput	true	"Student update payload"
+//	@Success		200		{object}	student.StudentItem
+//	@Failure		400		{object}	ErrorResponse
+//	@Failure		401		{object}	ErrorResponse
+//	@Failure		404		{object}	ErrorResponse
+//	@Failure		409		{object}	ErrorResponse
+//	@Failure		500		{object}	ErrorResponse
+//	@Router			/api/teacher/classes/{id}/students/{studentId} [patch]
 func (h *studentHandler) handleTeacherClassStudentUpdate(c *gin.Context) {
 	teacherRecord := mustTeacher(c)
 	if teacherRecord.ID == 0 {
@@ -239,6 +289,23 @@ func (h *studentHandler) handleTeacherClassStudentUpdate(c *gin.Context) {
 	writeJSON(c, 200, updatedStudent)
 }
 
+// handleTeacherClassStudentPasswordReset godoc
+//
+//	@Summary		Reset classroom student password
+//	@Description	Replace the password for one student under one classroom.
+//	@Tags			students
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id			path		int64					true	"Classroom ID"
+//	@Param			studentId	path		int64					true	"Student ID"
+//	@Param			payload		body		resetPasswordRequest	true	"New password payload"
+//	@Success		200		{object}	student.StudentItem
+//	@Failure		400		{object}	ErrorResponse
+//	@Failure		401		{object}	ErrorResponse
+//	@Failure		404		{object}	ErrorResponse
+//	@Failure		500		{object}	ErrorResponse
+//	@Router			/api/teacher/classes/{id}/students/{studentId}/reset-password [post]
 func (h *studentHandler) handleTeacherClassStudentPasswordReset(c *gin.Context) {
 	teacherRecord := mustTeacher(c)
 	if teacherRecord.ID == 0 {
@@ -269,6 +336,20 @@ func (h *studentHandler) handleTeacherClassStudentPasswordReset(c *gin.Context) 
 	writeJSON(c, 200, updatedStudent)
 }
 
+// handleTeacherClassStudentDelete godoc
+//
+//	@Summary		Delete classroom student
+//	@Description	Delete one student under one classroom for the current teacher.
+//	@Tags			students
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id			path		int64	true	"Classroom ID"
+//	@Param			studentId	path		int64	true	"Student ID"
+//	@Success		200	{object}	StatusResponse
+//	@Failure		401	{object}	ErrorResponse
+//	@Failure		404	{object}	ErrorResponse
+//	@Failure		500	{object}	ErrorResponse
+//	@Router			/api/teacher/classes/{id}/students/{studentId} [delete]
 func (h *studentHandler) handleTeacherClassStudentDelete(c *gin.Context) {
 	teacherRecord := mustTeacher(c)
 	if teacherRecord.ID == 0 {

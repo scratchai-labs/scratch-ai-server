@@ -34,7 +34,7 @@ npx playwright install chromium
 
 - 启动临时 `server-api`
 - 用临时 `SQLite` 和临时 `sb3` 目录自举真实后端
-- 自动注册教师账号，并在浏览器里走“登录 / 新建学生 / 重置密码 / 上传 `sb3` / 查看详情分析 / 分配 / 发布 / 实时看板 / 归档”链路
+- 自动注册教师账号，并在浏览器里走“登录 / 创建班级 / 班级内创建学生 / 班级内创建项目 / 查看项目详情 / 学生真实进度回流”链路
 
 补充说明：
 
@@ -67,7 +67,7 @@ VITE_SERVER_WEB_API_BASE_URL=http://localhost:8000
 - `VITE_SERVER_WEB_API_BASE_URL` 在生产环境必须显式配置
 - 若缺失上述变量，`vite build` 期间会直接失败，不再静默回退到 mock 或同源 `/api`
 
-当前真实 API 模式下，教师总览和学生管理会先请求 `GET /api/teacher/students`，再按学生补拉 `GET /api/teacher/dashboard/students/:id/history`，用最近一条学习历史渲染真实的 `status / currentTarget / stepSummary / latestAiHint / updatedAt`。
+当前真实 API 模式下，教师主入口是 `/classes`。班级列表走 `GET /api/teacher/classes`，班级详情会继续请求 `GET /api/teacher/classes/:id`、`GET /api/teacher/classes/:id/students`、`GET /api/teacher/classes/:id/projects`，项目详情则使用 `GET /api/teacher/assignments/:id`、`GET /api/teacher/assignments/:id/analysis` 和 `GET /api/teacher/dashboard/assignments/:id/live`。
 
 管理员账号登录后，会进入 `/admin`，通过 `GET /api/admin/overview`、`GET /api/admin/teachers`、`POST /api/admin/teachers/{id}/role`、`GET /api/admin/students`、`POST /api/admin/students`、`GET /api/admin/audit-logs` 以及对应的启停/重置接口统一维护账号；教师管理页支持直接切换教师/管理员角色，学生管理页支持直接为指定教师创建学生账号，操作日志页用于只读审计敏感账号操作。
 
@@ -76,7 +76,7 @@ VITE_SERVER_WEB_API_BASE_URL=http://localhost:8000
 - Web 对外统一入口是 `/login`
 - 管理员和教师共用同一登录页，不需要单独的管理员域名
 - 管理员登录后进入 `/admin`，再通过 `/admin/teachers`、`/admin/students` 和 `/admin/audit-logs` 维护教师与学生并查看审计日志
-- 教师登录后进入原有教学管理页面，不会进入管理员页面
+- 教师登录后默认进入 `/classes` 的班级管理页面，不会进入管理员页面
 - 当前 Web 没有教师自助注册页；首次教师注册需走 `POST /api/teacher/register`，生产环境更推荐由管理员在 `/admin/teachers` 创建
 - 教师访问管理员接口时，后端会返回 `403`
 
@@ -91,9 +91,16 @@ npm run dev
 
 - `POST /api/teacher/login`
 - `POST /api/teacher/register`
+- `GET /api/teacher/classes`
+- `POST /api/teacher/classes`
+- `GET /api/teacher/classes/:id`
+- `GET /api/teacher/classes/:id/students`
+- `POST /api/teacher/classes/:id/students`
+- `POST /api/teacher/classes/:id/students/batch`
+- `GET /api/teacher/classes/:id/projects`
+- `POST /api/teacher/classes/:id/projects`
 - `GET /api/teacher/students`
 - `GET /api/teacher/assignments`
-- `GET /api/teacher/dashboard/students/:id/history`
 - `GET /api/teacher/dashboard/assignments/:id/live`
 
 ## Vercel 预发布部署

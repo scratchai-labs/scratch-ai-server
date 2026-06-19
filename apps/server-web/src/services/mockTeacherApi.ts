@@ -2,11 +2,13 @@ import {
   type AdminAuditLog,
   type AdminOverview,
   type BatchCreateTeacherStudentsResult,
+  type CreateTeacherClassroomInput,
   type CreateTeacherStudentInput,
   TeacherApiError,
   type LiveDashboardSnapshot,
   type ManagedStudent,
   type ManagedTeacher,
+  type TeacherClassroom,
   type ManagedTeacherRole,
   type TeacherApiClient,
   type TeacherLoginInput,
@@ -62,6 +64,105 @@ const demoStudents: TeacherStudent[] = [
   },
 ]
 
+const demoClassrooms: TeacherClassroom[] = [
+  {
+    id: 'class-1',
+    name: '四年级一班',
+    studentCount: 2,
+    projectCount: 1,
+    createdAt: '2026-05-07T09:00:00Z',
+    updatedAt: '2026-05-07T09:30:00Z',
+  },
+  {
+    id: 'class-2',
+    name: '四年级二班',
+    studentCount: 1,
+    projectCount: 1,
+    createdAt: '2026-05-07T09:05:00Z',
+    updatedAt: '2026-05-07T09:35:00Z',
+  },
+]
+
+const demoClassroomStudents: Record<string, TeacherStudent[]> = {
+  'class-1': [
+    {
+      id: 'class-1-stu-1',
+      classroomId: 'class-1',
+      username: 'student-ada',
+      name: 'Ada',
+      className: '四年级一班',
+      progress: 72,
+      status: 'active',
+      currentTarget: '让角色按事件响应',
+      stepSummary: '已经接上绿旗事件',
+      latestAiHint: '补上广播消息后再测试一次',
+      updatedAt: '2026-05-07 09:20',
+      createdAt: '2026-05-07 09:20',
+    },
+    {
+      id: 'class-1-stu-2',
+      classroomId: 'class-1',
+      username: 'student-mia',
+      name: 'Mia',
+      className: '四年级一班',
+      progress: 38,
+      status: 'assigned',
+      currentTarget: '先把角色移动起来',
+      stepSummary: '已经摆好起始位置',
+      latestAiHint: '把移动积木接成完整流程',
+      updatedAt: '2026-05-07 09:24',
+      createdAt: '2026-05-07 09:24',
+    },
+  ],
+  'class-2': [
+    {
+      id: 'class-2-stu-1',
+      classroomId: 'class-2',
+      username: 'student-alan',
+      name: 'Alan',
+      className: '四年级二班',
+      progress: 55,
+      status: 'active',
+      currentTarget: '补上重复执行',
+      stepSummary: '已经接上广播消息',
+      latestAiHint: '先整理重复执行的脚本块',
+      updatedAt: '2026-05-07 09:27',
+      createdAt: '2026-05-07 09:27',
+    },
+  ],
+}
+
+const demoClassroomProjects: Record<string, TeacherRelease[]> = {
+  'class-1': [
+    {
+      id: 'rel-1',
+      classroomId: 'class-1',
+      title: '迷宫项目',
+      goal: '让角色按事件响应',
+      description: '第一节课项目',
+      className: '四年级一班',
+      status: 'draft',
+      analysisStatus: 'ready',
+      studentCount: 2,
+      updatedAt: '2026-05-07T09:30:00Z',
+    },
+  ],
+  'class-2': [
+    {
+      id: 'rel-2',
+      classroomId: 'class-2',
+      title: '追逐项目',
+      goal: '补齐广播与重复执行',
+      description: '第二节课项目',
+      className: '四年级二班',
+      status: 'published',
+      analysisStatus: 'ready',
+      studentCount: 1,
+      updatedAt: '2026-05-07T09:35:00Z',
+    },
+  ],
+}
+
 const demoReleases: TeacherRelease[] = [
   {
     id: 'rel-1',
@@ -90,9 +191,9 @@ const demoReleases: TeacherRelease[] = [
 const demoReleaseDetails: Record<string, TeacherReleaseDetail> = {
   'rel-1': {
     id: 'rel-1',
-    title: '第一期发布单',
+    title: '迷宫项目',
     goal: '让角色按事件响应',
-    description: '第一节课任务',
+    description: '第一节课项目',
     status: 'published',
     analysisStatus: 'ready',
     roleNames: ['Stage', 'Cat'],
@@ -122,9 +223,9 @@ const demoReleaseDetails: Record<string, TeacherReleaseDetail> = {
   },
   'rel-2': {
     id: 'rel-2',
-    title: '第二期发布单',
+    title: '追逐项目',
     goal: '补齐广播与重复执行',
-    description: '第二节课任务',
+    description: '第二节课项目',
     status: 'draft',
     analysisStatus: 'ready',
     roleNames: ['Stage', 'Mia'],
@@ -152,7 +253,7 @@ const demoSnapshots: Record<string, LiveDashboardSnapshot[]> = {
   'rel-1': [
     {
       releaseId: 'rel-1',
-      releaseTitle: '第一期发布单',
+      releaseTitle: '迷宫项目',
       updatedAt: '2026-05-07 09:40',
       students: [
         {
@@ -173,7 +274,7 @@ const demoSnapshots: Record<string, LiveDashboardSnapshot[]> = {
     },
     {
       releaseId: 'rel-1',
-      releaseTitle: '第一期发布单',
+      releaseTitle: '迷宫项目',
       updatedAt: '2026-05-07 09:44',
       students: [
         {
@@ -196,7 +297,7 @@ const demoSnapshots: Record<string, LiveDashboardSnapshot[]> = {
   'rel-2': [
     {
       releaseId: 'rel-2',
-      releaseTitle: '第二期发布单',
+      releaseTitle: '追逐项目',
       updatedAt: '2026-05-07 09:36',
       students: [
         {
@@ -312,6 +413,10 @@ function nextTeacherStudentId(students: TeacherStudent[]): string {
 function buildTeacherStudentRecord(
   students: TeacherStudent[],
   input: CreateTeacherStudentInput,
+  options: {
+    classroomId?: string
+    className?: string
+  } = {},
 ): TeacherStudent {
   const now = new Date().toISOString()
 
@@ -319,7 +424,8 @@ function buildTeacherStudentRecord(
     id: nextTeacherStudentId(students),
     username: input.username,
     name: input.displayName,
-    className: '未分组',
+    className: options.className ?? '未分组',
+    classroomId: options.classroomId,
     progress: 0,
     status: '',
     currentTarget: '',
@@ -333,6 +439,10 @@ function buildTeacherStudentRecord(
 function batchCreateTeacherStudents(
   students: TeacherStudent[],
   inputs: CreateTeacherStudentInput[],
+  options: {
+    classroomId?: string
+    className?: string
+  } = {},
 ): BatchCreateTeacherStudentsResult {
   const takenUsernames = new Set(students.map((student) => student.username))
   const created: TeacherStudent[] = []
@@ -344,7 +454,7 @@ function batchCreateTeacherStudents(
       continue
     }
 
-    const nextStudent = buildTeacherStudentRecord(students, input)
+    const nextStudent = buildTeacherStudentRecord(students, input, options)
     students.push(nextStudent)
     takenUsernames.add(input.username)
     created.push(clone(nextStudent))
@@ -364,6 +474,10 @@ export function createMockTeacherApiClient(): TeacherApiClient {
   const releaseDetails = clone(demoReleaseDetails)
   const students = clone(managedStudents)
   const auditLogs = clone(initialAuditLogs)
+  const classrooms = clone(demoClassrooms)
+  const classroomStudents = clone(demoClassroomStudents)
+  const classroomProjects = clone(demoClassroomProjects)
+  const snapshotsByRelease = clone(demoSnapshots)
 
   return {
     async login(input: TeacherLoginInput) {
@@ -381,6 +495,135 @@ export function createMockTeacherApiClient(): TeacherApiClient {
     },
     async listStudents() {
       return clone(teacherStudents)
+    },
+    async listClassrooms() {
+      return clone(classrooms)
+    },
+    async createClassroom(input) {
+      const now = new Date().toISOString()
+      const nextClassroom: TeacherClassroom = {
+        id: `class-${classrooms.length + 1}`,
+        name: input.name,
+        studentCount: 0,
+        projectCount: 0,
+        createdAt: now,
+        updatedAt: now,
+      }
+      classrooms.push(nextClassroom)
+      classroomStudents[nextClassroom.id] = []
+      classroomProjects[nextClassroom.id] = []
+      return clone(nextClassroom)
+    },
+    async getClassroomDetail(classroomId) {
+      const classroom = classrooms.find((item) => item.id === classroomId)
+      if (!classroom) {
+        throw new TeacherApiError('classroom not found', 404)
+      }
+      return clone(classroom)
+    },
+    async listClassroomStudents(classroomId) {
+      return clone(classroomStudents[classroomId] ?? [])
+    },
+    async createClassroomStudent(classroomId, input) {
+      const classroom = classrooms.find((item) => item.id === classroomId)
+      if (!classroom) {
+        throw new TeacherApiError('classroom not found', 404)
+      }
+
+      const nextStudent = buildTeacherStudentRecord(classroomStudents[classroomId] ?? [], input, {
+        classroomId,
+        className: classroom.name,
+      })
+      classroomStudents[classroomId] = [...(classroomStudents[classroomId] ?? []), nextStudent]
+      classroom.studentCount = classroomStudents[classroomId].length
+      classroom.updatedAt = new Date().toISOString()
+      return clone(nextStudent)
+    },
+    async batchCreateClassroomStudents(classroomId, input) {
+      const classroom = classrooms.find((item) => item.id === classroomId)
+      if (!classroom) {
+        throw new TeacherApiError('classroom not found', 404)
+      }
+
+      const nextStudents = classroomStudents[classroomId] ?? []
+      const result = batchCreateTeacherStudents(nextStudents, input, {
+        classroomId,
+        className: classroom.name,
+      })
+      classroomStudents[classroomId] = nextStudents
+      classroom.studentCount = nextStudents.length
+      classroom.updatedAt = new Date().toISOString()
+      return result
+    },
+    async listClassroomProjects(classroomId) {
+      return clone(classroomProjects[classroomId] ?? [])
+    },
+    async createClassroomProject(classroomId, input) {
+      const classroom = classrooms.find((item) => item.id === classroomId)
+      if (!classroom) {
+        throw new TeacherApiError('classroom not found', 404)
+      }
+
+      const nextProjectId = `rel-${releases.length + 1}`
+      const updatedAt = new Date().toISOString()
+      const nextProject: TeacherRelease = {
+        id: nextProjectId,
+        classroomId,
+        title: input.title,
+        goal: input.goal,
+        description: input.description,
+        className: classroom.name,
+        status: 'draft',
+        analysisStatus: 'pending',
+        studentCount: classroomStudents[classroomId]?.length ?? 0,
+        updatedAt,
+      }
+      releases.push(nextProject)
+      releaseDetails[nextProjectId] = {
+        id: nextProjectId,
+        title: nextProject.title,
+        goal: nextProject.goal,
+        description: nextProject.description,
+        status: nextProject.status,
+        analysisStatus: nextProject.analysisStatus,
+        roleNames: [],
+        scriptCounts: {},
+        blockCounts: {},
+        categoryCounts: {},
+        broadcastMessages: [],
+        variableNames: [],
+        listNames: [],
+        extensions: [],
+        teachingPoints: [],
+        assignedStudents: [],
+        updatedAt,
+      }
+      snapshotsByRelease[nextProjectId] = [
+        {
+          releaseId: nextProjectId,
+          releaseTitle: nextProject.title,
+          updatedAt,
+          students: (classroomStudents[classroomId] ?? []).map((student) => ({
+            id: student.id,
+            name: student.name,
+            progress: student.progress,
+            status: student.status,
+            currentTarget: student.currentTarget,
+            stepSummary: student.stepSummary,
+            latestAiHint: student.latestAiHint,
+            updatedAt: student.updatedAt,
+          })),
+        },
+      ]
+      classroomProjects[classroomId] = [...(classroomProjects[classroomId] ?? []), nextProject]
+      classroom.projectCount = classroomProjects[classroomId].length
+      classroom.updatedAt = updatedAt
+      return {
+        id: nextProject.id,
+        title: nextProject.title,
+        status: nextProject.status,
+        analysisStatus: nextProject.analysisStatus,
+      }
     },
     async createStudent(input) {
       const result = batchCreateTeacherStudents(teacherStudents, [input])
@@ -519,9 +762,9 @@ export function createMockTeacherApiClient(): TeacherApiClient {
       }
     },
     async getLiveDashboard(releaseId: string) {
-      const fallbackSnapshots = demoSnapshots['rel-1']!
+      const fallbackSnapshots = snapshotsByRelease['rel-1']!
       const snapshots =
-        demoSnapshots[releaseId] ?? fallbackSnapshots
+        snapshotsByRelease[releaseId] ?? fallbackSnapshots
       const cursor = cursorByRelease.get(releaseId) ?? 0
       const index = Math.min(cursor, snapshots.length - 1)
       cursorByRelease.set(releaseId, cursor + 1)

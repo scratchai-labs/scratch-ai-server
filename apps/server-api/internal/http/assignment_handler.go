@@ -117,6 +117,18 @@ func (h *assignmentHandler) handleTeacherAssignments(c *gin.Context) {
 	})
 }
 
+// handleTeacherClassProjectsList godoc
+//
+//	@Summary		List class projects
+//	@Description	List all projects created under one classroom.
+//	@Tags			assignments
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id	path		int64	true	"Classroom ID"
+//	@Success		200	{object}	TeacherAssignmentsResponse
+//	@Failure		401	{object}	ErrorResponse
+//	@Failure		500	{object}	ErrorResponse
+//	@Router			/api/teacher/classes/{id}/projects [get]
 func (h *assignmentHandler) handleTeacherClassProjectsList(c *gin.Context) {
 	teacherRecord := mustTeacher(c)
 	if teacherRecord.ID == 0 {
@@ -133,6 +145,25 @@ func (h *assignmentHandler) handleTeacherClassProjectsList(c *gin.Context) {
 	})
 }
 
+// handleTeacherClassProjectsCreate godoc
+//
+//	@Summary		Upload a class project
+//	@Description	Create a project under one classroom by uploading a reference Scratch project.
+//	@Tags			assignments
+//	@Accept			mpfd
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id			path		int64	true	"Classroom ID"
+//	@Param			title		formData	string	false	"Assignment title"
+//	@Param			goal		formData	string	false	"Teaching goal"
+//	@Param			description	formData	string	false	"Assignment description"
+//	@Param			sb3			formData	file	true	"Scratch project .sb3 file"
+//	@Success		201		{object}	AssignmentUploadResponse
+//	@Failure		400		{object}	ErrorResponse
+//	@Failure		401		{object}	ErrorResponse
+//	@Failure		404		{object}	ErrorResponse
+//	@Failure		500		{object}	ErrorResponse
+//	@Router			/api/teacher/classes/{id}/projects [post]
 func (h *assignmentHandler) handleTeacherClassProjectsCreate(c *gin.Context) {
 	teacherRecord := mustTeacher(c)
 	if teacherRecord.ID == 0 {
@@ -224,6 +255,7 @@ func readSB3Upload(reader io.Reader, maxBytes int64) ([]byte, error) {
 //	@Failure		404	{object}	ErrorResponse
 //	@Failure		500	{object}	ErrorResponse
 //	@Router			/api/teacher/assignments/{id} [get]
+//	@Router			/api/teacher/projects/{id} [get]
 func (h *assignmentHandler) handleTeacherAssignmentDetail(c *gin.Context) {
 	teacherRecord := mustTeacher(c)
 	if teacherRecord.ID == 0 {
@@ -262,6 +294,7 @@ func (h *assignmentHandler) handleTeacherAssignmentDetail(c *gin.Context) {
 //	@Failure		404	{object}	ErrorResponse
 //	@Failure		500	{object}	ErrorResponse
 //	@Router			/api/teacher/assignments/{id}/analysis [get]
+//	@Router			/api/teacher/projects/{id}/analysis [get]
 func (h *assignmentHandler) handleTeacherAssignmentAnalysis(c *gin.Context) {
 	teacherRecord := mustTeacher(c)
 	if teacherRecord.ID == 0 {

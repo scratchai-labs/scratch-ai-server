@@ -23,6 +23,20 @@ func (h *classroomHandler) handleTeacherClassesList(c *gin.Context) {
 	})
 }
 
+// handleTeacherClassesCreate godoc
+//
+//	@Summary		Create classroom
+//	@Description	Create one classroom for the current teacher.
+//	@Tags			classrooms
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			payload	body		classroom.CreateInput	true	"Classroom create payload"
+//	@Success		201		{object}	classroom.Item
+//	@Failure		400		{object}	ErrorResponse
+//	@Failure		401		{object}	ErrorResponse
+//	@Failure		500		{object}	ErrorResponse
+//	@Router			/api/teacher/classes [post]
 func (h *classroomHandler) handleTeacherClassesCreate(c *gin.Context) {
 	teacherRecord := mustTeacher(c)
 	if teacherRecord.ID == 0 {
@@ -44,6 +58,20 @@ func (h *classroomHandler) handleTeacherClassesCreate(c *gin.Context) {
 	writeJSON(c, http.StatusCreated, record)
 }
 
+// handleTeacherClassDetail godoc
+//
+//	@Summary		Get classroom detail
+//	@Description	Read one classroom plus its student and project counts for the current teacher.
+//	@Tags			classrooms
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id	path		int64	true	"Classroom ID"
+//	@Success		200	{object}	classroom.Detail
+//	@Failure		400	{object}	ErrorResponse
+//	@Failure		401	{object}	ErrorResponse
+//	@Failure		404	{object}	ErrorResponse
+//	@Failure		500	{object}	ErrorResponse
+//	@Router			/api/teacher/classes/{id} [get]
 func (h *classroomHandler) handleTeacherClassDetail(c *gin.Context) {
 	teacherRecord := mustTeacher(c)
 	if teacherRecord.ID == 0 {
@@ -68,6 +96,22 @@ func (h *classroomHandler) handleTeacherClassDetail(c *gin.Context) {
 	writeJSON(c, http.StatusOK, record)
 }
 
+// handleTeacherClassUpdate godoc
+//
+//	@Summary		Update classroom
+//	@Description	Update one classroom name for the current teacher.
+//	@Tags			classrooms
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id		path		int64					true	"Classroom ID"
+//	@Param			payload	body		classroom.UpdateInput	true	"Classroom update payload"
+//	@Success		200		{object}	classroom.Item
+//	@Failure		400		{object}	ErrorResponse
+//	@Failure		401		{object}	ErrorResponse
+//	@Failure		404		{object}	ErrorResponse
+//	@Failure		500		{object}	ErrorResponse
+//	@Router			/api/teacher/classes/{id} [patch]
 func (h *classroomHandler) handleTeacherClassUpdate(c *gin.Context) {
 	teacherRecord := mustTeacher(c)
 	if teacherRecord.ID == 0 {
@@ -98,6 +142,20 @@ func (h *classroomHandler) handleTeacherClassUpdate(c *gin.Context) {
 	writeJSON(c, http.StatusOK, record)
 }
 
+// handleTeacherClassDelete godoc
+//
+//	@Summary		Delete classroom
+//	@Description	Delete one empty classroom for the current teacher.
+//	@Tags			classrooms
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id	path		int64	true	"Classroom ID"
+//	@Success		200	{object}	StatusResponse
+//	@Failure		401	{object}	ErrorResponse
+//	@Failure		404	{object}	ErrorResponse
+//	@Failure		409	{object}	ErrorResponse
+//	@Failure		500	{object}	ErrorResponse
+//	@Router			/api/teacher/classes/{id} [delete]
 func (h *classroomHandler) handleTeacherClassDelete(c *gin.Context) {
 	teacherRecord := mustTeacher(c)
 	if teacherRecord.ID == 0 {

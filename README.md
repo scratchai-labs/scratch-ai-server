@@ -13,7 +13,7 @@ An open source server workspace for Scratch teaching. The current production tra
 - 当前主线只维护 **服务器端教学版**
 - 核心是服务端 API
 - 管理员可通过 Web 管理教师和学生账号
-- 教师通过 Web 管理学生和任务
+- 教师通过 Web 管理班级、班级内学生和班级内项目
 - 学生通过客户端登录和接收提示
 - 所有 AI 处理都放在服务端
 
@@ -97,7 +97,7 @@ npm run dev
 当前联调状态：
 
 - 教师 Web 已沉淀 `mock` / `real` 两套浏览器 smoke 验证
-- `npm run server:web:smoke:real` 已覆盖登录、新建学生、重置密码、上传 `sb3`、详情分析、分配学生、发布、实时看板、学生进度/提示、归档主链路
+- `npm run server:web:smoke:real` 已覆盖登录、创建班级、班级内创建学生、班级内创建项目、项目详情与学生真实进度回流主链路
 - 管理员后台已落地，可通过 `ADMIN_BOOTSTRAP_USERNAME` / `ADMIN_BOOTSTRAP_PASSWORD` 自举首个管理员账号并进入 `/admin`
 
 ## License

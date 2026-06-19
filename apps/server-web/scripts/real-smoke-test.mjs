@@ -179,101 +179,71 @@ async function runBrowserSmoke({
     await page.getByLabel('账号').fill(teacher.username)
     await page.getByLabel('密码').fill(teacher.password)
     await Promise.all([
-      page.waitForURL((url) => url.pathname === '/dashboard'),
+      page.waitForURL((url) => url.pathname === '/classes'),
       page.getByRole('button', { name: '登录' }).click(),
     ])
     await waitForBodyIncludes(page, [
-      `欢迎 ${teacher.username}`,
-      '在册学生',
-      '发布单',
-      '课堂最新状态',
+      '班级管理',
+      '新建班级',
+      '班级列表',
     ])
 
+    await page.locator('input').first().fill('real smoke 班级')
+    await page.getByRole('button', { name: '创建班级' }).click()
+    await waitForBodyIncludes(page, ['real smoke 班级'])
+
+    const classCard = page.locator('.release-card').filter({ hasText: 'real smoke 班级' }).first()
+    await assertVisible(classCard, '新建班级卡片')
     await Promise.all([
-      page.waitForURL((url) => url.pathname === '/students'),
-      page.getByRole('link', { name: '学生管理' }).click(),
+      page.waitForURL((url) => url.pathname.startsWith('/classes/')),
+      classCard.getByRole('link', { name: '进入班级' }).click(),
     ])
     await waitForBodyIncludes(page, [
-      '新建学生',
-      '学生列表',
-      '创建学生',
+      '学生管理',
+      '项目管理',
+      '批量导入学生',
+      '创建项目',
     ])
 
-    await page.locator('input[name="student-username"]').fill(student.username)
-    await page.locator('input[name="student-display-name"]').fill(student.displayName)
-    await page.locator('input[name="student-password"]').fill(student.initialPassword)
+    const studentInputs = page.locator('input')
+    await studentInputs.nth(0).fill(student.username)
+    await studentInputs.nth(1).fill(student.displayName)
+    await studentInputs.nth(2).fill(student.initialPassword)
     await page.getByRole('button', { name: '创建学生' }).click()
-    await waitForBodyIncludes(page, [`已创建学生账号 ${student.username}`])
     await waitForBodyIncludes(page, [student.username, student.displayName])
 
-    const studentRow = page.locator('tbody tr').filter({ hasText: student.username }).first()
-    await studentRow.locator('input[placeholder="输入新密码"]').fill(student.resetPassword)
-    await studentRow.getByRole('button', { name: '重置密码' }).click()
-    await waitForBodyIncludes(page, [`已重置 ${student.username} 的密码`])
-
-    await Promise.all([
-      page.waitForURL((url) => url.pathname === '/releases'),
-      page.getByRole('link', { name: '发布单管理' }).click(),
-    ])
-    await waitForBodyIncludes(page, [
-      '上传参考 sb3',
-      '发布单列表',
-      '上传并创建发布单',
-    ])
-
-    await page.locator('input[name="release-title"]').fill(release.title)
-    await page.locator('input[name="release-goal"]').fill(release.goal)
-    await page.locator('textarea[name="release-description"]').fill(release.description)
-    await page.locator('input[name="release-sb3"]').setInputFiles(sb3FilePath)
-    await page.getByRole('button', { name: '上传并创建发布单' }).click()
-    await waitForBodyIncludes(page, [`已上传发布单 ${release.title}`])
+    await page.locator('input[type="file"]').setInputFiles(sb3FilePath)
+    await studentInputs.nth(4).fill(release.title)
+    await studentInputs.nth(5).fill(release.goal)
+    await studentInputs.nth(6).fill(release.description)
+    await page.getByRole('button', { name: '创建项目' }).click()
+    await waitForBodyIncludes(page, [release.title, 'pending'])
 
     const releaseState = await waitForReleaseReady(apiBaseUrl, teacherToken, release.title)
-    const releaseCard = page.locator('.release-card').filter({ hasText: release.title }).first()
-    await assertVisible(releaseCard, `发布单卡片 ${release.title}`)
+    await page.reload({ waitUntil: 'domcontentloaded' })
+    await waitForBodyIncludes(page, [release.title, '查看项目详情'])
 
-    await releaseCard.getByRole('button', { name: '查看详情' }).click()
-    await waitForBodyIncludes(page, [
-      release.title,
-      release.goal,
-      release.description,
-      '分析完成',
-      'Stage',
-      'Cat',
-      '开始',
-      '分数',
-      '步骤列表',
-      'pen',
-    ], 15000)
-
-    const assignLabel = page.locator('label').filter({ hasText: student.username }).first()
-    await assignLabel.locator('input[type="checkbox"]').check()
-    await page.getByRole('button', { name: '保存分配' }).click()
-    await waitForBodyIncludes(page, ['已分配 1 名学生', `${student.displayName}（${student.username}）`])
-
-    await page.getByRole('button', { name: '发布发布单' }).click()
-    await waitForBodyIncludes(page, [`已发布 ${release.title}`])
-    await waitForBodyIncludes(page, ['已发布'])
-
+    const projectCard = page.locator('.release-card').filter({ hasText: release.title }).first()
+    await assertVisible(projectCard, `项目卡片 ${release.title}`)
     await Promise.all([
-      page.waitForURL(
-        (url) => url.pathname === `/releases/${releaseState.releaseId}/live`,
-      ),
-      releaseCard.getByRole('link', { name: '查看实时看板' }).click(),
+      page.waitForURL((url) => url.pathname === `/projects/${releaseState.releaseId}`),
+      projectCard.getByRole('link', { name: '查看项目详情' }).click(),
     ])
     await waitForBodyIncludes(page, [
-      '实时看板',
+      '项目概览',
+      '学生当前进度与提示',
       release.title,
-      student.displayName,
-    ])
+    ], 15000)
 
     const studentToken = await loginStudent(apiBaseUrl, {
       username: student.username,
-      password: student.resetPassword,
+      password: student.initialPassword,
     })
+    await assignAndPublish(apiBaseUrl, teacherToken, releaseState.releaseId, student.username)
     await waitForStudentAssignment(apiBaseUrl, studentToken, release.title)
     await reportStudentProgress(apiBaseUrl, studentToken, releaseState.releaseId)
     const hint = await requestStudentHint(apiBaseUrl, studentToken, releaseState.releaseId)
+    await page.reload({ waitUntil: 'domcontentloaded' })
 
     await waitForBodyIncludes(page, [
       student.displayName,
@@ -281,17 +251,6 @@ async function runBrowserSmoke({
       '已经把事件积木接上了',
       hint.hintText,
     ], 15000)
-
-    await Promise.all([
-      page.waitForURL((url) => url.pathname === '/releases'),
-      page.getByRole('link', { name: '发布单管理' }).click(),
-    ])
-    await assertVisible(releaseCard, `发布单卡片 ${release.title}`)
-    await releaseCard.getByRole('button', { name: '查看详情' }).click()
-    await waitForBodyIncludes(page, [release.title, '分析完成'])
-
-    await page.getByRole('button', { name: '归档发布单' }).click()
-    await waitForBodyIncludes(page, [`已归档 ${release.title}`, '已归档'])
 
     assertNoBrowserFailures(pageErrors, failedRequests, failedResponses)
     return hint
@@ -365,6 +324,31 @@ async function waitForReleaseReady(apiBaseUrl, teacherToken, releaseTitle) {
       intervalMs: 250,
     },
   )
+}
+
+async function assignAndPublish(apiBaseUrl, teacherToken, releaseId, studentUsername) {
+  const studentsPayload = await requestJson(`${apiBaseUrl}/api/teacher/students`, {
+    token: teacherToken,
+  })
+  const studentRecord =
+    studentsPayload.items?.find((item) => String(item.username) === studentUsername) ?? null
+
+  if (!studentRecord) {
+    throw new Error(`student ${studentUsername} not found for assignment`)
+  }
+
+  await requestJson(`${apiBaseUrl}/api/teacher/assignments/${releaseId}/assign-students`, {
+    method: 'POST',
+    token: teacherToken,
+    body: {
+      studentIds: [Number(studentRecord.id)],
+    },
+  })
+
+  await requestJson(`${apiBaseUrl}/api/teacher/assignments/${releaseId}/publish`, {
+    method: 'POST',
+    token: teacherToken,
+  })
 }
 
 async function waitForStudentAssignment(apiBaseUrl, studentToken, releaseTitle) {

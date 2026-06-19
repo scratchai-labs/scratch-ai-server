@@ -10,6 +10,7 @@ function createRouterForTest() {
     history: createMemoryHistory(),
     routes: [
       { path: '/login', component: LoginView },
+      { path: '/classes', component: { template: '<div>classes</div>' } },
       { path: '/dashboard', component: { template: '<div>dashboard</div>' } },
       { path: '/admin', component: { template: '<div>admin overview</div>' } },
       { path: '/admin/teachers', component: { template: '<div>admin teachers</div>' } },
@@ -94,7 +95,7 @@ describe('LoginView', () => {
     await flushPromises()
 
     expect(wrapper.get('[role="status"]').text()).toContain('登录成功')
-    expect(router.currentRoute.value.fullPath).toBe('/dashboard')
+    expect(router.currentRoute.value.fullPath).toBe('/classes')
   })
 
   it('navigates admin users to the admin overview page after login succeeds', async () => {

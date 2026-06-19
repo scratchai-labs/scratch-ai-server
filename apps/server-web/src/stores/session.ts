@@ -16,7 +16,7 @@ export const useSessionStore = defineStore('session', () => {
   const isAdmin = computed(() => role.value === 'admin')
   const token = computed(() => session.value?.token ?? '')
   const teacherName = computed(() => session.value?.teacherName ?? '')
-  const landingPath = computed(() => (isAdmin.value ? '/admin' : '/dashboard'))
+  const landingPath = computed(() => (isAdmin.value ? '/admin' : '/classes'))
 
   async function login(api: TeacherApiClient, input: TeacherLoginInput) {
     const nextSession = await api.login(input)

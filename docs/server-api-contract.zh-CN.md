@@ -97,6 +97,20 @@ Authorization: Bearer <token>
 
 ## 3. 教师接口
 
+当前教师端第一优先工作流已经调整为：
+
+1. `POST /api/teacher/register` 或 `POST /api/teacher/login`
+2. `GET /api/teacher/classes`
+3. `POST /api/teacher/classes`
+4. `GET /api/teacher/classes/{id}`
+5. `GET /api/teacher/classes/{id}/students`
+6. `POST /api/teacher/classes/{id}/students` 或 `POST /api/teacher/classes/{id}/students/batch`
+7. `GET /api/teacher/classes/{id}/projects`
+8. `POST /api/teacher/classes/{id}/projects`
+9. `GET /api/teacher/projects/{id}` / `GET /api/teacher/projects/{id}/analysis` / `GET /api/teacher/projects/{id}/live`
+
+旧的 `/api/teacher/students*` 和 `/api/teacher/assignments*` 仍保留兼容入口，但新的教师 Web 已默认走“班级 -> 学生 / 项目”链路。
+
 ### 3.1 注册
 
 `POST /api/teacher/register`
