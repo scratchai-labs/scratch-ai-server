@@ -53,7 +53,7 @@ npm run server:api:docs
 
 - 教师 / 管理员 / 学生三套角色边界
 - 教师业务接口、学生业务接口、管理员总览 / 教师 / 学生管理接口
-- 管理员登录后进入 `/admin`，教师登录后进入原有教学后台
+- 管理员登录后进入 `/admin`，教师登录后默认进入 `/classes`
 
 因此，当前阶段的默认建议是：继续沿现有仓库自研扩展，不建议现在切整套开源管理系统。
 
@@ -675,16 +675,16 @@ Prompt 至少应包含：
 - `/admin/teachers`
 - `/admin/students`
 - `/admin/audit-logs`
-- `/students`
-- `/releases`
-- `/releases/:id/live`
+- `/classes`
+- `/classes/:id`
+- `/projects/:id`
 
 每个页面职责：
 
 - `/login`
   - 管理员与教师共用登录入口
   - 管理员登录后跳转 `/admin`
-  - 教师登录后跳转原有教学工作区
+  - 教师登录后默认跳转 `/classes`
 - `/admin`
   - 查看后台总览
 - `/admin/teachers`
@@ -695,20 +695,25 @@ Prompt 至少应包含：
 - `/admin/audit-logs`
   - 查看管理员敏感操作审计日志
   - 第一阶段先支持按 action 基础筛选
-- `/students`
-  - 单个创建、重置密码、查看状态
+- `/classes`
+  - 创建班级
+  - 查看班级列表与统计
+  - 从入口进入班级详情
+- `/classes/:id`
+  - 单个创建、编辑、删除学生
   - 支持下载真实 Excel `xlsx` 模板、按表内彩色提示填写并粘贴表格数据批量创建学生
-- `/releases`
-  - 上传 `sb3`、创建任务
-  - 在同页查看详情与分析结果
+  - 上传 `sb3`、创建项目
+  - 查看班级内项目列表并进入项目详情
+- `/projects/:id`
+  - 查看项目概览与分析结果
   - 分配学生、发布/归档
-- `/releases/:id/live`
   - 查看学生最新进度、最新提示、更新时间
 
 补充口径：
 
 - 管理员页面是同一套 Web 应用里的独立后台路由，不是单独前端项目
-- 当前发布单详情没有单独拆成 `/releases/:id` 页面，而是收在 `/releases` 的详情面板里
+- 教师主链路已经切到 `班级 -> 班级详情 -> 项目详情`
+- 旧 `/students`、`/releases`、`/releases/:id/live` 只保留兼容语义，不再作为当前 Web 主入口文档
 - 当前没有开放 Web 自助教师注册页；首次教师注册需调用 `POST /api/teacher/register`，或在管理员后台上线后由管理员创建
 - 教师访问管理员接口时，后端应返回 `403`
 

@@ -61,7 +61,7 @@ npx playwright install chromium
 ### 3. Dashboard
 
 - 页面可正常进入
-- 仍能看到 `Ada` 的最新提示与 `第一期发布单` 的摘要卡片
+- 仍能看到 `Ada` 的最新提示与 `迷宫项目` 的摘要卡片
 
 ### 4. 班级详情
 
@@ -74,6 +74,7 @@ npx playwright install chromium
 
 - 可从班级详情点击进入 `迷宫项目`
 - 页面能看到项目概览、教学点和学生当前进度与提示
+- 页面能看到 `Ada / Alan` 两名学生的进度与提示
 - `Ada` 当前提示为 `先把绿旗事件连起来`
 
 ## 结论
