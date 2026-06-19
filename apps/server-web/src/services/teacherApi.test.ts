@@ -527,6 +527,7 @@ describe('createFetchTeacherApiClient', () => {
     await expect(api.listStudents()).resolves.toEqual([
       {
         id: '1',
+        classroomId: '',
         username: '',
         name: 'Ada',
         className: '未分组',
@@ -542,6 +543,7 @@ describe('createFetchTeacherApiClient', () => {
     await expect(api.listReleases()).resolves.toEqual([
       {
         id: '7',
+        classroomId: '',
         title: '第一期发布单',
         goal: '',
         description: '',
@@ -636,6 +638,7 @@ describe('createFetchTeacherApiClient', () => {
     await expect(api.listStudents()).resolves.toEqual([
       {
         id: '1',
+        classroomId: '',
         username: '',
         name: 'Ada',
         className: '未分组',

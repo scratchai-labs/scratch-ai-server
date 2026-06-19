@@ -18,6 +18,11 @@ type BatchCreateInput struct {
 	InitialPassword string `json:"initialPassword" binding:"required"`
 }
 
+type UpdateInput struct {
+	Username    string `json:"username" binding:"required"`
+	DisplayName string `json:"displayName" binding:"required"`
+}
+
 type BatchCreateRequest struct {
 	Students []BatchCreateInput `json:"students" binding:"required,min=1,dive"`
 }
@@ -52,6 +57,8 @@ var (
 	ErrStudentDisabled    = errors.New("student account is disabled")
 	ErrUnauthorized       = errors.New("missing or invalid bearer token")
 	ErrStudentNotFound    = errors.New("student not found")
+	ErrClassroomNotFound  = errors.New("classroom not found")
+	ErrStudentConflict    = errors.New("student username already exists")
 )
 
 type Service struct {
@@ -62,7 +69,15 @@ func NewService(store *memory.Store) *Service {
 	return &Service{store: store}
 }
 
-func (s *Service) BatchCreate(teacherID int64, input BatchCreateRequest) (BatchCreateResult, error) {
+func (s *Service) BatchCreateLegacy(teacherID int64, input BatchCreateRequest) (BatchCreateResult, error) {
+	classroom, err := s.store.EnsureDefaultClassroom(teacherID)
+	if err != nil {
+		return BatchCreateResult{}, err
+	}
+	return s.BatchCreate(teacherID, classroom.ID, input)
+}
+
+func (s *Service) BatchCreate(teacherID int64, classroomID int64, input BatchCreateRequest) (BatchCreateResult, error) {
 	created := make([]StudentItem, 0, len(input.Students))
 	conflicts := make([]string, 0)
 
@@ -73,6 +88,7 @@ func (s *Service) BatchCreate(teacherID int64, input BatchCreateRequest) (BatchC
 		}
 
 		createdStudent, err := s.store.CreateStudent(teacherID, memory.CreateStudentInput{
+			ClassroomID:  classroomID,
 			Username:     strings.TrimSpace(student.Username),
 			DisplayName:  strings.TrimSpace(student.DisplayName),
 			PasswordHash: string(passwordHash),
@@ -81,6 +97,9 @@ func (s *Service) BatchCreate(teacherID int64, input BatchCreateRequest) (BatchC
 			if err == memory.ErrStudentConflict {
 				conflicts = append(conflicts, strings.TrimSpace(student.Username))
 				continue
+			}
+			if err == memory.ErrClassroomNotFound {
+				return BatchCreateResult{}, ErrClassroomNotFound
 			}
 			return BatchCreateResult{}, err
 		}
@@ -92,6 +111,15 @@ func (s *Service) BatchCreate(teacherID int64, input BatchCreateRequest) (BatchC
 		Created:   created,
 		Conflicts: conflicts,
 	}, nil
+}
+
+func (s *Service) ListByClassroom(teacherID int64, classroomID int64) []StudentItem {
+	students := s.store.ListStudentsByClassroom(teacherID, classroomID)
+	result := make([]StudentItem, 0, len(students))
+	for _, student := range students {
+		result = append(result, toStudentItem(student))
+	}
+	return result
 }
 
 func (s *Service) List(teacherID int64) []StudentItem {
@@ -164,13 +192,18 @@ func (s *Service) Logout(authorizationHeader string) error {
 	return s.store.DeleteStudentToken(token)
 }
 
-func (s *Service) ResetPassword(teacherID int64, studentID int64, newPassword string) (StudentItem, error) {
+func (s *Service) ResetPassword(teacherID int64, classroomID int64, studentID int64, newPassword string) (StudentItem, error) {
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
 	if err != nil {
 		return StudentItem{}, err
 	}
 
-	updatedStudent, err := s.store.UpdateStudentPassword(teacherID, studentID, string(passwordHash))
+	studentRecord, ok := s.store.GetStudentByClassroom(teacherID, classroomID, studentID)
+	if !ok {
+		return StudentItem{}, ErrStudentNotFound
+	}
+
+	updatedStudent, err := s.store.UpdateStudentPassword(teacherID, studentRecord.ID, string(passwordHash))
 	if err != nil {
 		if errors.Is(err, memory.ErrStudentNotFound) {
 			return StudentItem{}, ErrStudentNotFound
@@ -179,6 +212,42 @@ func (s *Service) ResetPassword(teacherID int64, studentID int64, newPassword st
 	}
 
 	return toStudentItem(updatedStudent), nil
+}
+
+func (s *Service) ResetPasswordLegacy(teacherID int64, studentID int64, newPassword string) (StudentItem, error) {
+	classroom, err := s.store.EnsureDefaultClassroom(teacherID)
+	if err != nil {
+		return StudentItem{}, err
+	}
+	return s.ResetPassword(teacherID, classroom.ID, studentID, newPassword)
+}
+
+func (s *Service) Update(teacherID int64, classroomID int64, studentID int64, input UpdateInput) (StudentItem, error) {
+	updatedStudent, err := s.store.UpdateStudent(
+		teacherID,
+		classroomID,
+		studentID,
+		strings.TrimSpace(input.Username),
+		strings.TrimSpace(input.DisplayName),
+	)
+	if err != nil {
+		if errors.Is(err, memory.ErrStudentNotFound) {
+			return StudentItem{}, ErrStudentNotFound
+		}
+		if errors.Is(err, memory.ErrStudentConflict) {
+			return StudentItem{}, ErrStudentConflict
+		}
+		return StudentItem{}, err
+	}
+	return toStudentItem(updatedStudent), nil
+}
+
+func (s *Service) Delete(teacherID int64, classroomID int64, studentID int64) error {
+	err := s.store.DeleteStudent(teacherID, classroomID, studentID)
+	if errors.Is(err, memory.ErrStudentNotFound) {
+		return ErrStudentNotFound
+	}
+	return err
 }
 
 func toStudentItem(student memory.Student) StudentItem {

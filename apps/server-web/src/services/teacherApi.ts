@@ -40,6 +40,26 @@ export interface CreateTeacherStudentInput {
   initialPassword: string
 }
 
+export interface UpdateTeacherStudentInput {
+  username: string
+  displayName: string
+}
+
+export interface TeacherClassroom {
+  id: string
+  name: string
+  studentCount: number
+  projectCount: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface TeacherClassroomDetail extends TeacherClassroom {}
+
+export interface CreateTeacherClassroomInput {
+  name: string
+}
+
 export interface BatchCreateTeacherStudentsResult {
   created: TeacherStudent[]
   conflicts: string[]
@@ -79,6 +99,7 @@ export interface ManagedStudent {
 
 export interface TeacherStudent {
   id: string
+  classroomId?: string
   username: string
   name: string
   className: string
@@ -95,6 +116,7 @@ export type TeacherReleaseStatus = 'draft' | 'published' | 'archived'
 
 export interface TeacherRelease {
   id: string
+  classroomId?: string
   title: string
   goal: string
   description: string
@@ -182,14 +204,30 @@ export interface LiveDashboardSnapshot {
 export interface TeacherApiClient {
   login(input: TeacherLoginInput): Promise<TeacherSession>
   logout?(): Promise<void>
+  listClassrooms?(): Promise<TeacherClassroom[]>
+  createClassroom?(input: CreateTeacherClassroomInput): Promise<TeacherClassroom>
+  getClassroomDetail?(classroomId: string): Promise<TeacherClassroomDetail>
+  updateClassroom?(classroomId: string, input: CreateTeacherClassroomInput): Promise<TeacherClassroom>
+  deleteClassroom?(classroomId: string): Promise<void>
   listStudents(): Promise<TeacherStudent[]>
+  listClassroomStudents?(classroomId: string): Promise<TeacherStudent[]>
   createStudent?(input: CreateTeacherStudentInput): Promise<TeacherStudent>
+  createClassroomStudent?(classroomId: string, input: CreateTeacherStudentInput): Promise<TeacherStudent>
   batchCreateStudents?(
     input: CreateTeacherStudentInput[],
   ): Promise<BatchCreateTeacherStudentsResult>
+  batchCreateClassroomStudents?(
+    classroomId: string,
+    input: CreateTeacherStudentInput[],
+  ): Promise<BatchCreateTeacherStudentsResult>
   resetStudentPassword?(studentId: string, newPassword: string): Promise<TeacherStudent>
+  resetClassroomStudentPassword?(classroomId: string, studentId: string, newPassword: string): Promise<TeacherStudent>
+  updateClassroomStudent?(classroomId: string, studentId: string, input: UpdateTeacherStudentInput): Promise<TeacherStudent>
+  deleteClassroomStudent?(classroomId: string, studentId: string): Promise<void>
   listReleases(): Promise<TeacherRelease[]>
+  listClassroomProjects?(classroomId: string): Promise<TeacherRelease[]>
   createRelease?(input: CreateTeacherReleaseInput): Promise<TeacherReleaseMutationResult>
+  createClassroomProject?(classroomId: string, input: CreateTeacherReleaseInput): Promise<TeacherReleaseMutationResult>
   getReleaseDetail?(releaseId: string): Promise<TeacherReleaseDetail>
   getReleaseAnalysis?(releaseId: string): Promise<TeacherReleaseAnalysis>
   assignStudentsToRelease?(
@@ -321,6 +359,49 @@ export function createFetchTeacherApiClient(options: {
         },
       )
     },
+    async listClassrooms() {
+      const payload = await requestAuthedJson<unknown>('/api/teacher/classes')
+      return normalizeClassrooms(payload)
+    },
+    async createClassroom(input) {
+      const payload = await requestAuthedMutation<unknown>('/api/teacher/classes', input)
+      return normalizeTeacherClassroom(payload)
+    },
+    async getClassroomDetail(classroomId) {
+      const payload = await requestAuthedJson<unknown>(`/api/teacher/classes/${classroomId}`)
+      return normalizeTeacherClassroomDetail(payload)
+    },
+    async updateClassroom(classroomId, input) {
+      const payload = await requestJson<unknown>(
+        fetchImpl,
+        buildApiUrl(baseUrl, `/api/teacher/classes/${classroomId}`),
+        {
+          method: 'PATCH',
+          headers: {
+            ...(buildAuthHeaders(getToken) ?? {}),
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(input),
+        },
+        {
+          onUnauthorized,
+        },
+      )
+      return normalizeTeacherClassroom(payload)
+    },
+    async deleteClassroom(classroomId) {
+      await requestJson(
+        fetchImpl,
+        buildApiUrl(baseUrl, `/api/teacher/classes/${classroomId}`),
+        {
+          method: 'DELETE',
+          headers: buildAuthHeaders(getToken),
+        },
+        {
+          onUnauthorized,
+        },
+      )
+    },
     async listStudents() {
       const payload = await requestAuthedJson<unknown>('/api/teacher/students')
       const students = normalizeStudents(payload)
@@ -348,12 +429,26 @@ export function createFetchTeacherApiClient(options: {
         .map((student, index) => applyStudentHistory(student, histories[index] ?? []))
         .sort(compareStudentsByUpdatedAt)
     },
+    async listClassroomStudents(classroomId) {
+      const payload = await requestAuthedJson<unknown>(`/api/teacher/classes/${classroomId}/students`)
+      return normalizeStudents(payload)
+    },
     async createStudent(input) {
       const payload = await requestAuthedMutation<unknown>('/api/teacher/students', input)
       return normalizeCreatedTeacherStudent(payload)
     },
+    async createClassroomStudent(classroomId, input) {
+      const payload = await requestAuthedMutation<unknown>(`/api/teacher/classes/${classroomId}/students`, input)
+      return normalizeCreatedTeacherStudent(payload)
+    },
     async batchCreateStudents(input) {
       const payload = await requestAuthedMutation<unknown>('/api/teacher/students/batch', {
+        students: input,
+      })
+      return normalizeTeacherStudentBatchResult(payload)
+    },
+    async batchCreateClassroomStudents(classroomId, input) {
+      const payload = await requestAuthedMutation<unknown>(`/api/teacher/classes/${classroomId}/students/batch`, {
         students: input,
       })
       return normalizeTeacherStudentBatchResult(payload)
@@ -365,8 +460,50 @@ export function createFetchTeacherApiClient(options: {
       )
       return normalizeTeacherStudentRecord(payload)
     },
+    async resetClassroomStudentPassword(classroomId, studentId, newPassword) {
+      const payload = await requestAuthedMutation<unknown>(
+        `/api/teacher/classes/${classroomId}/students/${studentId}/reset-password`,
+        { newPassword },
+      )
+      return normalizeTeacherStudentRecord(payload)
+    },
+    async updateClassroomStudent(classroomId, studentId, input) {
+      const payload = await requestJson<unknown>(
+        fetchImpl,
+        buildApiUrl(baseUrl, `/api/teacher/classes/${classroomId}/students/${studentId}`),
+        {
+          method: 'PATCH',
+          headers: {
+            ...(buildAuthHeaders(getToken) ?? {}),
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(input),
+        },
+        {
+          onUnauthorized,
+        },
+      )
+      return normalizeTeacherStudentRecord(payload)
+    },
+    async deleteClassroomStudent(classroomId, studentId) {
+      await requestJson(
+        fetchImpl,
+        buildApiUrl(baseUrl, `/api/teacher/classes/${classroomId}/students/${studentId}`),
+        {
+          method: 'DELETE',
+          headers: buildAuthHeaders(getToken),
+        },
+        {
+          onUnauthorized,
+        },
+      )
+    },
     async listReleases() {
       const payload = await requestAuthedJson<unknown>('/api/teacher/assignments')
+      return normalizeReleases(payload)
+    },
+    async listClassroomProjects(classroomId) {
+      const payload = await requestAuthedJson<unknown>(`/api/teacher/classes/${classroomId}/projects`)
       return normalizeReleases(payload)
     },
     async createRelease(input) {
@@ -378,6 +515,26 @@ export function createFetchTeacherApiClient(options: {
       const payload = await requestJson<unknown>(
         fetchImpl,
         buildApiUrl(baseUrl, '/api/teacher/assignments'),
+        {
+          method: 'POST',
+          headers: buildAuthHeaders(getToken),
+          body,
+        },
+        {
+          onUnauthorized,
+        },
+      )
+      return normalizeTeacherReleaseMutation(payload)
+    },
+    async createClassroomProject(classroomId, input) {
+      const body = new FormData()
+      body.append('title', input.title)
+      body.append('goal', input.goal)
+      body.append('description', input.description)
+      body.append('sb3', input.file)
+      const payload = await requestJson<unknown>(
+        fetchImpl,
+        buildApiUrl(baseUrl, `/api/teacher/classes/${classroomId}/projects`),
         {
           method: 'POST',
           headers: buildAuthHeaders(getToken),
@@ -537,6 +694,29 @@ function buildAuthHeaders(getToken: (() => string) | undefined): HeadersInit | u
   }
 }
 
+function normalizeClassrooms(payload: unknown): TeacherClassroom[] {
+  return normalizeCollection<Record<string, unknown>>(payload).map((item) =>
+    normalizeTeacherClassroom(item),
+  )
+}
+
+function normalizeTeacherClassroom(payload: unknown): TeacherClassroom {
+  const record = payload && typeof payload === 'object' ? (payload as Record<string, unknown>) : {}
+
+  return {
+    id: String(record.id ?? ''),
+    name: String(record.name ?? ''),
+    studentCount: Number(record.studentCount ?? 0),
+    projectCount: Number(record.projectCount ?? 0),
+    createdAt: String(record.createdAt ?? '—'),
+    updatedAt: String(record.updatedAt ?? '—'),
+  }
+}
+
+function normalizeTeacherClassroomDetail(payload: unknown): TeacherClassroomDetail {
+  return normalizeTeacherClassroom(payload)
+}
+
 function normalizeStudents(payload: unknown): TeacherStudent[] {
   return normalizeCollection<Record<string, unknown>>(payload).map((item) =>
     normalizeTeacherStudentRecord(item),
@@ -573,9 +753,10 @@ function normalizeTeacherStudentRecord(payload: unknown): TeacherStudent {
 
   return {
     id: String(record.id ?? ''),
+    classroomId: pickFirstNonEmpty(record.classroomId),
     username: String(record.username ?? ''),
     name: String(record.displayName ?? record.name ?? ''),
-    className: '未分组',
+    className: pickFirstNonEmpty(record.classroomName, record.className) || '未分组',
     progress: 0,
     status: '',
     currentTarget: '',
@@ -723,10 +904,11 @@ function pickLatestStudentHistory(historyItems: TeacherStudentHistoryItem[]): Te
 function normalizeReleases(payload: unknown): TeacherRelease[] {
   return normalizeCollection<Record<string, unknown>>(payload).map((item) => ({
     id: String(item.id ?? ''),
+    classroomId: pickFirstNonEmpty(item.classroomId),
     title: String(item.title ?? ''),
     goal: String(item.goal ?? ''),
     description: String(item.description ?? ''),
-    className: '未分组',
+    className: pickFirstNonEmpty(item.classroomName, item.className) || '未分组',
     status: normalizeReleaseStatus(item.status),
     analysisStatus: String(item.analysisStatus ?? 'pending'),
     studentCount: Number(item.studentCount ?? 0),

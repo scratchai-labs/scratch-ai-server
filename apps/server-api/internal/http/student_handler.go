@@ -22,6 +22,18 @@ type resetPasswordRequest struct {
 	NewPassword string `json:"newPassword" binding:"required"`
 }
 
+func parseClassroomAndStudentIDs(c *gin.Context) (int64, int64, bool) {
+	classroomID, ok := parseIDParam(c, "id", "classroom")
+	if !ok {
+		return 0, 0, false
+	}
+	studentID, ok := parseIDParam(c, "studentId", "student")
+	if !ok {
+		return 0, 0, false
+	}
+	return classroomID, studentID, true
+}
+
 // handleTeacherStudentsList godoc
 //
 //	@Summary		List students
@@ -70,7 +82,7 @@ func (h *studentHandler) handleTeacherStudentCreate(c *gin.Context) {
 		return
 	}
 
-	result, err := h.studentService.BatchCreate(teacherRecord.ID, student.BatchCreateRequest{
+	result, err := h.studentService.BatchCreateLegacy(teacherRecord.ID, student.BatchCreateRequest{
 		Students: []student.BatchCreateInput{request},
 	})
 	if err != nil {
@@ -107,13 +119,177 @@ func (h *studentHandler) handleTeacherStudentsBatch(c *gin.Context) {
 		return
 	}
 
-	result, err := h.studentService.BatchCreate(teacherRecord.ID, request)
+	result, err := h.studentService.BatchCreateLegacy(teacherRecord.ID, request)
 	if err != nil {
 		writeJSONError(c, 500, "student batch create failed")
 		return
 	}
 
 	writeJSON(c, 201, result)
+}
+
+func (h *studentHandler) handleTeacherClassStudentsList(c *gin.Context) {
+	teacherRecord := mustTeacher(c)
+	if teacherRecord.ID == 0 {
+		return
+	}
+
+	classroomID, ok := parseIDParam(c, "id", "classroom")
+	if !ok {
+		return
+	}
+
+	writeJSON(c, 200, TeacherStudentsResponse{
+		Items: h.studentService.ListByClassroom(teacherRecord.ID, classroomID),
+	})
+}
+
+func (h *studentHandler) handleTeacherClassStudentCreate(c *gin.Context) {
+	teacherRecord := mustTeacher(c)
+	if teacherRecord.ID == 0 {
+		return
+	}
+
+	classroomID, ok := parseIDParam(c, "id", "classroom")
+	if !ok {
+		return
+	}
+
+	var request student.BatchCreateInput
+	if err := c.ShouldBindJSON(&request); err != nil {
+		writeJSONError(c, 400, "invalid request body")
+		return
+	}
+
+	result, err := h.studentService.BatchCreate(teacherRecord.ID, classroomID, student.BatchCreateRequest{
+		Students: []student.BatchCreateInput{request},
+	})
+	if err != nil {
+		if errors.Is(err, student.ErrClassroomNotFound) {
+			writeJSONError(c, 404, err.Error())
+			return
+		}
+		writeJSONError(c, 500, "student create failed")
+		return
+	}
+
+	writeJSON(c, 201, result)
+}
+
+func (h *studentHandler) handleTeacherClassStudentsBatch(c *gin.Context) {
+	teacherRecord := mustTeacher(c)
+	if teacherRecord.ID == 0 {
+		return
+	}
+
+	classroomID, ok := parseIDParam(c, "id", "classroom")
+	if !ok {
+		return
+	}
+
+	var request student.BatchCreateRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		writeJSONError(c, 400, "invalid request body")
+		return
+	}
+
+	result, err := h.studentService.BatchCreate(teacherRecord.ID, classroomID, request)
+	if err != nil {
+		if errors.Is(err, student.ErrClassroomNotFound) {
+			writeJSONError(c, 404, err.Error())
+			return
+		}
+		writeJSONError(c, 500, "student batch create failed")
+		return
+	}
+
+	writeJSON(c, 201, result)
+}
+
+func (h *studentHandler) handleTeacherClassStudentUpdate(c *gin.Context) {
+	teacherRecord := mustTeacher(c)
+	if teacherRecord.ID == 0 {
+		return
+	}
+
+	classroomID, studentID, ok := parseClassroomAndStudentIDs(c)
+	if !ok {
+		return
+	}
+
+	var request student.UpdateInput
+	if err := c.ShouldBindJSON(&request); err != nil {
+		writeJSONError(c, 400, "invalid request body")
+		return
+	}
+
+	updatedStudent, err := h.studentService.Update(teacherRecord.ID, classroomID, studentID, request)
+	if err != nil {
+		switch {
+		case errors.Is(err, student.ErrStudentNotFound):
+			writeJSONError(c, 404, err.Error())
+		case errors.Is(err, student.ErrStudentConflict):
+			writeJSONError(c, 409, err.Error())
+		default:
+			writeJSONError(c, 500, "student update failed")
+		}
+		return
+	}
+
+	writeJSON(c, 200, updatedStudent)
+}
+
+func (h *studentHandler) handleTeacherClassStudentPasswordReset(c *gin.Context) {
+	teacherRecord := mustTeacher(c)
+	if teacherRecord.ID == 0 {
+		return
+	}
+
+	classroomID, studentID, ok := parseClassroomAndStudentIDs(c)
+	if !ok {
+		return
+	}
+
+	var request resetPasswordRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		writeJSONError(c, 400, "invalid request body")
+		return
+	}
+
+	updatedStudent, err := h.studentService.ResetPassword(teacherRecord.ID, classroomID, studentID, request.NewPassword)
+	if err != nil {
+		if errors.Is(err, student.ErrStudentNotFound) {
+			writeJSONError(c, 404, err.Error())
+			return
+		}
+		writeJSONError(c, 500, "student password reset failed")
+		return
+	}
+
+	writeJSON(c, 200, updatedStudent)
+}
+
+func (h *studentHandler) handleTeacherClassStudentDelete(c *gin.Context) {
+	teacherRecord := mustTeacher(c)
+	if teacherRecord.ID == 0 {
+		return
+	}
+
+	classroomID, studentID, ok := parseClassroomAndStudentIDs(c)
+	if !ok {
+		return
+	}
+
+	if err := h.studentService.Delete(teacherRecord.ID, classroomID, studentID); err != nil {
+		if errors.Is(err, student.ErrStudentNotFound) {
+			writeJSONError(c, 404, err.Error())
+			return
+		}
+		writeJSONError(c, 500, "student delete failed")
+		return
+	}
+
+	writeJSON(c, 200, StatusResponse{Status: "ok"})
 }
 
 // handleTeacherStudentPasswordReset godoc
@@ -149,7 +325,7 @@ func (h *studentHandler) handleTeacherStudentPasswordReset(c *gin.Context) {
 		return
 	}
 
-	updatedStudent, err := h.studentService.ResetPassword(teacherRecord.ID, studentID, request.NewPassword)
+	updatedStudent, err := h.studentService.ResetPasswordLegacy(teacherRecord.ID, studentID, request.NewPassword)
 	if err != nil {
 		if errors.Is(err, student.ErrStudentNotFound) {
 			writeJSONError(c, 404, err.Error())

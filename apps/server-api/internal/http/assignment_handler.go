@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/scratchai-labs/scratch-ai-server/apps/server-api/internal/assignment"
+	"github.com/scratchai-labs/scratch-ai-server/apps/server-api/internal/store/memory"
 )
 
 type assignmentHandler struct {
@@ -88,7 +89,7 @@ func (h *assignmentHandler) handleTeacherAssignments(c *gin.Context) {
 		return
 	}
 
-	createdAssignment, err := h.assignmentService.Upload(c.Request.Context(), teacherRecord.ID, assignment.UploadInput{
+	createdAssignment, err := h.assignmentService.UploadLegacy(c.Request.Context(), teacherRecord.ID, assignment.UploadInput{
 		Title:       strings.TrimSpace(c.Request.FormValue("title")),
 		Goal:        strings.TrimSpace(c.Request.FormValue("goal")),
 		Description: strings.TrimSpace(c.Request.FormValue("description")),
@@ -102,6 +103,87 @@ func (h *assignmentHandler) handleTeacherAssignments(c *gin.Context) {
 			writeJSONError(c, 400, err.Error())
 		default:
 			writeJSONError(c, 500, "assignment upload failed")
+		}
+		return
+	}
+
+	writeJSON(c, 201, AssignmentUploadResponse{
+		ID:             createdAssignment.ID,
+		Title:          createdAssignment.Title,
+		Goal:           createdAssignment.Goal,
+		Description:    createdAssignment.Description,
+		Status:         createdAssignment.Status,
+		AnalysisStatus: createdAssignment.AnalysisStatus,
+	})
+}
+
+func (h *assignmentHandler) handleTeacherClassProjectsList(c *gin.Context) {
+	teacherRecord := mustTeacher(c)
+	if teacherRecord.ID == 0 {
+		return
+	}
+
+	classroomID, ok := parseIDParam(c, "id", "classroom")
+	if !ok {
+		return
+	}
+
+	writeJSON(c, 200, TeacherAssignmentsResponse{
+		Items: h.assignmentService.ListForTeacherByClassroom(teacherRecord.ID, classroomID),
+	})
+}
+
+func (h *assignmentHandler) handleTeacherClassProjectsCreate(c *gin.Context) {
+	teacherRecord := mustTeacher(c)
+	if teacherRecord.ID == 0 {
+		return
+	}
+
+	classroomID, ok := parseIDParam(c, "id", "classroom")
+	if !ok {
+		return
+	}
+
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxSB3MultipartBodyBytes)
+	if err := c.Request.ParseMultipartForm(assignment.MaxSB3Bytes); err != nil {
+		writeJSONError(c, 400, "invalid multipart form")
+		return
+	}
+
+	file, fileHeader, err := c.Request.FormFile("sb3")
+	if err != nil {
+		writeJSONError(c, 400, "sb3 file is required")
+		return
+	}
+	defer file.Close()
+
+	rawSB3, err := readSB3Upload(file, assignment.MaxSB3Bytes)
+	if err != nil {
+		if errors.Is(err, assignment.ErrSB3TooLarge) {
+			writeJSONError(c, 400, err.Error())
+			return
+		}
+		writeJSONError(c, 500, "failed to read sb3 file")
+		return
+	}
+
+	createdAssignment, err := h.assignmentService.Upload(c.Request.Context(), teacherRecord.ID, assignment.UploadInput{
+		ClassroomID:  classroomID,
+		Title:        strings.TrimSpace(c.Request.FormValue("title")),
+		Goal:         strings.TrimSpace(c.Request.FormValue("goal")),
+		Description:  strings.TrimSpace(c.Request.FormValue("description")),
+		FileName:     fileHeader.Filename,
+		ContentType:  fileHeader.Header.Get("Content-Type"),
+		SB3Data:      rawSB3,
+	})
+	if err != nil {
+		switch {
+		case errors.Is(err, assignment.ErrInvalidSB3File), errors.Is(err, assignment.ErrInvalidSB3MIME), errors.Is(err, assignment.ErrSB3TooLarge):
+			writeJSONError(c, 400, err.Error())
+		case errors.Is(err, memory.ErrClassroomNotFound):
+			writeJSONError(c, 404, "classroom not found")
+		default:
+			writeJSONError(c, 500, "project upload failed")
 		}
 		return
 	}

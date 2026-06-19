@@ -71,6 +71,9 @@ func (b *sqlBackend) initSchema() error {
 	if err := b.ensureTeacherColumns(); err != nil {
 		return err
 	}
+	if err := b.ensureClassroomColumns(); err != nil {
+		return err
+	}
 	return b.ensureAssignmentAnalysisColumns()
 }
 
@@ -308,15 +311,150 @@ func (b *sqlBackend) ListAuditLogs() []AuditLog {
 	return records
 }
 
+func (b *sqlBackend) CreateClassroom(teacherID int64, input CreateClassroomInput) (Classroom, error) {
+	now := nowUTC()
+	id, err := b.insertReturningID(
+		"INSERT INTO classrooms (teacher_id, name, created_at, updated_at) VALUES (?, ?, ?, ?)",
+		teacherID,
+		input.Name,
+		now,
+		now,
+	)
+	if err != nil {
+		return Classroom{}, err
+	}
+
+	return Classroom{
+		ID:        id,
+		TeacherID: teacherID,
+		Name:      input.Name,
+		CreatedAt: parseTime(now),
+		UpdatedAt: parseTime(now),
+	}, nil
+}
+
+func (b *sqlBackend) EnsureDefaultClassroom(teacherID int64) (Classroom, error) {
+	row := b.db.QueryRow(
+		b.rebind("SELECT id, teacher_id, name, created_at, updated_at FROM classrooms WHERE teacher_id = ? AND name = ? LIMIT 1"),
+		teacherID,
+		"默认班级",
+	)
+	record, err := scanClassroom(row)
+	if err == nil {
+		return record, nil
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return Classroom{}, err
+	}
+	return b.CreateClassroom(teacherID, CreateClassroomInput{Name: "默认班级"})
+}
+
+func (b *sqlBackend) ListClassroomsByTeacher(teacherID int64) []Classroom {
+	rows, err := b.db.Query(
+		b.rebind("SELECT id, teacher_id, name, created_at, updated_at FROM classrooms WHERE teacher_id = ? ORDER BY id ASC"),
+		teacherID,
+	)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+
+	records := make([]Classroom, 0)
+	for rows.Next() {
+		record, scanErr := scanClassroom(rows)
+		if scanErr == nil {
+			records = append(records, record)
+		}
+	}
+	return records
+}
+
+func (b *sqlBackend) GetClassroomByTeacher(teacherID int64, classroomID int64) (Classroom, bool) {
+	row := b.db.QueryRow(
+		b.rebind("SELECT id, teacher_id, name, created_at, updated_at FROM classrooms WHERE teacher_id = ? AND id = ?"),
+		teacherID,
+		classroomID,
+	)
+	record, err := scanClassroom(row)
+	if errors.Is(err, sql.ErrNoRows) {
+		return Classroom{}, false
+	}
+	return record, err == nil
+}
+
+func (b *sqlBackend) UpdateClassroom(teacherID int64, classroomID int64, name string) (Classroom, error) {
+	if _, ok := b.GetClassroomByTeacher(teacherID, classroomID); !ok {
+		return Classroom{}, ErrClassroomNotFound
+	}
+
+	_, err := b.db.Exec(
+		b.rebind("UPDATE classrooms SET name = ?, updated_at = ? WHERE teacher_id = ? AND id = ?"),
+		name,
+		nowUTC(),
+		teacherID,
+		classroomID,
+	)
+	if err != nil {
+		return Classroom{}, err
+	}
+
+	record, _ := b.GetClassroomByTeacher(teacherID, classroomID)
+	return record, nil
+}
+
+func (b *sqlBackend) DeleteClassroom(teacherID int64, classroomID int64) error {
+	if _, ok := b.GetClassroomByTeacher(teacherID, classroomID); !ok {
+		return ErrClassroomNotFound
+	}
+	if b.CountStudentsByClassroom(classroomID) > 0 || b.CountAssignmentsByClassroom(classroomID) > 0 {
+		return ErrClassroomNotEmpty
+	}
+
+	_, err := b.db.Exec(
+		b.rebind("DELETE FROM classrooms WHERE teacher_id = ? AND id = ?"),
+		teacherID,
+		classroomID,
+	)
+	return err
+}
+
+func (b *sqlBackend) CountStudentsByClassroom(classroomID int64) int {
+	row := b.db.QueryRow(
+		b.rebind("SELECT COUNT(*) FROM students WHERE classroom_id = ?"),
+		classroomID,
+	)
+	var count int
+	if err := row.Scan(&count); err != nil {
+		return 0
+	}
+	return count
+}
+
+func (b *sqlBackend) CountAssignmentsByClassroom(classroomID int64) int {
+	row := b.db.QueryRow(
+		b.rebind("SELECT COUNT(*) FROM assignments WHERE classroom_id = ?"),
+		classroomID,
+	)
+	var count int
+	if err := row.Scan(&count); err != nil {
+		return 0
+	}
+	return count
+}
+
 func (b *sqlBackend) CreateStudent(teacherID int64, input CreateStudentInput) (Student, error) {
 	if _, ok := b.FindStudentByUsername(input.Username); ok {
 		return Student{}, ErrStudentConflict
 	}
+	if _, ok := b.GetClassroomByTeacher(teacherID, input.ClassroomID); !ok {
+		return Student{}, ErrClassroomNotFound
+	}
 
 	now := nowUTC()
 	id, err := b.insertReturningID(
-		"INSERT INTO students (teacher_id, username, display_name, password_hash, status, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+		"INSERT INTO students (teacher_id, classroom_id, username, display_name, password_hash, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
 		teacherID,
+		input.ClassroomID,
 		input.Username,
 		input.DisplayName,
 		input.PasswordHash,
@@ -330,6 +468,7 @@ func (b *sqlBackend) CreateStudent(teacherID int64, input CreateStudentInput) (S
 	return Student{
 		ID:           id,
 		TeacherID:    teacherID,
+		ClassroomID:  input.ClassroomID,
 		Username:     input.Username,
 		DisplayName:  input.DisplayName,
 		PasswordHash: input.PasswordHash,
@@ -340,7 +479,7 @@ func (b *sqlBackend) CreateStudent(teacherID int64, input CreateStudentInput) (S
 
 func (b *sqlBackend) ListStudentsByTeacher(teacherID int64) []Student {
 	rows, err := b.db.Query(
-		b.rebind("SELECT id, teacher_id, username, display_name, password_hash, status, created_at FROM students WHERE teacher_id = ? ORDER BY id ASC"),
+		b.rebind("SELECT id, teacher_id, classroom_id, username, display_name, password_hash, status, created_at FROM students WHERE teacher_id = ? ORDER BY id ASC"),
 		teacherID,
 	)
 	if err != nil {
@@ -360,7 +499,7 @@ func (b *sqlBackend) ListStudentsByTeacher(teacherID int64) []Student {
 
 func (b *sqlBackend) ListStudents() []Student {
 	rows, err := b.db.Query(
-		b.rebind("SELECT id, teacher_id, username, display_name, password_hash, status, created_at FROM students ORDER BY id ASC"),
+		b.rebind("SELECT id, teacher_id, classroom_id, username, display_name, password_hash, status, created_at FROM students ORDER BY id ASC"),
 	)
 	if err != nil {
 		return nil
@@ -379,7 +518,7 @@ func (b *sqlBackend) ListStudents() []Student {
 
 func (b *sqlBackend) FindStudentByUsername(username string) (Student, bool) {
 	row := b.db.QueryRow(
-		b.rebind("SELECT id, teacher_id, username, display_name, password_hash, status, created_at FROM students WHERE username = ?"),
+		b.rebind("SELECT id, teacher_id, classroom_id, username, display_name, password_hash, status, created_at FROM students WHERE username = ?"),
 		username,
 	)
 	record, err := scanStudent(row)
@@ -409,7 +548,7 @@ func (b *sqlBackend) DeleteStudentToken(token string) error {
 func (b *sqlBackend) FindStudentByToken(token string) (Student, bool) {
 	row := b.db.QueryRow(
 		b.rebind(`
-			SELECT s.id, s.teacher_id, s.username, s.display_name, s.password_hash, s.status, s.created_at
+			SELECT s.id, s.teacher_id, s.classroom_id, s.username, s.display_name, s.password_hash, s.status, s.created_at
 			FROM student_sessions ss
 			JOIN students s ON s.id = ss.student_id
 			WHERE ss.token = ?
@@ -425,7 +564,7 @@ func (b *sqlBackend) FindStudentByToken(token string) (Student, bool) {
 
 func (b *sqlBackend) GetStudentByTeacher(teacherID int64, studentID int64) (Student, bool) {
 	row := b.db.QueryRow(
-		b.rebind("SELECT id, teacher_id, username, display_name, password_hash, status, created_at FROM students WHERE teacher_id = ? AND id = ?"),
+		b.rebind("SELECT id, teacher_id, classroom_id, username, display_name, password_hash, status, created_at FROM students WHERE teacher_id = ? AND id = ?"),
 		teacherID,
 		studentID,
 	)
@@ -438,7 +577,7 @@ func (b *sqlBackend) GetStudentByTeacher(teacherID int64, studentID int64) (Stud
 
 func (b *sqlBackend) GetStudentByID(studentID int64) (Student, bool) {
 	row := b.db.QueryRow(
-		b.rebind("SELECT id, teacher_id, username, display_name, password_hash, status, created_at FROM students WHERE id = ?"),
+		b.rebind("SELECT id, teacher_id, classroom_id, username, display_name, password_hash, status, created_at FROM students WHERE id = ?"),
 		studentID,
 	)
 	record, err := scanStudent(row)
@@ -446,6 +585,41 @@ func (b *sqlBackend) GetStudentByID(studentID int64) (Student, bool) {
 		return Student{}, false
 	}
 	return record, err == nil
+}
+
+func (b *sqlBackend) GetStudentByClassroom(teacherID int64, classroomID int64, studentID int64) (Student, bool) {
+	row := b.db.QueryRow(
+		b.rebind("SELECT id, teacher_id, classroom_id, username, display_name, password_hash, status, created_at FROM students WHERE teacher_id = ? AND classroom_id = ? AND id = ?"),
+		teacherID,
+		classroomID,
+		studentID,
+	)
+	record, err := scanStudent(row)
+	if errors.Is(err, sql.ErrNoRows) {
+		return Student{}, false
+	}
+	return record, err == nil
+}
+
+func (b *sqlBackend) ListStudentsByClassroom(teacherID int64, classroomID int64) []Student {
+	rows, err := b.db.Query(
+		b.rebind("SELECT id, teacher_id, classroom_id, username, display_name, password_hash, status, created_at FROM students WHERE teacher_id = ? AND classroom_id = ? ORDER BY id ASC"),
+		teacherID,
+		classroomID,
+	)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+
+	records := make([]Student, 0)
+	for rows.Next() {
+		record, scanErr := scanStudent(rows)
+		if scanErr == nil {
+			records = append(records, record)
+		}
+	}
+	return records
 }
 
 func (b *sqlBackend) UpdateStudentPassword(teacherID int64, studentID int64, passwordHash string) (Student, error) {
@@ -512,11 +686,53 @@ func (b *sqlBackend) UpdateStudentStatus(studentID int64, status string) (Studen
 	return record, nil
 }
 
+func (b *sqlBackend) UpdateStudent(teacherID int64, classroomID int64, studentID int64, username string, displayName string) (Student, error) {
+	record, ok := b.GetStudentByClassroom(teacherID, classroomID, studentID)
+	if !ok {
+		return Student{}, ErrStudentNotFound
+	}
+	if existing, exists := b.FindStudentByUsername(username); exists && existing.ID != record.ID {
+		return Student{}, ErrStudentConflict
+	}
+
+	_, err := b.db.Exec(
+		b.rebind("UPDATE students SET username = ?, display_name = ? WHERE teacher_id = ? AND classroom_id = ? AND id = ?"),
+		username,
+		displayName,
+		teacherID,
+		classroomID,
+		studentID,
+	)
+	if err != nil {
+		return Student{}, err
+	}
+
+	record, _ = b.GetStudentByClassroom(teacherID, classroomID, studentID)
+	return record, nil
+}
+
+func (b *sqlBackend) DeleteStudent(teacherID int64, classroomID int64, studentID int64) error {
+	if _, ok := b.GetStudentByClassroom(teacherID, classroomID, studentID); !ok {
+		return ErrStudentNotFound
+	}
+	_, err := b.db.Exec(
+		b.rebind("DELETE FROM students WHERE teacher_id = ? AND classroom_id = ? AND id = ?"),
+		teacherID,
+		classroomID,
+		studentID,
+	)
+	return err
+}
+
 func (b *sqlBackend) CreateAssignment(teacherID int64, input CreateAssignmentInput) (Assignment, error) {
+	if _, ok := b.GetClassroomByTeacher(teacherID, input.ClassroomID); !ok {
+		return Assignment{}, ErrClassroomNotFound
+	}
 	now := nowUTC()
 	id, err := b.insertReturningID(
-		"INSERT INTO assignments (teacher_id, title, goal, description, status, file_name, sb3_file_path, analysis_status, analysis_error_message, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+		"INSERT INTO assignments (teacher_id, classroom_id, title, goal, description, status, file_name, sb3_file_path, analysis_status, analysis_error_message, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
 		teacherID,
+		input.ClassroomID,
 		input.Title,
 		input.Goal,
 		input.Description,
@@ -545,6 +761,10 @@ func (b *sqlBackend) GetAssignmentByTeacher(teacherID int64, assignmentID int64)
 
 func (b *sqlBackend) ListAssignmentsByTeacher(teacherID int64) []Assignment {
 	return b.listAssignmentsByFilters("a.teacher_id = ?", teacherID)
+}
+
+func (b *sqlBackend) ListAssignmentsByClassroom(teacherID int64, classroomID int64) []Assignment {
+	return b.listAssignmentsByFilters("a.teacher_id = ? AND a.classroom_id = ?", teacherID, classroomID)
 }
 
 func (b *sqlBackend) ListAssignmentsPendingAnalysis() []Assignment {
@@ -638,12 +858,14 @@ func (b *sqlBackend) SetAssignmentAnalysisFailed(assignmentID int64, message str
 }
 
 func (b *sqlBackend) AssignStudents(teacherID int64, assignmentID int64, studentIDs []int64) error {
-	if _, ok := b.GetAssignmentByTeacher(teacherID, assignmentID); !ok {
+	record, ok := b.GetAssignmentByTeacher(teacherID, assignmentID)
+	if !ok {
 		return ErrAssignmentNotFound
 	}
 
 	for _, studentID := range studentIDs {
-		if _, ok := b.GetStudentByTeacher(teacherID, studentID); !ok {
+		student, ok := b.GetStudentByID(studentID)
+		if !ok || student.TeacherID != teacherID || student.ClassroomID != record.ClassroomID {
 			return ErrStudentNotFound
 		}
 		_, err := b.db.Exec(
@@ -786,7 +1008,7 @@ func (b *sqlBackend) LatestHint(studentID int64, assignmentID int64) (HintRecord
 func (b *sqlBackend) ListAssignedStudents(assignmentID int64) []Student {
 	rows, err := b.db.Query(
 		b.rebind(`
-			SELECT s.id, s.teacher_id, s.username, s.display_name, s.password_hash, s.status, s.created_at
+			SELECT s.id, s.teacher_id, s.classroom_id, s.username, s.display_name, s.password_hash, s.status, s.created_at
 			FROM assignment_students rel
 			JOIN students s ON s.id = rel.student_id
 			WHERE rel.assignment_id = ?
@@ -919,12 +1141,27 @@ func scanTeacher(scanner interface{ Scan(...any) error }) (Teacher, error) {
 	return record, nil
 }
 
+func scanClassroom(scanner interface{ Scan(...any) error }) (Classroom, error) {
+	var (
+		record    Classroom
+		createdAt string
+		updatedAt string
+	)
+	err := scanner.Scan(&record.ID, &record.TeacherID, &record.Name, &createdAt, &updatedAt)
+	if err != nil {
+		return Classroom{}, err
+	}
+	record.CreatedAt = parseTime(createdAt)
+	record.UpdatedAt = parseTime(updatedAt)
+	return record, nil
+}
+
 func scanStudent(scanner interface{ Scan(...any) error }) (Student, error) {
 	var (
 		record    Student
 		createdAt string
 	)
-	err := scanner.Scan(&record.ID, &record.TeacherID, &record.Username, &record.DisplayName, &record.PasswordHash, &record.Status, &createdAt)
+	err := scanner.Scan(&record.ID, &record.TeacherID, &record.ClassroomID, &record.Username, &record.DisplayName, &record.PasswordHash, &record.Status, &createdAt)
 	if err != nil {
 		return Student{}, err
 	}
@@ -950,6 +1187,7 @@ func scanAssignment(scanner interface{ Scan(...any) error }) (Assignment, error)
 	err := scanner.Scan(
 		&record.ID,
 		&record.TeacherID,
+		&record.ClassroomID,
 		&record.Title,
 		&record.Goal,
 		&record.Description,
@@ -1142,6 +1380,7 @@ const assignmentSelectSQL = `
 	SELECT
 		a.id,
 		a.teacher_id,
+		a.classroom_id,
 		a.title,
 		a.goal,
 		a.description,
@@ -1187,9 +1426,19 @@ var sqliteSchemaStatements = []string{
 	)
 	`,
 	`
+	CREATE TABLE IF NOT EXISTS classrooms (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		teacher_id INTEGER NOT NULL REFERENCES teachers(id) ON DELETE CASCADE,
+		name TEXT NOT NULL,
+		created_at TEXT NOT NULL,
+		updated_at TEXT NOT NULL
+	)
+	`,
+	`
 	CREATE TABLE IF NOT EXISTS students (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		teacher_id INTEGER NOT NULL REFERENCES teachers(id) ON DELETE CASCADE,
+		classroom_id INTEGER NOT NULL REFERENCES classrooms(id) ON DELETE RESTRICT DEFAULT 0,
 		username TEXT NOT NULL UNIQUE,
 		display_name TEXT NOT NULL,
 		password_hash TEXT NOT NULL,
@@ -1211,6 +1460,7 @@ var sqliteSchemaStatements = []string{
 	CREATE TABLE IF NOT EXISTS assignments (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		teacher_id INTEGER NOT NULL REFERENCES teachers(id) ON DELETE CASCADE,
+		classroom_id INTEGER NOT NULL REFERENCES classrooms(id) ON DELETE RESTRICT DEFAULT 0,
 		title TEXT NOT NULL,
 		goal TEXT NOT NULL,
 		description TEXT NOT NULL,
@@ -1286,10 +1536,13 @@ var sqliteSchemaStatements = []string{
 		created_at TEXT NOT NULL
 	)
 	`,
+	"CREATE INDEX IF NOT EXISTS idx_classrooms_teacher_id ON classrooms(teacher_id)",
 	"CREATE INDEX IF NOT EXISTS idx_students_teacher_id ON students(teacher_id)",
+	"CREATE INDEX IF NOT EXISTS idx_students_classroom_id ON students(classroom_id)",
 	"CREATE INDEX IF NOT EXISTS idx_teacher_sessions_token ON teacher_sessions(token)",
 	"CREATE INDEX IF NOT EXISTS idx_student_sessions_token ON student_sessions(token)",
 	"CREATE INDEX IF NOT EXISTS idx_assignments_teacher_id ON assignments(teacher_id)",
+	"CREATE INDEX IF NOT EXISTS idx_assignments_classroom_id ON assignments(classroom_id)",
 	"CREATE INDEX IF NOT EXISTS idx_assignment_students_student_id ON assignment_students(student_id)",
 	"CREATE INDEX IF NOT EXISTS idx_progress_student_assignment_id ON progress_reports(student_id, assignment_id, id DESC)",
 	"CREATE INDEX IF NOT EXISTS idx_hint_student_assignment_id ON hint_records(student_id, assignment_id, id DESC)",
@@ -1317,9 +1570,19 @@ var postgresSchemaStatements = []string{
 	)
 	`,
 	`
+	CREATE TABLE IF NOT EXISTS classrooms (
+		id BIGSERIAL PRIMARY KEY,
+		teacher_id BIGINT NOT NULL REFERENCES teachers(id) ON DELETE CASCADE,
+		name TEXT NOT NULL,
+		created_at TEXT NOT NULL,
+		updated_at TEXT NOT NULL
+	)
+	`,
+	`
 	CREATE TABLE IF NOT EXISTS students (
 		id BIGSERIAL PRIMARY KEY,
 		teacher_id BIGINT NOT NULL REFERENCES teachers(id) ON DELETE CASCADE,
+		classroom_id BIGINT NOT NULL REFERENCES classrooms(id) ON DELETE RESTRICT DEFAULT 0,
 		username TEXT NOT NULL UNIQUE,
 		display_name TEXT NOT NULL,
 		password_hash TEXT NOT NULL,
@@ -1341,6 +1604,7 @@ var postgresSchemaStatements = []string{
 	CREATE TABLE IF NOT EXISTS assignments (
 		id BIGSERIAL PRIMARY KEY,
 		teacher_id BIGINT NOT NULL REFERENCES teachers(id) ON DELETE CASCADE,
+		classroom_id BIGINT NOT NULL REFERENCES classrooms(id) ON DELETE RESTRICT DEFAULT 0,
 		title TEXT NOT NULL,
 		goal TEXT NOT NULL,
 		description TEXT NOT NULL,
@@ -1416,10 +1680,13 @@ var postgresSchemaStatements = []string{
 		created_at TEXT NOT NULL
 	)
 	`,
+	"CREATE INDEX IF NOT EXISTS idx_classrooms_teacher_id ON classrooms(teacher_id)",
 	"CREATE INDEX IF NOT EXISTS idx_students_teacher_id ON students(teacher_id)",
+	"CREATE INDEX IF NOT EXISTS idx_students_classroom_id ON students(classroom_id)",
 	"CREATE INDEX IF NOT EXISTS idx_teacher_sessions_token ON teacher_sessions(token)",
 	"CREATE INDEX IF NOT EXISTS idx_student_sessions_token ON student_sessions(token)",
 	"CREATE INDEX IF NOT EXISTS idx_assignments_teacher_id ON assignments(teacher_id)",
+	"CREATE INDEX IF NOT EXISTS idx_assignments_classroom_id ON assignments(classroom_id)",
 	"CREATE INDEX IF NOT EXISTS idx_assignment_students_student_id ON assignment_students(student_id)",
 	"CREATE INDEX IF NOT EXISTS idx_progress_student_assignment_id ON progress_reports(student_id, assignment_id, id DESC)",
 	"CREATE INDEX IF NOT EXISTS idx_hint_student_assignment_id ON hint_records(student_id, assignment_id, id DESC)",
@@ -1468,6 +1735,83 @@ func (b *sqlBackend) ensureTeacherColumns() error {
 		}
 
 		if _, err := b.db.Exec(fmt.Sprintf("ALTER TABLE teachers ADD COLUMN %s", columnDefinition)); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (b *sqlBackend) ensureClassroomColumns() error {
+	requiredStudentColumns := map[string]string{
+		"classroom_id": "classroom_id INTEGER NOT NULL DEFAULT 0",
+	}
+	requiredAssignmentColumns := map[string]string{
+		"classroom_id": "classroom_id INTEGER NOT NULL DEFAULT 0",
+	}
+
+	for columnName, columnDefinition := range requiredStudentColumns {
+		exists, err := b.columnExists("students", columnName)
+		if err != nil {
+			return err
+		}
+		if exists {
+			continue
+		}
+		if _, err := b.db.Exec(fmt.Sprintf("ALTER TABLE students ADD COLUMN %s", columnDefinition)); err != nil {
+			return err
+		}
+	}
+
+	for columnName, columnDefinition := range requiredAssignmentColumns {
+		exists, err := b.columnExists("assignments", columnName)
+		if err != nil {
+			return err
+		}
+		if exists {
+			continue
+		}
+		if _, err := b.db.Exec(fmt.Sprintf("ALTER TABLE assignments ADD COLUMN %s", columnDefinition)); err != nil {
+			return err
+		}
+	}
+
+	rows, err := b.db.Query(b.rebind("SELECT id FROM teachers ORDER BY id ASC"))
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	var teacherIDs []int64
+	for rows.Next() {
+		var teacherID int64
+		if scanErr := rows.Scan(&teacherID); scanErr == nil {
+			teacherIDs = append(teacherIDs, teacherID)
+		}
+	}
+
+	defaultClassroomIDs := make(map[int64]int64, len(teacherIDs))
+	for _, teacherID := range teacherIDs {
+		record, err := b.EnsureDefaultClassroom(teacherID)
+		if err != nil {
+			return err
+		}
+		defaultClassroomIDs[teacherID] = record.ID
+	}
+
+	for teacherID, classroomID := range defaultClassroomIDs {
+		if _, err := b.db.Exec(
+			b.rebind("UPDATE students SET classroom_id = ? WHERE teacher_id = ? AND classroom_id = 0"),
+			classroomID,
+			teacherID,
+		); err != nil {
+			return err
+		}
+		if _, err := b.db.Exec(
+			b.rebind("UPDATE assignments SET classroom_id = ? WHERE teacher_id = ? AND classroom_id = 0"),
+			classroomID,
+			teacherID,
+		); err != nil {
 			return err
 		}
 	}

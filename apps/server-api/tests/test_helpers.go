@@ -281,6 +281,40 @@ func createStudent(t *testing.T, handler http.Handler, teacherToken string, user
 	return int64(studentRecord["id"].(float64))
 }
 
+func createClassroom(t *testing.T, handler http.Handler, teacherToken string, name string) int64 {
+	t.Helper()
+
+	res := performAuthedJSONRequest(t, handler, teacherToken, http.MethodPost, "/api/teacher/classes", map[string]any{
+		"name": name,
+	})
+	require.Equal(t, http.StatusCreated, res.Code)
+	return requireInt64Field(t, res.Body.String(), "id")
+}
+
+func createStudentInClassroom(t *testing.T, handler http.Handler, teacherToken string, classroomID int64, username string, displayName string, password string) int64 {
+	t.Helper()
+
+	res := performAuthedJSONRequest(t, handler, teacherToken, http.MethodPost, "/api/teacher/classes/"+strconv.FormatInt(classroomID, 10)+"/students/batch", map[string]any{
+		"students": []map[string]any{
+			{
+				"username":        username,
+				"displayName":     displayName,
+				"initialPassword": password,
+			},
+		},
+	})
+	require.Equal(t, http.StatusCreated, res.Code)
+
+	record := parseObject(t, res.Body.String())
+	created, ok := record["created"].([]any)
+	require.True(t, ok)
+	require.Len(t, created, 1)
+
+	studentRecord, ok := created[0].(map[string]any)
+	require.True(t, ok)
+	return int64(studentRecord["id"].(float64))
+}
+
 func uploadAssignmentAndWaitReady(t *testing.T, handler http.Handler, teacherToken string, title string) int64 {
 	t.Helper()
 
@@ -306,15 +340,40 @@ func uploadAssignmentAndWaitReady(t *testing.T, handler http.Handler, teacherTok
 	return assignmentID
 }
 
+func uploadAssignmentToClassroomAndWaitReady(t *testing.T, handler http.Handler, teacherToken string, classroomID int64, title string) int64 {
+	t.Helper()
+
+	res := performMultipartAuthedRequest(t, handler, teacherToken, http.MethodPost, "/api/teacher/classes/"+strconv.FormatInt(classroomID, 10)+"/projects", map[string]string{
+		"title":       title,
+		"goal":        "先完成作品主流程",
+		"description": "测试任务",
+	}, "sb3", "fixture.sb3", createSampleSB3(t))
+	require.Equal(t, http.StatusCreated, res.Code)
+	assignmentID := requireInt64Field(t, res.Body.String(), "id")
+
+	require.Eventually(t, func() bool {
+		analysisRes := performAuthedJSONRequest(t, handler, teacherToken, http.MethodGet, "/api/teacher/projects/"+strconv.FormatInt(assignmentID, 10)+"/analysis", nil)
+		if analysisRes.Code != http.StatusOK {
+			return false
+		}
+
+		record := parseObject(t, analysisRes.Body.String())
+		status, ok := record["analysisStatus"].(string)
+		return ok && status == "ready"
+	}, 2*time.Second, 20*time.Millisecond)
+
+	return assignmentID
+}
+
 func assignStudentAndPublish(t *testing.T, handler http.Handler, teacherToken string, assignmentID int64, studentID int64) {
 	t.Helper()
 
-	assignRes := performAuthedJSONRequest(t, handler, teacherToken, http.MethodPost, "/api/teacher/assignments/"+strconv.FormatInt(assignmentID, 10)+"/assign-students", map[string]any{
+	assignRes := performAuthedJSONRequest(t, handler, teacherToken, http.MethodPost, "/api/teacher/projects/"+strconv.FormatInt(assignmentID, 10)+"/assign-students", map[string]any{
 		"studentIds": []int64{studentID},
 	})
 	require.Equal(t, http.StatusOK, assignRes.Code)
 
-	publishRes := performAuthedJSONRequest(t, handler, teacherToken, http.MethodPost, "/api/teacher/assignments/"+strconv.FormatInt(assignmentID, 10)+"/publish", nil)
+	publishRes := performAuthedJSONRequest(t, handler, teacherToken, http.MethodPost, "/api/teacher/projects/"+strconv.FormatInt(assignmentID, 10)+"/publish", nil)
 	require.Equal(t, http.StatusOK, publishRes.Code)
 }
 
@@ -355,4 +414,8 @@ func reportStudentProgress(t *testing.T, handler http.Handler, studentToken stri
 		},
 	})
 	require.Equal(t, http.StatusCreated, progressRes.Code)
+}
+
+func itoa(value int64) string {
+	return strconv.FormatInt(value, 10)
 }

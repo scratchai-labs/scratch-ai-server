@@ -5,11 +5,11 @@ import AdminOverviewView from '@/views/AdminOverviewView.vue'
 import AdminAuditLogsView from '@/views/AdminAuditLogsView.vue'
 import AdminStudentsView from '@/views/AdminStudentsView.vue'
 import AdminTeachersView from '@/views/AdminTeachersView.vue'
+import ClassDetailView from '@/views/ClassDetailView.vue'
+import ClassesView from '@/views/ClassesView.vue'
 import DashboardView from '@/views/DashboardView.vue'
-import LiveReleaseView from '@/views/LiveReleaseView.vue'
 import LoginView from '@/views/LoginView.vue'
-import ReleasesView from '@/views/ReleasesView.vue'
-import StudentsView from '@/views/StudentsView.vue'
+import ProjectDetailView from '@/views/ProjectDetailView.vue'
 
 export function createTeacherRouter(pinia: Pinia) {
   const router = createRouter({
@@ -17,7 +17,7 @@ export function createTeacherRouter(pinia: Pinia) {
     routes: [
       {
         path: '/',
-        redirect: '/dashboard',
+        redirect: '/classes',
       },
       {
         path: '/login',
@@ -36,25 +36,26 @@ export function createTeacherRouter(pinia: Pinia) {
         },
       },
       {
-        path: '/students',
-        name: 'students',
-        component: StudentsView,
+        path: '/classes',
+        name: 'classes',
+        component: ClassesView,
         meta: {
           requiresTeacher: true,
         },
       },
       {
-        path: '/releases',
-        name: 'releases',
-        component: ReleasesView,
+        path: '/classes/:id',
+        name: 'class-detail',
+        component: ClassDetailView,
+        props: true,
         meta: {
           requiresTeacher: true,
         },
       },
       {
-        path: '/releases/:id/live',
-        name: 'release-live',
-        component: LiveReleaseView,
+        path: '/projects/:id',
+        name: 'project-detail',
+        component: ProjectDetailView,
         props: true,
         meta: {
           requiresTeacher: true,
@@ -94,7 +95,7 @@ export function createTeacherRouter(pinia: Pinia) {
       },
       {
         path: '/:pathMatch(.*)*',
-        redirect: '/dashboard',
+        redirect: '/classes',
       },
     ],
   })
@@ -119,7 +120,7 @@ export function createTeacherRouter(pinia: Pinia) {
     }
 
     if (to.meta.requiresAdmin && !sessionStore.isAdmin) {
-      return '/dashboard'
+      return '/classes'
     }
 
     if (to.meta.requiresTeacher && sessionStore.isAdmin) {

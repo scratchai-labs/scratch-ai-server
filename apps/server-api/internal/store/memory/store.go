@@ -14,6 +14,8 @@ import (
 var (
 	ErrTeacherConflict    = errors.New("teacher username already exists")
 	ErrTeacherNotFound    = errors.New("teacher not found")
+	ErrClassroomNotFound  = errors.New("classroom not found")
+	ErrClassroomNotEmpty  = errors.New("classroom is not empty")
 	ErrStudentConflict    = errors.New("student username already exists")
 	ErrAssignmentNotFound = errors.New("assignment not found")
 	ErrAssignmentNotReady = errors.New("assignment analysis not ready")
@@ -32,11 +34,20 @@ type Teacher struct {
 type Student struct {
 	ID           int64
 	TeacherID    int64
+	ClassroomID  int64
 	Username     string
 	DisplayName  string
 	PasswordHash string
 	Status       string
 	CreatedAt    time.Time
+}
+
+type Classroom struct {
+	ID        int64
+	TeacherID int64
+	Name      string
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 type AssignmentAnalysis struct {
@@ -54,6 +65,7 @@ type AssignmentAnalysis struct {
 type Assignment struct {
 	ID                   int64
 	TeacherID            int64
+	ClassroomID          int64
 	Title                string
 	Goal                 string
 	Description          string
@@ -105,12 +117,18 @@ type AuditLog struct {
 }
 
 type CreateStudentInput struct {
+	ClassroomID  int64
 	Username     string
 	DisplayName  string
 	PasswordHash string
 }
 
+type CreateClassroomInput struct {
+	Name string
+}
+
 type CreateAssignmentInput struct {
+	ClassroomID int64
 	Title       string
 	Goal        string
 	Description string
@@ -155,6 +173,7 @@ type Store struct {
 	mu sync.RWMutex
 
 	nextTeacherID    int64
+	nextClassroomID  int64
 	nextStudentID    int64
 	nextAssignmentID int64
 	nextProgressID   int64
@@ -165,15 +184,20 @@ type Store struct {
 	teachersByUsername map[string]int64
 	teacherTokens      map[string]int64
 
-	studentsByID       map[int64]Student
-	studentsByUsername map[string]int64
-	studentsByTeacher  map[int64][]int64
-	studentTokens      map[string]int64
+	classroomsByID      map[int64]Classroom
+	classroomsByTeacher map[int64][]int64
 
-	assignmentsByID      map[int64]Assignment
-	assignmentsByTeacher map[int64][]int64
-	assignmentsByStudent map[int64][]int64
-	studentsByAssignment map[int64][]int64
+	studentsByID        map[int64]Student
+	studentsByUsername  map[string]int64
+	studentsByTeacher   map[int64][]int64
+	studentsByClassroom map[int64][]int64
+	studentTokens       map[string]int64
+
+	assignmentsByID        map[int64]Assignment
+	assignmentsByTeacher   map[int64][]int64
+	assignmentsByClassroom map[int64][]int64
+	assignmentsByStudent   map[int64][]int64
+	studentsByAssignment   map[int64][]int64
 
 	progressByID                map[int64]ProgressReport
 	progressByStudentAssignment map[string][]int64
@@ -191,6 +215,7 @@ func NewStore(cfg config.Config) (*Store, error) {
 	return &Store{
 		sql:                         sqlBackend,
 		nextTeacherID:               1,
+		nextClassroomID:             1,
 		nextStudentID:               1,
 		nextAssignmentID:            1,
 		nextProgressID:              1,
@@ -199,12 +224,16 @@ func NewStore(cfg config.Config) (*Store, error) {
 		teachersByID:                map[int64]Teacher{},
 		teachersByUsername:          map[string]int64{},
 		teacherTokens:               map[string]int64{},
+		classroomsByID:              map[int64]Classroom{},
+		classroomsByTeacher:         map[int64][]int64{},
 		studentsByID:                map[int64]Student{},
 		studentsByUsername:          map[string]int64{},
 		studentsByTeacher:           map[int64][]int64{},
+		studentsByClassroom:         map[int64][]int64{},
 		studentTokens:               map[string]int64{},
 		assignmentsByID:             map[int64]Assignment{},
 		assignmentsByTeacher:        map[int64][]int64{},
+		assignmentsByClassroom:      map[int64][]int64{},
 		assignmentsByStudent:        map[int64][]int64{},
 		studentsByAssignment:        map[int64][]int64{},
 		progressByID:                map[int64]ProgressReport{},
@@ -468,8 +497,163 @@ func (s *Store) ListAuditLogs() []AuditLog {
 	return records
 }
 
+func (s *Store) CreateClassroom(teacherID int64, input CreateClassroomInput) (Classroom, error) {
+	if s.sql != nil {
+		return s.sql.CreateClassroom(teacherID, input)
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	now := time.Now().UTC()
+	record := Classroom{
+		ID:        s.nextClassroomID,
+		TeacherID: teacherID,
+		Name:      input.Name,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+	s.nextClassroomID++
+
+	s.classroomsByID[record.ID] = record
+	s.classroomsByTeacher[teacherID] = append(s.classroomsByTeacher[teacherID], record.ID)
+	return record, nil
+}
+
+func (s *Store) EnsureDefaultClassroom(teacherID int64) (Classroom, error) {
+	if s.sql != nil {
+		return s.sql.EnsureDefaultClassroom(teacherID)
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for _, classroomID := range s.classroomsByTeacher[teacherID] {
+		record, ok := s.classroomsByID[classroomID]
+		if ok && record.Name == "默认班级" {
+			return record, nil
+		}
+	}
+
+	now := time.Now().UTC()
+	record := Classroom{
+		ID:        s.nextClassroomID,
+		TeacherID: teacherID,
+		Name:      "默认班级",
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+	s.nextClassroomID++
+	s.classroomsByID[record.ID] = record
+	s.classroomsByTeacher[teacherID] = append(s.classroomsByTeacher[teacherID], record.ID)
+	return record, nil
+}
+
+func (s *Store) ListClassroomsByTeacher(teacherID int64) []Classroom {
+	if s.sql != nil {
+		return s.sql.ListClassroomsByTeacher(teacherID)
+	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	ids := slices.Clone(s.classroomsByTeacher[teacherID])
+	items := make([]Classroom, 0, len(ids))
+	for _, id := range ids {
+		if record, ok := s.classroomsByID[id]; ok {
+			items = append(items, record)
+		}
+	}
+	return items
+}
+
+func (s *Store) GetClassroomByTeacher(teacherID int64, classroomID int64) (Classroom, bool) {
+	if s.sql != nil {
+		return s.sql.GetClassroomByTeacher(teacherID, classroomID)
+	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	record, ok := s.classroomsByID[classroomID]
+	if !ok || record.TeacherID != teacherID {
+		return Classroom{}, false
+	}
+	return record, true
+}
+
+func (s *Store) UpdateClassroom(teacherID int64, classroomID int64, name string) (Classroom, error) {
+	if s.sql != nil {
+		return s.sql.UpdateClassroom(teacherID, classroomID, name)
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	record, ok := s.classroomsByID[classroomID]
+	if !ok || record.TeacherID != teacherID {
+		return Classroom{}, ErrClassroomNotFound
+	}
+	record.Name = name
+	record.UpdatedAt = time.Now().UTC()
+	s.classroomsByID[classroomID] = record
+	return record, nil
+}
+
+func (s *Store) DeleteClassroom(teacherID int64, classroomID int64) error {
+	if s.sql != nil {
+		return s.sql.DeleteClassroom(teacherID, classroomID)
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	record, ok := s.classroomsByID[classroomID]
+	if !ok || record.TeacherID != teacherID {
+		return ErrClassroomNotFound
+	}
+	if len(s.studentsByClassroom[classroomID]) > 0 || len(s.assignmentsByClassroom[classroomID]) > 0 {
+		return ErrClassroomNotEmpty
+	}
+
+	delete(s.classroomsByID, classroomID)
+	s.classroomsByTeacher[teacherID] = removeInt64(s.classroomsByTeacher[teacherID], classroomID)
+	delete(s.studentsByClassroom, classroomID)
+	delete(s.assignmentsByClassroom, classroomID)
+	return nil
+}
+
+func (s *Store) CountStudentsByClassroom(classroomID int64) int {
+	if s.sql != nil {
+		return s.sql.CountStudentsByClassroom(classroomID)
+	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	return len(s.studentsByClassroom[classroomID])
+}
+
+func (s *Store) CountAssignmentsByClassroom(classroomID int64) int {
+	if s.sql != nil {
+		return s.sql.CountAssignmentsByClassroom(classroomID)
+	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	return len(s.assignmentsByClassroom[classroomID])
+}
+
 func (s *Store) CreateStudent(teacherID int64, input CreateStudentInput) (Student, error) {
 	if s.sql != nil {
+		if input.ClassroomID == 0 {
+			classroom, err := s.sql.EnsureDefaultClassroom(teacherID)
+			if err != nil {
+				return Student{}, err
+			}
+			input.ClassroomID = classroom.ID
+		}
 		return s.sql.CreateStudent(teacherID, input)
 	}
 
@@ -480,9 +664,23 @@ func (s *Store) CreateStudent(teacherID int64, input CreateStudentInput) (Studen
 		return Student{}, ErrStudentConflict
 	}
 
+	if input.ClassroomID == 0 {
+		classroom, err := s.ensureDefaultClassroomLocked(teacherID)
+		if err != nil {
+			return Student{}, err
+		}
+		input.ClassroomID = classroom.ID
+	}
+
+	classroom, ok := s.classroomsByID[input.ClassroomID]
+	if !ok || classroom.TeacherID != teacherID {
+		return Student{}, ErrClassroomNotFound
+	}
+
 	student := Student{
 		ID:           s.nextStudentID,
 		TeacherID:    teacherID,
+		ClassroomID:  input.ClassroomID,
 		Username:     input.Username,
 		DisplayName:  input.DisplayName,
 		PasswordHash: input.PasswordHash,
@@ -494,6 +692,7 @@ func (s *Store) CreateStudent(teacherID int64, input CreateStudentInput) (Studen
 	s.studentsByID[student.ID] = student
 	s.studentsByUsername[student.Username] = student.ID
 	s.studentsByTeacher[teacherID] = append(s.studentsByTeacher[teacherID], student.ID)
+	s.studentsByClassroom[input.ClassroomID] = append(s.studentsByClassroom[input.ClassroomID], student.ID)
 	return student, nil
 }
 
@@ -623,6 +822,44 @@ func (s *Store) GetStudentByTeacher(teacherID int64, studentID int64) (Student, 
 	return student, true
 }
 
+func (s *Store) GetStudentByClassroom(teacherID int64, classroomID int64, studentID int64) (Student, bool) {
+	if s.sql != nil {
+		return s.sql.GetStudentByClassroom(teacherID, classroomID, studentID)
+	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	student, ok := s.studentsByID[studentID]
+	if !ok || student.TeacherID != teacherID || student.ClassroomID != classroomID {
+		return Student{}, false
+	}
+	return student, true
+}
+
+func (s *Store) ListStudentsByClassroom(teacherID int64, classroomID int64) []Student {
+	if s.sql != nil {
+		return s.sql.ListStudentsByClassroom(teacherID, classroomID)
+	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	classroom, ok := s.classroomsByID[classroomID]
+	if !ok || classroom.TeacherID != teacherID {
+		return nil
+	}
+
+	ids := slices.Clone(s.studentsByClassroom[classroomID])
+	students := make([]Student, 0, len(ids))
+	for _, id := range ids {
+		if student, ok := s.studentsByID[id]; ok {
+			students = append(students, student)
+		}
+	}
+	return students
+}
+
 func (s *Store) GetStudentByID(studentID int64) (Student, bool) {
 	if s.sql != nil {
 		return s.sql.GetStudentByID(studentID)
@@ -651,6 +888,56 @@ func (s *Store) UpdateStudentPassword(teacherID int64, studentID int64, password
 	student.PasswordHash = passwordHash
 	s.studentsByID[studentID] = student
 	return student, nil
+}
+
+func (s *Store) UpdateStudent(teacherID int64, classroomID int64, studentID int64, username string, displayName string) (Student, error) {
+	if s.sql != nil {
+		return s.sql.UpdateStudent(teacherID, classroomID, studentID, username, displayName)
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	student, ok := s.studentsByID[studentID]
+	if !ok || student.TeacherID != teacherID || student.ClassroomID != classroomID {
+		return Student{}, ErrStudentNotFound
+	}
+	if existingID, exists := s.studentsByUsername[username]; exists && existingID != studentID {
+		return Student{}, ErrStudentConflict
+	}
+
+	if student.Username != username {
+		delete(s.studentsByUsername, student.Username)
+		s.studentsByUsername[username] = studentID
+	}
+	student.Username = username
+	student.DisplayName = displayName
+	s.studentsByID[studentID] = student
+	return student, nil
+}
+
+func (s *Store) DeleteStudent(teacherID int64, classroomID int64, studentID int64) error {
+	if s.sql != nil {
+		return s.sql.DeleteStudent(teacherID, classroomID, studentID)
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	student, ok := s.studentsByID[studentID]
+	if !ok || student.TeacherID != teacherID || student.ClassroomID != classroomID {
+		return ErrStudentNotFound
+	}
+
+	delete(s.studentsByUsername, student.Username)
+	delete(s.studentsByID, studentID)
+	s.studentsByTeacher[teacherID] = removeInt64(s.studentsByTeacher[teacherID], studentID)
+	s.studentsByClassroom[classroomID] = removeInt64(s.studentsByClassroom[classroomID], studentID)
+	delete(s.assignmentsByStudent, studentID)
+	for assignmentID, studentIDs := range s.studentsByAssignment {
+		s.studentsByAssignment[assignmentID] = removeInt64(studentIDs, studentID)
+	}
+	return nil
 }
 
 func (s *Store) UpdateStudentPasswordByID(studentID int64, passwordHash string) (Student, error) {
@@ -691,16 +978,37 @@ func (s *Store) UpdateStudentStatus(studentID int64, status string) (Student, er
 
 func (s *Store) CreateAssignment(teacherID int64, input CreateAssignmentInput) (Assignment, error) {
 	if s.sql != nil {
+		if input.ClassroomID == 0 {
+			classroom, err := s.sql.EnsureDefaultClassroom(teacherID)
+			if err != nil {
+				return Assignment{}, err
+			}
+			input.ClassroomID = classroom.ID
+		}
 		return s.sql.CreateAssignment(teacherID, input)
 	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	if input.ClassroomID == 0 {
+		classroom, err := s.ensureDefaultClassroomLocked(teacherID)
+		if err != nil {
+			return Assignment{}, err
+		}
+		input.ClassroomID = classroom.ID
+	}
+
+	classroom, ok := s.classroomsByID[input.ClassroomID]
+	if !ok || classroom.TeacherID != teacherID {
+		return Assignment{}, ErrClassroomNotFound
+	}
+
 	now := time.Now().UTC()
 	assignment := Assignment{
 		ID:             s.nextAssignmentID,
 		TeacherID:      teacherID,
+		ClassroomID:    input.ClassroomID,
 		Title:          input.Title,
 		Goal:           input.Goal,
 		Description:    input.Description,
@@ -716,7 +1024,30 @@ func (s *Store) CreateAssignment(teacherID int64, input CreateAssignmentInput) (
 
 	s.assignmentsByID[assignment.ID] = assignment
 	s.assignmentsByTeacher[teacherID] = append(s.assignmentsByTeacher[teacherID], assignment.ID)
+	s.assignmentsByClassroom[input.ClassroomID] = append(s.assignmentsByClassroom[input.ClassroomID], assignment.ID)
 	return assignment, nil
+}
+
+func (s *Store) ensureDefaultClassroomLocked(teacherID int64) (Classroom, error) {
+	for _, classroomID := range s.classroomsByTeacher[teacherID] {
+		record, ok := s.classroomsByID[classroomID]
+		if ok && record.Name == "默认班级" {
+			return record, nil
+		}
+	}
+
+	now := time.Now().UTC()
+	record := Classroom{
+		ID:        s.nextClassroomID,
+		TeacherID: teacherID,
+		Name:      "默认班级",
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+	s.nextClassroomID++
+	s.classroomsByID[record.ID] = record
+	s.classroomsByTeacher[teacherID] = append(s.classroomsByTeacher[teacherID], record.ID)
+	return record, nil
 }
 
 func (s *Store) GetAssignmentByTeacher(teacherID int64, assignmentID int64) (Assignment, bool) {
@@ -743,6 +1074,29 @@ func (s *Store) ListAssignmentsByTeacher(teacherID int64) []Assignment {
 	defer s.mu.RUnlock()
 
 	ids := slices.Clone(s.assignmentsByTeacher[teacherID])
+	assignments := make([]Assignment, 0, len(ids))
+	for _, id := range ids {
+		if assignment, ok := s.assignmentsByID[id]; ok {
+			assignments = append(assignments, assignment)
+		}
+	}
+	return assignments
+}
+
+func (s *Store) ListAssignmentsByClassroom(teacherID int64, classroomID int64) []Assignment {
+	if s.sql != nil {
+		return s.sql.ListAssignmentsByClassroom(teacherID, classroomID)
+	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	classroom, ok := s.classroomsByID[classroomID]
+	if !ok || classroom.TeacherID != teacherID {
+		return nil
+	}
+
+	ids := slices.Clone(s.assignmentsByClassroom[classroomID])
 	assignments := make([]Assignment, 0, len(ids))
 	for _, id := range ids {
 		if assignment, ok := s.assignmentsByID[id]; ok {
@@ -854,7 +1208,7 @@ func (s *Store) AssignStudents(teacherID int64, assignmentID int64, studentIDs [
 
 	for _, studentID := range studentIDs {
 		student, ok := s.studentsByID[studentID]
-		if !ok || student.TeacherID != teacherID {
+		if !ok || student.TeacherID != teacherID || student.ClassroomID != assignment.ClassroomID {
 			return ErrStudentNotFound
 		}
 
@@ -1086,6 +1440,20 @@ func (s *Store) ListAssignedStudents(assignmentID int64) []Student {
 
 func relationKey(studentID int64, assignmentID int64) string {
 	return strconv.FormatInt(studentID, 10) + ":" + strconv.FormatInt(assignmentID, 10)
+}
+
+func removeInt64(items []int64, target int64) []int64 {
+	if len(items) == 0 {
+		return items
+	}
+
+	filtered := items[:0]
+	for _, item := range items {
+		if item != target {
+			filtered = append(filtered, item)
+		}
+	}
+	return filtered
 }
 
 func cloneMap(input map[string]any) map[string]any {

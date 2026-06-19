@@ -24,6 +24,7 @@ const MaxSB3Bytes = 16 << 20
 const maxAnalysisAttempts = 3
 
 type UploadInput struct {
+	ClassroomID  int64
 	Title       string
 	Goal        string
 	Description string
@@ -148,6 +149,7 @@ func (s *Service) Upload(ctx context.Context, teacherID int64, input UploadInput
 	}
 
 	assignment, err := s.store.CreateAssignment(teacherID, memory.CreateAssignmentInput{
+		ClassroomID:  input.ClassroomID,
 		Title:       input.Title,
 		Goal:        input.Goal,
 		Description: input.Description,
@@ -163,6 +165,15 @@ func (s *Service) Upload(ctx context.Context, teacherID int64, input UploadInput
 		return input.SB3Data, nil
 	})
 	return assignment, nil
+}
+
+func (s *Service) UploadLegacy(ctx context.Context, teacherID int64, input UploadInput) (memory.Assignment, error) {
+	classroom, err := s.store.EnsureDefaultClassroom(teacherID)
+	if err != nil {
+		return memory.Assignment{}, err
+	}
+	input.ClassroomID = classroom.ID
+	return s.Upload(ctx, teacherID, input)
 }
 
 func (s *Service) GetAnalysis(teacherID int64, assignmentID int64) (memory.Assignment, error) {
@@ -252,6 +263,24 @@ func (s *Service) ListForStudent(studentID int64) []StudentAssignmentItem {
 
 func (s *Service) ListForTeacher(teacherID int64) []TeacherAssignmentItem {
 	assignments := s.store.ListAssignmentsByTeacher(teacherID)
+	items := make([]TeacherAssignmentItem, 0, len(assignments))
+	for _, assignmentRecord := range assignments {
+		items = append(items, TeacherAssignmentItem{
+			ID:             assignmentRecord.ID,
+			Title:          assignmentRecord.Title,
+			Goal:           assignmentRecord.Goal,
+			Description:    assignmentRecord.Description,
+			Status:         assignmentRecord.Status,
+			AnalysisStatus: assignmentRecord.AnalysisStatus,
+			StudentCount:   len(s.store.ListAssignedStudents(assignmentRecord.ID)),
+			UpdatedAt:      assignmentRecord.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		})
+	}
+	return items
+}
+
+func (s *Service) ListForTeacherByClassroom(teacherID int64, classroomID int64) []TeacherAssignmentItem {
+	assignments := s.store.ListAssignmentsByClassroom(teacherID, classroomID)
 	items := make([]TeacherAssignmentItem, 0, len(assignments))
 	for _, assignmentRecord := range assignments {
 		items = append(items, TeacherAssignmentItem{

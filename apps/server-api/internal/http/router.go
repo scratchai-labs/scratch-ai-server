@@ -8,6 +8,7 @@ import (
 	"github.com/scratchai-labs/scratch-ai-server/apps/server-api/internal/admin"
 	"github.com/scratchai-labs/scratch-ai-server/apps/server-api/internal/assignment"
 	"github.com/scratchai-labs/scratch-ai-server/apps/server-api/internal/auth"
+	"github.com/scratchai-labs/scratch-ai-server/apps/server-api/internal/classroom"
 	"github.com/scratchai-labs/scratch-ai-server/apps/server-api/internal/config"
 	"github.com/scratchai-labs/scratch-ai-server/apps/server-api/internal/dashboard"
 	"github.com/scratchai-labs/scratch-ai-server/apps/server-api/internal/hint"
@@ -32,6 +33,7 @@ func NewRouter(cfg config.Config) (http.Handler, error) {
 		return nil, err
 	}
 	adminService := admin.NewService(store)
+	classroomService := classroom.NewService(store)
 	studentService := student.NewService(store)
 	assignmentService := assignment.NewService(store, sb3.NewAnalyzer(), sb3.NewLocalStorage(cfg.SB3StorageDir))
 	progressService := progress.NewService(store)
@@ -40,6 +42,7 @@ func NewRouter(cfg config.Config) (http.Handler, error) {
 
 	authRoutes := &authHandler{service: authService}
 	adminRoutes := &adminHandler{service: adminService}
+	classroomRoutes := &classroomHandler{service: classroomService}
 	studentRoutes := &studentHandler{
 		studentService:    studentService,
 		assignmentService: assignmentService,
@@ -69,18 +72,37 @@ func NewRouter(cfg config.Config) (http.Handler, error) {
 	teacherGroup.Use(requireTeacher(authService))
 	teacherGroup.GET("/me", authRoutes.handleTeacherMe)
 	teacherGroup.POST("/logout", authRoutes.handleTeacherLogout)
+	teacherGroup.GET("/classes", classroomRoutes.handleTeacherClassesList)
+	teacherGroup.POST("/classes", classroomRoutes.handleTeacherClassesCreate)
+	teacherGroup.GET("/classes/:id", classroomRoutes.handleTeacherClassDetail)
+	teacherGroup.PATCH("/classes/:id", classroomRoutes.handleTeacherClassUpdate)
+	teacherGroup.DELETE("/classes/:id", classroomRoutes.handleTeacherClassDelete)
 	teacherGroup.GET("/students", studentRoutes.handleTeacherStudentsList)
 	teacherGroup.POST("/students", studentRoutes.handleTeacherStudentCreate)
 	teacherGroup.POST("/students/batch", studentRoutes.handleTeacherStudentsBatch)
 	teacherGroup.POST("/students/:id/reset-password", studentRoutes.handleTeacherStudentPasswordReset)
+	teacherGroup.GET("/classes/:id/students", studentRoutes.handleTeacherClassStudentsList)
+	teacherGroup.POST("/classes/:id/students", studentRoutes.handleTeacherClassStudentCreate)
+	teacherGroup.POST("/classes/:id/students/batch", studentRoutes.handleTeacherClassStudentsBatch)
+	teacherGroup.PATCH("/classes/:id/students/:studentId", studentRoutes.handleTeacherClassStudentUpdate)
+	teacherGroup.POST("/classes/:id/students/:studentId/reset-password", studentRoutes.handleTeacherClassStudentPasswordReset)
+	teacherGroup.DELETE("/classes/:id/students/:studentId", studentRoutes.handleTeacherClassStudentDelete)
 	teacherGroup.GET("/assignments", assignmentRoutes.handleTeacherAssignmentsList)
 	teacherGroup.POST("/assignments", assignmentRoutes.handleTeacherAssignments)
+	teacherGroup.GET("/classes/:id/projects", assignmentRoutes.handleTeacherClassProjectsList)
+	teacherGroup.POST("/classes/:id/projects", assignmentRoutes.handleTeacherClassProjectsCreate)
 	teacherGroup.GET("/assignments/:id", assignmentRoutes.handleTeacherAssignmentDetail)
 	teacherGroup.GET("/assignments/:id/analysis", assignmentRoutes.handleTeacherAssignmentAnalysis)
 	teacherGroup.POST("/assignments/:id/assign-students", assignmentRoutes.handleTeacherAssignmentStudents)
 	teacherGroup.POST("/assignments/:id/publish", assignmentRoutes.handleTeacherAssignmentPublish)
 	teacherGroup.POST("/assignments/:id/archive", assignmentRoutes.handleTeacherAssignmentArchive)
+	teacherGroup.GET("/projects/:id", assignmentRoutes.handleTeacherAssignmentDetail)
+	teacherGroup.GET("/projects/:id/analysis", assignmentRoutes.handleTeacherAssignmentAnalysis)
+	teacherGroup.POST("/projects/:id/assign-students", assignmentRoutes.handleTeacherAssignmentStudents)
+	teacherGroup.POST("/projects/:id/publish", assignmentRoutes.handleTeacherAssignmentPublish)
+	teacherGroup.POST("/projects/:id/archive", assignmentRoutes.handleTeacherAssignmentArchive)
 	teacherGroup.GET("/dashboard/assignments/:id/live", dashboardRoutes.handleTeacherLiveDashboard)
+	teacherGroup.GET("/projects/:id/live", dashboardRoutes.handleTeacherLiveDashboard)
 	teacherGroup.GET("/dashboard/students/:id/history", dashboardRoutes.handleTeacherStudentHistory)
 
 	adminGroup := engine.Group("/api/admin")

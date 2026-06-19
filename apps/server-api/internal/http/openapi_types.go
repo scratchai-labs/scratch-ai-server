@@ -2,6 +2,7 @@ package http
 
 import (
 	"github.com/scratchai-labs/scratch-ai-server/apps/server-api/internal/assignment"
+	"github.com/scratchai-labs/scratch-ai-server/apps/server-api/internal/classroom"
 	"github.com/scratchai-labs/scratch-ai-server/apps/server-api/internal/student"
 )
 
@@ -57,6 +58,10 @@ type StudentMeResponse struct {
 
 type TeacherStudentsResponse struct {
 	Items []student.StudentItem `json:"items"`
+}
+
+type TeacherClassroomsResponse struct {
+	Items []classroom.Item `json:"items"`
 }
 
 type AdminTeacherCreateRequestDoc struct {

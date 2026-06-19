@@ -40,12 +40,8 @@ const navigation = computed(() => [
           to: '/dashboard',
         },
         {
-          label: '学生管理',
-          to: '/students',
-        },
-        {
-          label: '发布单管理',
-          to: '/releases',
+          label: '班级管理',
+          to: '/classes',
         },
       ]),
 ])
