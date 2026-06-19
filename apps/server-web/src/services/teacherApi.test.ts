@@ -614,6 +614,203 @@ describe('createFetchTeacherApiClient', () => {
     )
   })
 
+  it('reads and mutates classrooms from the expected paths', async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(
+        createFetchResponse({
+          items: [
+            {
+              id: 11,
+              name: '四年级一班',
+              studentCount: 2,
+              projectCount: 1,
+              createdAt: '2026-05-25T12:00:00Z',
+              updatedAt: '2026-05-25T12:30:00Z',
+            },
+          ],
+        }),
+      )
+      .mockResolvedValueOnce(
+        createFetchResponse({
+          id: 11,
+          name: '四年级一班',
+          studentCount: 2,
+          projectCount: 1,
+          createdAt: '2026-05-25T12:00:00Z',
+          updatedAt: '2026-05-25T12:30:00Z',
+        }),
+      )
+      .mockResolvedValueOnce(
+        createFetchResponse({
+          items: [
+            {
+              id: 1,
+              classroomId: 11,
+              username: 'student-1',
+              displayName: 'Ada',
+              className: '四年级一班',
+              progress: 0,
+              status: '',
+              latestAiHint: '等待学生请求提示',
+              updatedAt: '2026-05-25T12:20:00Z',
+              createdAt: '2026-05-25T12:20:00Z',
+            },
+          ],
+        }),
+      )
+      .mockResolvedValueOnce(
+        createFetchResponse({
+          items: [
+            {
+              id: 7,
+              classroomId: 11,
+              title: '迷宫项目',
+              goal: '让角色按事件响应',
+              description: '第一节课项目',
+              className: '四年级一班',
+              status: 'draft',
+              analysisStatus: 'ready',
+              studentCount: 2,
+              updatedAt: '2026-05-25T12:25:00Z',
+            },
+          ],
+        }),
+      )
+      .mockResolvedValueOnce(
+        createFetchResponse({
+          id: 3,
+          title: '追逐项目',
+          status: 'draft',
+          analysisStatus: 'pending',
+        }),
+      )
+    const api = createFetchTeacherApiClient({
+      baseUrl: 'https://teacher.example',
+      fetchImpl,
+      getToken: () => 'teacher-token',
+    })
+
+    await expect(api.listClassrooms?.()).resolves.toEqual([
+      {
+        id: '11',
+        name: '四年级一班',
+        studentCount: 2,
+        projectCount: 1,
+        createdAt: '2026-05-25T12:00:00Z',
+        updatedAt: '2026-05-25T12:30:00Z',
+      },
+    ])
+
+    await expect(api.getClassroomDetail?.('11')).resolves.toEqual({
+      id: '11',
+      name: '四年级一班',
+      studentCount: 2,
+      projectCount: 1,
+      createdAt: '2026-05-25T12:00:00Z',
+      updatedAt: '2026-05-25T12:30:00Z',
+    })
+
+    await expect(api.listClassroomStudents?.('11')).resolves.toEqual([
+      {
+        id: '1',
+        classroomId: '11',
+        username: 'student-1',
+        name: 'Ada',
+        className: '四年级一班',
+        progress: 0,
+        status: '',
+        currentTarget: '',
+        stepSummary: '',
+        latestAiHint: '等待学生请求提示',
+        updatedAt: '2026-05-25T12:20:00Z',
+        createdAt: '2026-05-25T12:20:00Z',
+      },
+    ])
+
+    await expect(api.listClassroomProjects?.('11')).resolves.toEqual([
+      {
+        id: '7',
+        classroomId: '11',
+        title: '迷宫项目',
+        goal: '让角色按事件响应',
+        description: '第一节课项目',
+        className: '四年级一班',
+        status: 'draft',
+        analysisStatus: 'ready',
+        studentCount: 2,
+        updatedAt: '2026-05-25T12:25:00Z',
+      },
+    ])
+
+    await expect(
+      api.createClassroomProject?.('11', {
+        title: '追逐项目',
+        goal: '补齐广播与重复执行',
+        description: '第二节课项目',
+        file: new File(['fake-sb3'], 'maze.sb3', {
+          type: 'application/zip',
+        }),
+      }),
+    ).resolves.toEqual({
+      id: '3',
+      title: '追逐项目',
+      status: 'draft',
+      analysisStatus: 'pending',
+    })
+
+    expect(fetchImpl).toHaveBeenNthCalledWith(
+      1,
+      'https://teacher.example/api/teacher/classes',
+      expect.objectContaining({
+        method: 'GET',
+        headers: {
+          Authorization: 'Bearer teacher-token',
+        },
+      }),
+    )
+    expect(fetchImpl).toHaveBeenNthCalledWith(
+      2,
+      'https://teacher.example/api/teacher/classes/11',
+      expect.objectContaining({
+        method: 'GET',
+        headers: {
+          Authorization: 'Bearer teacher-token',
+        },
+      }),
+    )
+    expect(fetchImpl).toHaveBeenNthCalledWith(
+      3,
+      'https://teacher.example/api/teacher/classes/11/students',
+      expect.objectContaining({
+        method: 'GET',
+        headers: {
+          Authorization: 'Bearer teacher-token',
+        },
+      }),
+    )
+    expect(fetchImpl).toHaveBeenNthCalledWith(
+      4,
+      'https://teacher.example/api/teacher/classes/11/projects',
+      expect.objectContaining({
+        method: 'GET',
+        headers: {
+          Authorization: 'Bearer teacher-token',
+        },
+      }),
+    )
+    expect(fetchImpl).toHaveBeenNthCalledWith(
+      5,
+      'https://teacher.example/api/teacher/classes/11/projects',
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer teacher-token',
+        },
+      }),
+    )
+  })
+
   it('keeps the student list usable when one history request fails', async () => {
     const fetchImpl = vi
       .fn()

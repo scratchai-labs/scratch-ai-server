@@ -6,6 +6,7 @@
 
 ## 已完成
 
+- 2026-06-19：维护教师端“班级优先”链路发布前收尾：补齐班级/项目别名路由 Swagger 契约与回归测试，收口教师端导航/登录文案/路由守卫测试、mock smoke 断言与 `server:api:docs` 脚本目录；完成后推送远端主分支。
 - 2026-06-19：对教师端“班级优先”链路完成一轮 4-agent 完整验收：已收口教师登录默认落点、mock/real smoke 脚本、浏览器点击与截图、README/部署/开发/API 契约文档口径，并通过 `go test ./...`、`npm run test --workspace=@scratch-ai/server-web`、`npm run server:web:smoke:mock`、`npm run server:web:smoke:real`、`VITE_SERVER_WEB_API_MODE=real VITE_SERVER_WEB_API_BASE_URL=https://api.example.com npm run build --workspace=@scratch-ai/server-web`；验收截图产物见 `.artifacts/playwright/classes-audit-2026-06-19.png`、`.artifacts/playwright/class-detail-audit-2026-06-19.png`、`.artifacts/playwright/project-detail-audit-2026-06-19.png`。
 - 2026-06-19：完成教师端浏览器点击验收，复用本地 mock 教师后台环境，覆盖登录、班级列表、班级详情、创建学生、批量导入区域、项目详情主链路，并产出截图与问题记录；未发现功能阻断，仅有浏览器 autocomplete 提示噪音。
 

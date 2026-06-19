@@ -348,6 +348,7 @@ func (h *assignmentHandler) handleTeacherAssignmentAnalysis(c *gin.Context) {
 //	@Failure		404		{object}	ErrorResponse
 //	@Failure		500		{object}	ErrorResponse
 //	@Router			/api/teacher/assignments/{id}/assign-students [post]
+//	@Router			/api/teacher/projects/{id}/assign-students [post]
 func (h *assignmentHandler) handleTeacherAssignmentStudents(c *gin.Context) {
 	teacherRecord := mustTeacher(c)
 	if teacherRecord.ID == 0 {
@@ -399,6 +400,7 @@ func (h *assignmentHandler) handleTeacherAssignmentStudents(c *gin.Context) {
 //	@Failure		409	{object}	ErrorResponse
 //	@Failure		500	{object}	ErrorResponse
 //	@Router			/api/teacher/assignments/{id}/publish [post]
+//	@Router			/api/teacher/projects/{id}/publish [post]
 func (h *assignmentHandler) handleTeacherAssignmentPublish(c *gin.Context) {
 	teacherRecord := mustTeacher(c)
 	if teacherRecord.ID == 0 {
@@ -445,6 +447,7 @@ func (h *assignmentHandler) handleTeacherAssignmentPublish(c *gin.Context) {
 //	@Failure		404	{object}	ErrorResponse
 //	@Failure		500	{object}	ErrorResponse
 //	@Router			/api/teacher/assignments/{id}/archive [post]
+//	@Router			/api/teacher/projects/{id}/archive [post]
 func (h *assignmentHandler) handleTeacherAssignmentArchive(c *gin.Context) {
 	teacherRecord := mustTeacher(c)
 	if teacherRecord.ID == 0 {

@@ -36,12 +36,12 @@ const navigation = computed(() => [
       ]
     : [
         {
-          label: '实时总览',
-          to: '/dashboard',
-        },
-        {
           label: '班级管理',
           to: '/classes',
+        },
+        {
+          label: '实时总览',
+          to: '/dashboard',
         },
       ]),
 ])

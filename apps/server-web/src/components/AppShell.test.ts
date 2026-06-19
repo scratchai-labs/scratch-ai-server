@@ -56,6 +56,7 @@ describe('AppShell', () => {
     })
 
     expect(wrapper.get('aside.shell__sidebar').text()).toContain('Scratch 教师后台')
+    expect(wrapper.get('nav.shell__nav').text()).toContain('班级管理')
     expect(wrapper.get('nav.shell__nav').text()).toContain('实时总览')
     expect(wrapper.get('.shell__footer').text()).toContain('当前教师')
   })

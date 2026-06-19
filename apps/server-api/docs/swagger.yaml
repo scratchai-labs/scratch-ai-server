@@ -222,6 +222,50 @@ definitions:
       token:
         type: string
     type: object
+  classroom.CreateInput:
+    properties:
+      name:
+        type: string
+    required:
+    - name
+    type: object
+  classroom.Detail:
+    properties:
+      createdAt:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      projectCount:
+        type: integer
+      studentCount:
+        type: integer
+      updatedAt:
+        type: string
+    type: object
+  classroom.Item:
+    properties:
+      createdAt:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      projectCount:
+        type: integer
+      studentCount:
+        type: integer
+      updatedAt:
+        type: string
+    type: object
+  classroom.UpdateInput:
+    properties:
+      name:
+        type: string
+    required:
+    - name
+    type: object
   dashboard.LiveAssignmentResponse:
     properties:
       assignmentId:
@@ -800,6 +844,16 @@ definitions:
         type: string
       token:
         type: string
+    type: object
+  student.UpdateInput:
+    properties:
+      displayName:
+        type: string
+      username:
+        type: string
+    required:
+    - displayName
+    - username
     type: object
 info:
   contact: {}
@@ -1789,6 +1843,490 @@ paths:
       summary: Publish an assignment
       tags:
       - assignments
+  /api/teacher/classes:
+    post:
+      consumes:
+      - application/json
+      description: Create one classroom for the current teacher.
+      parameters:
+      - description: Classroom create payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/classroom.CreateInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/classroom.Item'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create classroom
+      tags:
+      - classrooms
+  /api/teacher/classes/{id}:
+    delete:
+      description: Delete one empty classroom for the current teacher.
+      parameters:
+      - description: Classroom ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.StatusResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete classroom
+      tags:
+      - classrooms
+    get:
+      description: Read one classroom plus its student and project counts for the
+        current teacher.
+      parameters:
+      - description: Classroom ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/classroom.Detail'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get classroom detail
+      tags:
+      - classrooms
+    patch:
+      consumes:
+      - application/json
+      description: Update one classroom name for the current teacher.
+      parameters:
+      - description: Classroom ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Classroom update payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/classroom.UpdateInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/classroom.Item'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update classroom
+      tags:
+      - classrooms
+  /api/teacher/classes/{id}/projects:
+    get:
+      description: List all projects created under one classroom.
+      parameters:
+      - description: Classroom ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.TeacherAssignmentsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List class projects
+      tags:
+      - assignments
+    post:
+      consumes:
+      - multipart/form-data
+      description: Create a project under one classroom by uploading a reference Scratch
+        project.
+      parameters:
+      - description: Classroom ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Assignment title
+        in: formData
+        name: title
+        type: string
+      - description: Teaching goal
+        in: formData
+        name: goal
+        type: string
+      - description: Assignment description
+        in: formData
+        name: description
+        type: string
+      - description: Scratch project .sb3 file
+        in: formData
+        name: sb3
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/http.AssignmentUploadResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Upload a class project
+      tags:
+      - assignments
+  /api/teacher/classes/{id}/students:
+    post:
+      consumes:
+      - application/json
+      description: Create a single student under one classroom for the current teacher.
+      parameters:
+      - description: Classroom ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Single student create payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/student.BatchCreateInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/student.BatchCreateResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create one student in classroom
+      tags:
+      - students
+  /api/teacher/classes/{id}/students/{studentId}:
+    delete:
+      description: Delete one student under one classroom for the current teacher.
+      parameters:
+      - description: Classroom ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Student ID
+        format: int64
+        in: path
+        name: studentId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.StatusResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete classroom student
+      tags:
+      - students
+    patch:
+      consumes:
+      - application/json
+      description: Update one student under one classroom for the current teacher.
+      parameters:
+      - description: Classroom ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Student ID
+        format: int64
+        in: path
+        name: studentId
+        required: true
+        type: integer
+      - description: Student update payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/student.UpdateInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/student.StudentItem'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update classroom student
+      tags:
+      - students
+  /api/teacher/classes/{id}/students/{studentId}/reset-password:
+    post:
+      consumes:
+      - application/json
+      description: Replace the password for one student under one classroom.
+      parameters:
+      - description: Classroom ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Student ID
+        format: int64
+        in: path
+        name: studentId
+        required: true
+        type: integer
+      - description: New password payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/http.resetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/student.StudentItem'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Reset classroom student password
+      tags:
+      - students
+  /api/teacher/classes/{id}/students/batch:
+    post:
+      consumes:
+      - application/json
+      description: Create multiple students under one classroom and report conflicts
+        without failing the entire request.
+      parameters:
+      - description: Classroom ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Batch create payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/student.BatchCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/student.BatchCreateResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Batch create students in classroom
+      tags:
+      - students
   /api/teacher/dashboard/assignments/{id}/live:
     get:
       description: Read the latest reported progress and hint state for all students
@@ -1947,6 +2485,250 @@ paths:
       summary: Get current teacher profile
       tags:
       - teacher-auth
+  /api/teacher/projects/{id}:
+    get:
+      description: Read assignment metadata, analysis summary, and assigned students
+        for the current teacher.
+      parameters:
+      - description: Assignment ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/assignment.TeacherAssignmentDetail'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get teacher assignment detail
+      tags:
+      - assignments
+  /api/teacher/projects/{id}/analysis:
+    get:
+      description: Read the parsed SB3 analysis for a teacher assignment.
+      parameters:
+      - description: Assignment ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.AssignmentAnalysisResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get assignment analysis summary
+      tags:
+      - assignments
+  /api/teacher/projects/{id}/archive:
+    post:
+      description: Archive an existing assignment so students no longer see it in
+        active lists.
+      parameters:
+      - description: Assignment ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.AssignmentStatusResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Archive an assignment
+      tags:
+      - assignments
+  /api/teacher/projects/{id}/assign-students:
+    post:
+      consumes:
+      - application/json
+      description: Bind one or more existing students to an assignment before publishing
+        it.
+      parameters:
+      - description: Assignment ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Student assignment payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/http.assignStudentsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.AssignmentStudentsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Assign students to an assignment
+      tags:
+      - assignments
+  /api/teacher/projects/{id}/live:
+    get:
+      description: Read the latest reported progress and hint state for all students
+        assigned to one assignment.
+      parameters:
+      - description: Assignment ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dashboard.LiveAssignmentResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get live assignment dashboard
+      tags:
+      - dashboard
+  /api/teacher/projects/{id}/publish:
+    post:
+      description: Publish an analyzed assignment so students can access it.
+      parameters:
+      - description: Assignment ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.AssignmentStatusResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Publish an assignment
+      tags:
+      - assignments
   /api/teacher/register:
     post:
       consumes:

@@ -1055,12 +1055,16 @@ function compareTimestampText(left: string, right: string) {
 
 function pickFirstNonEmpty(...values: unknown[]): string {
   for (const value of values) {
-    if (typeof value !== 'string') {
+    if (typeof value === 'string') {
+      const trimmed = value.trim()
+      if (trimmed) {
+        return trimmed
+      }
       continue
     }
-    const trimmed = value.trim()
-    if (trimmed) {
-      return trimmed
+
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return String(value)
     }
   }
   return ''

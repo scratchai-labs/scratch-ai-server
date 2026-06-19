@@ -15,10 +15,10 @@ describe('createUnauthorizedHandler', () => {
       history: createMemoryHistory(),
       routes: [
         { path: '/login', component: { template: '<div>login</div>' } },
-        { path: '/dashboard', component: { template: '<div>dashboard</div>' } },
+        { path: '/classes', component: { template: '<div>classes</div>' } },
       ],
     })
-    await router.push('/dashboard')
+    await router.push('/classes')
     await router.isReady()
 
     const sessionStore = useSessionStore()

@@ -25,6 +25,7 @@ type dashboardHandler struct {
 //	@Failure		404	{object}	ErrorResponse
 //	@Failure		500	{object}	ErrorResponse
 //	@Router			/api/teacher/dashboard/assignments/{id}/live [get]
+//	@Router			/api/teacher/projects/{id}/live [get]
 func (h *dashboardHandler) handleTeacherLiveDashboard(c *gin.Context) {
 	teacherRecord := mustTeacher(c)
 	if teacherRecord.ID == 0 {

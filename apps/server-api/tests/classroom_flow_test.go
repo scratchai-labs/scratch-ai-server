@@ -59,4 +59,24 @@ func TestTeacherCanCreateStudentsAndProjectsInsideClassroom(t *testing.T) {
 	projectListRes := performAuthedJSONRequest(t, handler, teacherToken, http.MethodGet, "/api/teacher/classes/"+itoa(classroomID)+"/projects", nil)
 	require.Equal(t, http.StatusOK, projectListRes.Code)
 	requireJSONArrayLen(t, projectListRes.Body.String(), "items", 1)
+
+	detailRes := performAuthedJSONRequest(t, handler, teacherToken, http.MethodGet, "/api/teacher/projects/"+itoa(projectID), nil)
+	require.Equal(t, http.StatusOK, detailRes.Code)
+
+	analysisRes := performAuthedJSONRequest(t, handler, teacherToken, http.MethodGet, "/api/teacher/projects/"+itoa(projectID)+"/analysis", nil)
+	require.Equal(t, http.StatusOK, analysisRes.Code)
+
+	liveRes := performAuthedJSONRequest(t, handler, teacherToken, http.MethodGet, "/api/teacher/projects/"+itoa(projectID)+"/live", nil)
+	require.Equal(t, http.StatusOK, liveRes.Code)
+
+	assignAliasRes := performAuthedJSONRequest(t, handler, teacherToken, http.MethodPost, "/api/teacher/projects/"+itoa(projectID)+"/assign-students", map[string]any{
+		"studentIds": []int64{studentID},
+	})
+	require.Equal(t, http.StatusOK, assignAliasRes.Code)
+
+	publishAliasRes := performAuthedJSONRequest(t, handler, teacherToken, http.MethodPost, "/api/teacher/projects/"+itoa(projectID)+"/publish", nil)
+	require.Equal(t, http.StatusOK, publishAliasRes.Code)
+
+	archiveAliasRes := performAuthedJSONRequest(t, handler, teacherToken, http.MethodPost, "/api/teacher/projects/"+itoa(projectID)+"/archive", nil)
+	require.Equal(t, http.StatusOK, archiveAliasRes.Code)
 }

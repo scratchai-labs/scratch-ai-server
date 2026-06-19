@@ -49,7 +49,7 @@ async function handleSubmit() {
       password: form.password,
     })
 
-    feedback.value = '登录成功，正在进入看板。'
+    feedback.value = '登录成功，正在进入班级管理。'
     feedbackTone.value = 'success'
     await router.push(redirectTarget.value)
   } catch (error) {

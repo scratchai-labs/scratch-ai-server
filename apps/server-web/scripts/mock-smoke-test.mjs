@@ -134,6 +134,7 @@ async function runBrowserSmoke(baseUrl) {
       '项目概览',
       '学生当前进度与提示',
       'Ada',
+      'Alan',
       '先把绿旗事件连起来',
     ])
 

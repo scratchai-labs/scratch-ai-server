@@ -66,8 +66,7 @@ describe('ClassDetailView', () => {
     expect(wrapper.text()).toContain('student-03')
     expect(wrapper.text()).toContain('小明')
 
-    const batchInputs = wrapper.findAll('input[type="password"]')
-    await batchInputs[1]?.setValue('abc12345')
+    await wrapper.findAll('input[type="password"]')[1]?.setValue('abc12345')
     await wrapper.get('textarea').setValue('姓名\t账号\t密码\n小红\tstudent-04\t')
     await wrapper.findAll('form')[1]?.trigger('submit.prevent')
     await flushPromises()
