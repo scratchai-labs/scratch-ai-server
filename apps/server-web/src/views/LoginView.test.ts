@@ -68,6 +68,33 @@ describe('LoginView', () => {
     expect(router.currentRoute.value.fullPath).toBe('/login')
   })
 
+  it('shows deployment guidance when login fails with a network fetch error', async () => {
+    const api = {
+      login: vi.fn().mockRejectedValue(new Error('Failed to fetch')),
+    }
+    const router = createRouterForTest()
+    router.push('/login')
+    await router.isReady()
+
+    const wrapper = mount(LoginView, {
+      global: {
+        plugins: [createPinia(), router],
+        provide: {
+          [teacherApiKey as symbol]: api,
+        },
+      },
+    })
+
+    await wrapper.get('input[name="username"]').setValue('teacher')
+    await wrapper.get('input[name="password"]').setValue('teach123')
+    await wrapper.get('form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(wrapper.get('[role="alert"]').text()).toContain('无法连接到服务器')
+    expect(wrapper.get('[role="alert"]').text()).toContain('API 地址')
+    expect(wrapper.get('[role="alert"]').text()).toContain('CORS')
+  })
+
   it('shows success feedback and navigates after login succeeds', async () => {
     const api = {
       login: vi.fn().mockResolvedValue({

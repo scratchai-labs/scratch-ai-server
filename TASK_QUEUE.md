@@ -6,6 +6,7 @@
 
 ## 已完成
 
+- 2026-06-20：排查服务器部署后教师后台显示 `Failed to fetch`：确认该报错来自浏览器网络层而非后端业务返回，根因优先落在真实 API 地址不可达、`CORS_ALLOWED_ORIGINS` 未包含当前 Web 域名，或 Web/API 的 HTTPS 配置不一致；前端已补登录页回归测试，并把原始 `Failed to fetch` 收口为可执行的部署排查提示。已通过 `npm run test --workspace=@scratch-ai/server-web -- src/views/LoginView.test.ts`。
 - 2026-06-19：继续维护教师端“班级优先”链路相关对外文档：已清理中文总览、仓库结构、架构说明、服务器端开发说明、mock smoke 说明里残留的旧 `/students`、`/releases` 与“原有教学工作区”表述，统一为“班级管理 / 班级详情 / 项目详情 / 教师默认进入 `/classes`”口径。
 - 2026-06-19：维护教师端“班级优先”链路发布前收尾：补齐班级/项目别名路由 Swagger 契约与回归测试，收口教师端导航/登录文案/路由守卫测试、mock smoke 断言与 `server:api:docs` 脚本目录；完成后推送远端主分支。
 - 2026-06-19：对教师端“班级优先”链路完成一轮 4-agent 完整验收：已收口教师登录默认落点、mock/real smoke 脚本、浏览器点击与截图、README/部署/开发/API 契约文档口径，并通过 `go test ./...`、`npm run test --workspace=@scratch-ai/server-web`、`npm run server:web:smoke:mock`、`npm run server:web:smoke:real`、`VITE_SERVER_WEB_API_MODE=real VITE_SERVER_WEB_API_BASE_URL=https://api.example.com npm run build --workspace=@scratch-ai/server-web`；验收截图产物见 `.artifacts/playwright/classes-audit-2026-06-19.png`、`.artifacts/playwright/class-detail-audit-2026-06-19.png`、`.artifacts/playwright/project-detail-audit-2026-06-19.png`。
