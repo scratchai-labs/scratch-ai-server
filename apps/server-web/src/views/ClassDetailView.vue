@@ -192,7 +192,7 @@ onMounted(() => {
           </label>
           <label class="field">
             <span>粘贴 Excel 内容</span>
-            <textarea v-model="batchForm.pastedText" class="textarea" rows="8" />
+            <textarea v-model="batchForm.pastedText" class="input" rows="8" />
           </label>
           <button class="button button--primary" type="submit">批量导入学生</button>
         </form>
@@ -250,7 +250,7 @@ onMounted(() => {
         <article v-for="project in projects" :key="project.id" class="release-card">
           <div class="release-card__head">
             <div>
-              <strong>{{ project.title }}</strong>
+              <h2>{{ project.title }}</h2>
               <p>{{ project.goal }}</p>
             </div>
             <StatusBadge :tone="project.status === 'published' ? 'success' : 'warning'">

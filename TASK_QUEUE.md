@@ -6,6 +6,7 @@
 
 ## 已完成
 
+- 2026-06-20：修复教师端 `classes/3` 班级详情页样式不统一问题：确认根因是 `ClassDetailView` 偏离了现有共享样式约定，批量导入区误用了未定义的 `.textarea`，项目卡片标题使用了未被卡片标题选择器覆盖的裸 `strong`；现已统一回共享 `.input` 与 `release-card__head h2` 结构，并补页面结构回归测试。已通过 `npm run test --workspace=@scratch-ai/server-web -- src/views/ClassDetailView.test.ts`。
 - 2026-06-20：将 `server-api` 数据库初始化升级为正式自动迁移机制：新增启动即执行的版本化 schema migrations 与 `schema_migrations` 记录表，收口现有“基础建表 / 教师 role+status 补列 / classroom_id 补列回填 / assignment_analysis 扩展列 / 索引”到顺序迁移；兼容现有 `SQLite` / `Postgres` / `Neon` 老库自动升级，避免后续推代码时因缺表/缺列/索引顺序问题导致启动失败。已通过 `go test ./internal/store/memory`，并同步 README / 部署文档口径。
 - 2026-06-20：修复 `server-api` 连接旧数据库时因 `classroom_id` 缺列导致启动失败：确认根因是 schema 初始化先创建依赖 `students.classroom_id` / `assignments.classroom_id` 的索引，再执行老库补列迁移，致使旧库在启动阶段提前报 `column "classroom_id" does not exist`；现已调整为“先建表、再补列、最后建索引”，并补旧版 SQLite schema 升级回归测试。已通过 `go test ./internal/store/memory`。
 - 2026-06-20：排查服务器部署后教师后台显示 `Failed to fetch`：确认该报错来自浏览器网络层而非后端业务返回，根因优先落在真实 API 地址不可达、`CORS_ALLOWED_ORIGINS` 未包含当前 Web 域名，或 Web/API 的 HTTPS 配置不一致；前端已补登录页回归测试，并把原始 `Failed to fetch` 收口为可执行的部署排查提示。已通过 `npm run test --workspace=@scratch-ai/server-web -- src/views/LoginView.test.ts`。

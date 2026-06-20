@@ -39,6 +39,28 @@ describe('ClassDetailView', () => {
     expect(wrapper.text()).toContain('查看项目详情')
   })
 
+  it('uses the shared form and card classes for the classroom detail layout', async () => {
+    const api = createMockTeacherApiClient()
+    const router = createRouterForTest()
+    router.push('/classes/class-1')
+    await router.isReady()
+
+    const wrapper = mount(ClassDetailView, {
+      global: {
+        plugins: [createPinia(), router],
+        provide: {
+          [teacherApiKey as symbol]: api,
+        },
+      },
+    })
+
+    await flushPromises()
+
+    expect(wrapper.get('textarea.input').exists()).toBe(true)
+    expect(wrapper.find('textarea.textarea').exists()).toBe(false)
+    expect(wrapper.get('.release-card__head h2').text()).toContain('迷宫项目')
+  })
+
   it('creates classroom students and projects from the detail page', async () => {
     const file = new File(['fake-sb3'], 'maze.sb3', { type: 'application/zip' })
     const api = createMockTeacherApiClient()
