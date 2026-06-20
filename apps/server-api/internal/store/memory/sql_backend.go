@@ -22,6 +22,12 @@ type sqlBackend struct {
 	dialect string
 }
 
+type schemaMigration struct {
+	version int
+	name    string
+	apply   func(*sqlBackend) error
+}
+
 func newSQLBackend(cfg config.Config) (*sqlBackend, error) {
 	var (
 		db      *sql.DB
@@ -58,43 +64,34 @@ func newSQLBackend(cfg config.Config) (*sqlBackend, error) {
 }
 
 func (b *sqlBackend) initSchema() error {
-	statements := sqliteSchemaStatements
-	if b.dialect == "postgres" {
-		statements = postgresSchemaStatements
-	}
-
-	for _, statement := range statements {
-		if isCreateIndexStatement(statement) {
-			continue
-		}
-		if _, err := b.db.Exec(statement); err != nil {
+	if b.dialect == "sqlite" {
+		if _, err := b.db.Exec("PRAGMA foreign_keys = ON"); err != nil {
 			return err
 		}
 	}
-	if err := b.ensureTeacherColumns(); err != nil {
-		return err
-	}
-	if err := b.ensureClassroomColumns(); err != nil {
-		return err
-	}
-	if err := b.ensureAssignmentAnalysisColumns(); err != nil {
+
+	if err := b.ensureSchemaMigrationsTable(); err != nil {
 		return err
 	}
 
-	for _, statement := range statements {
-		if !isCreateIndexStatement(statement) {
+	appliedVersions, err := b.appliedMigrationVersions()
+	if err != nil {
+		return err
+	}
+
+	for _, migration := range b.schemaMigrations() {
+		if appliedVersions[migration.version] {
 			continue
 		}
-		if _, err := b.db.Exec(statement); err != nil {
+		if err := migration.apply(b); err != nil {
+			return fmt.Errorf("apply migration %03d_%s: %w", migration.version, migration.name, err)
+		}
+		if err := b.recordMigration(migration); err != nil {
 			return err
 		}
 	}
 
 	return nil
-}
-
-func isCreateIndexStatement(statement string) bool {
-	return strings.HasPrefix(strings.ToUpper(strings.TrimSpace(statement)), "CREATE INDEX")
 }
 
 func (b *sqlBackend) CreateTeacher(username string, passwordHash string) (Teacher, error) {
@@ -1424,8 +1421,7 @@ const assignmentSelectSQL = `
 	LEFT JOIN assignment_analysis aa ON aa.assignment_id = a.id
 `
 
-var sqliteSchemaStatements = []string{
-	"PRAGMA foreign_keys = ON",
+var sqliteTableStatements = []string{
 	`
 	CREATE TABLE IF NOT EXISTS teachers (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1556,6 +1552,9 @@ var sqliteSchemaStatements = []string{
 		created_at TEXT NOT NULL
 	)
 	`,
+}
+
+var sqliteIndexStatements = []string{
 	"CREATE INDEX IF NOT EXISTS idx_classrooms_teacher_id ON classrooms(teacher_id)",
 	"CREATE INDEX IF NOT EXISTS idx_students_teacher_id ON students(teacher_id)",
 	"CREATE INDEX IF NOT EXISTS idx_students_classroom_id ON students(classroom_id)",
@@ -1569,7 +1568,7 @@ var sqliteSchemaStatements = []string{
 	"CREATE INDEX IF NOT EXISTS idx_audit_logs_actor_teacher_id ON audit_logs(actor_teacher_id)",
 }
 
-var postgresSchemaStatements = []string{
+var postgresTableStatements = []string{
 	`
 	CREATE TABLE IF NOT EXISTS teachers (
 		id BIGSERIAL PRIMARY KEY,
@@ -1700,6 +1699,9 @@ var postgresSchemaStatements = []string{
 		created_at TEXT NOT NULL
 	)
 	`,
+}
+
+var postgresIndexStatements = []string{
 	"CREATE INDEX IF NOT EXISTS idx_classrooms_teacher_id ON classrooms(teacher_id)",
 	"CREATE INDEX IF NOT EXISTS idx_students_teacher_id ON students(teacher_id)",
 	"CREATE INDEX IF NOT EXISTS idx_students_classroom_id ON students(classroom_id)",
@@ -1711,6 +1713,117 @@ var postgresSchemaStatements = []string{
 	"CREATE INDEX IF NOT EXISTS idx_progress_student_assignment_id ON progress_reports(student_id, assignment_id, id DESC)",
 	"CREATE INDEX IF NOT EXISTS idx_hint_student_assignment_id ON hint_records(student_id, assignment_id, id DESC)",
 	"CREATE INDEX IF NOT EXISTS idx_audit_logs_actor_teacher_id ON audit_logs(actor_teacher_id)",
+}
+
+func (b *sqlBackend) schemaMigrations() []schemaMigration {
+	return []schemaMigration{
+		{
+			version: 1,
+			name:    "base_tables",
+			apply: func(backend *sqlBackend) error {
+				return backend.applySchemaStatements(backend.schemaTableStatements())
+			},
+		},
+		{
+			version: 2,
+			name:    "teacher_role_status_columns",
+			apply:   func(backend *sqlBackend) error { return backend.ensureTeacherColumns() },
+		},
+		{
+			version: 3,
+			name:    "classroom_columns_backfill",
+			apply:   func(backend *sqlBackend) error { return backend.ensureClassroomColumns() },
+		},
+		{
+			version: 4,
+			name:    "assignment_analysis_extended_columns",
+			apply:   func(backend *sqlBackend) error { return backend.ensureAssignmentAnalysisColumns() },
+		},
+		{
+			version: 5,
+			name:    "supporting_indexes",
+			apply: func(backend *sqlBackend) error {
+				return backend.applySchemaStatements(backend.schemaIndexStatements())
+			},
+		},
+	}
+}
+
+func (b *sqlBackend) schemaTableStatements() []string {
+	if b.dialect == "postgres" {
+		return postgresTableStatements
+	}
+	return sqliteTableStatements
+}
+
+func (b *sqlBackend) schemaIndexStatements() []string {
+	if b.dialect == "postgres" {
+		return postgresIndexStatements
+	}
+	return sqliteIndexStatements
+}
+
+func (b *sqlBackend) applySchemaStatements(statements []string) error {
+	for _, statement := range statements {
+		if _, err := b.db.Exec(statement); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (b *sqlBackend) ensureSchemaMigrationsTable() error {
+	statement := `
+	CREATE TABLE IF NOT EXISTS schema_migrations (
+		version BIGINT PRIMARY KEY,
+		name TEXT NOT NULL,
+		applied_at TEXT NOT NULL
+	)
+	`
+	if b.dialect == "sqlite" {
+		statement = `
+		CREATE TABLE IF NOT EXISTS schema_migrations (
+			version INTEGER PRIMARY KEY,
+			name TEXT NOT NULL,
+			applied_at TEXT NOT NULL
+		)
+		`
+	}
+
+	_, err := b.db.Exec(statement)
+	return err
+}
+
+func (b *sqlBackend) appliedMigrationVersions() (map[int]bool, error) {
+	rows, err := b.db.Query("SELECT version FROM schema_migrations ORDER BY version ASC")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	versions := make(map[int]bool)
+	for rows.Next() {
+		var version int
+		if err := rows.Scan(&version); err != nil {
+			return nil, err
+		}
+		versions[version] = true
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return versions, nil
+}
+
+func (b *sqlBackend) recordMigration(migration schemaMigration) error {
+	_, err := b.db.Exec(
+		b.rebind("INSERT INTO schema_migrations (version, name, applied_at) VALUES (?, ?, ?)"),
+		migration.version,
+		migration.name,
+		nowUTC(),
+	)
+	return err
 }
 
 func (b *sqlBackend) ensureAssignmentAnalysisColumns() error {
@@ -1763,11 +1876,16 @@ func (b *sqlBackend) ensureTeacherColumns() error {
 }
 
 func (b *sqlBackend) ensureClassroomColumns() error {
+	columnType := "INTEGER"
+	if b.dialect == "postgres" {
+		columnType = "BIGINT"
+	}
+
 	requiredStudentColumns := map[string]string{
-		"classroom_id": "classroom_id INTEGER NOT NULL DEFAULT 0",
+		"classroom_id": fmt.Sprintf("classroom_id %s NOT NULL DEFAULT 0", columnType),
 	}
 	requiredAssignmentColumns := map[string]string{
-		"classroom_id": "classroom_id INTEGER NOT NULL DEFAULT 0",
+		"classroom_id": fmt.Sprintf("classroom_id %s NOT NULL DEFAULT 0", columnType),
 	}
 
 	for columnName, columnDefinition := range requiredStudentColumns {

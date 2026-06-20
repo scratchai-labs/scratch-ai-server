@@ -129,6 +129,7 @@ npm run server:api:docs:check
 - 默认监听 `:8000`
 - 未配置 `DATABASE_URL` 时，默认使用本地 `SQLite`
 - 配置 `DATABASE_URL` 后，自动切到 `Postgres`
+- 服务启动时会自动执行内置 schema migrations，并把版本记录写入 `schema_migrations`；现有 `SQLite` / `Postgres` / `Neon` 老库会在启动阶段自动升级到当前代码所需结构
 - `CORS_ALLOWED_ORIGINS` 配置后，会按白名单回写 `Access-Control-Allow-Origin`
 - 默认把原始 `sb3` 保存到 `SB3_STORAGE_DIR`，未配置时使用系统临时目录下的 `scratch-ai-server-sb3`
 - 同时配置 `ADMIN_BOOTSTRAP_USERNAME` 和 `ADMIN_BOOTSTRAP_PASSWORD` 后，服务启动时会自动创建或提升一个 `admin` 账号，便于首次进入教师管理后台；管理员还可以在后台把教师账号提升或降回普通教师

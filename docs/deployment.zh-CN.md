@@ -121,6 +121,7 @@ SB3_STORAGE_DIR=/data/prod-sb3
 注意：
 
 - `GIN_MODE=release` 下，缺少 `DATABASE_URL`、`SB3_STORAGE_DIR` 或 `CORS_ALLOWED_ORIGINS`，服务会直接启动失败
+- `server-api` 启动时会自动执行内置 schema migrations；只要镜像成功启动并连上当前 `Neon DATABASE_URL`，就会自动补齐新表、缺列和索引，不需要再手工登录数据库做常规结构迁移
 - `/health` 现在会做数据库 `Ping`，数据库不通时会返回 `503`
 - `SB3_STORAGE_DIR` 必须挂到持久卷，不能放在临时容器文件系统里
 - 若配置了 `ADMIN_BOOTSTRAP_USERNAME` + `ADMIN_BOOTSTRAP_PASSWORD`，服务启动时会自动创建或提升该管理员账号，适合部署后首次进入教师管理后台

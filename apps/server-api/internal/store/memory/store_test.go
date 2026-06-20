@@ -168,6 +168,16 @@ func TestStoreInitSchemaMigratesLegacySQLiteClassroomColumnsBeforeIndexes(t *tes
 
 	require.True(t, sqliteColumnExists(t, store.sql.db, "students", "classroom_id"))
 	require.True(t, sqliteColumnExists(t, store.sql.db, "assignments", "classroom_id"))
+	require.Equal(t, []int{1, 2, 3, 4, 5}, sqliteMigrationVersions(t, store.sql.db))
+}
+
+func TestStoreInitSchemaRecordsMigrationsForFreshSQLiteDatabase(t *testing.T) {
+	store := newOpenStore(t)
+	t.Cleanup(func() {
+		_ = store.sql.db.Close()
+	})
+
+	require.Equal(t, []int{1, 2, 3, 4, 5}, sqliteMigrationVersions(t, store.sql.db))
 }
 
 func TestStoreCreateHintReturnsWriteError(t *testing.T) {
@@ -228,4 +238,22 @@ func sqliteColumnExists(t *testing.T, db *sql.DB, tableName string, columnName s
 
 	require.NoError(t, rows.Err())
 	return false
+}
+
+func sqliteMigrationVersions(t *testing.T, db *sql.DB) []int {
+	t.Helper()
+
+	rows, err := db.Query("SELECT version FROM schema_migrations ORDER BY version ASC")
+	require.NoError(t, err)
+	defer rows.Close()
+
+	versions := make([]int, 0)
+	for rows.Next() {
+		var version int
+		require.NoError(t, rows.Scan(&version))
+		versions = append(versions, version)
+	}
+
+	require.NoError(t, rows.Err())
+	return versions
 }
