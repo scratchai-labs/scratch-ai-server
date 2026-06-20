@@ -64,6 +64,9 @@ func (b *sqlBackend) initSchema() error {
 	}
 
 	for _, statement := range statements {
+		if isCreateIndexStatement(statement) {
+			continue
+		}
 		if _, err := b.db.Exec(statement); err != nil {
 			return err
 		}
@@ -74,7 +77,24 @@ func (b *sqlBackend) initSchema() error {
 	if err := b.ensureClassroomColumns(); err != nil {
 		return err
 	}
-	return b.ensureAssignmentAnalysisColumns()
+	if err := b.ensureAssignmentAnalysisColumns(); err != nil {
+		return err
+	}
+
+	for _, statement := range statements {
+		if !isCreateIndexStatement(statement) {
+			continue
+		}
+		if _, err := b.db.Exec(statement); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func isCreateIndexStatement(statement string) bool {
+	return strings.HasPrefix(strings.ToUpper(strings.TrimSpace(statement)), "CREATE INDEX")
 }
 
 func (b *sqlBackend) CreateTeacher(username string, passwordHash string) (Teacher, error) {

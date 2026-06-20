@@ -6,6 +6,7 @@
 
 ## 已完成
 
+- 2026-06-20：修复 `server-api` 连接旧数据库时因 `classroom_id` 缺列导致启动失败：确认根因是 schema 初始化先创建依赖 `students.classroom_id` / `assignments.classroom_id` 的索引，再执行老库补列迁移，致使旧库在启动阶段提前报 `column "classroom_id" does not exist`；现已调整为“先建表、再补列、最后建索引”，并补旧版 SQLite schema 升级回归测试。已通过 `go test ./internal/store/memory`。
 - 2026-06-20：排查服务器部署后教师后台显示 `Failed to fetch`：确认该报错来自浏览器网络层而非后端业务返回，根因优先落在真实 API 地址不可达、`CORS_ALLOWED_ORIGINS` 未包含当前 Web 域名，或 Web/API 的 HTTPS 配置不一致；前端已补登录页回归测试，并把原始 `Failed to fetch` 收口为可执行的部署排查提示。已通过 `npm run test --workspace=@scratch-ai/server-web -- src/views/LoginView.test.ts`。
 - 2026-06-19：继续维护教师端“班级优先”链路相关对外文档：已清理中文总览、仓库结构、架构说明、服务器端开发说明、mock smoke 说明里残留的旧 `/students`、`/releases` 与“原有教学工作区”表述，统一为“班级管理 / 班级详情 / 项目详情 / 教师默认进入 `/classes`”口径。
 - 2026-06-19：维护教师端“班级优先”链路发布前收尾：补齐班级/项目别名路由 Swagger 契约与回归测试，收口教师端导航/登录文案/路由守卫测试、mock smoke 断言与 `server:api:docs` 脚本目录；完成后推送远端主分支。
