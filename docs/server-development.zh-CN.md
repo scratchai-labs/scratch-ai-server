@@ -29,6 +29,7 @@ npm run server:api:docs
 - HTTP 框架：`Gin`
 - 默认数据库：`SQLite`
 - 可选数据库：`Postgres`（配置 `DATABASE_URL` 后启用）
+- 数据库结构迁移：服务启动时自动执行内置 schema migrations，并把已应用版本记录到 `schema_migrations`
 - `sb3` 存储：本地目录 `SB3_STORAGE_DIR`
 - AI 上游：`DeepSeek API`
 - 教师端：`Vue 3 + Vite`

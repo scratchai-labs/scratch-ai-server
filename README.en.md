@@ -65,6 +65,7 @@ Current database behavior:
 
 - local development uses `SQLite` by default
 - the server switches to `Postgres` when `DATABASE_URL` is provided
+- `server-api` runs built-in schema migrations on startup, so existing `SQLite`, `Postgres`, and `Neon` databases are upgraded automatically to the structure required by the current code
 - raw `sb3` files are stored under `SB3_STORAGE_DIR`
 
 Current integration status:

@@ -20,6 +20,7 @@
 - 架构说明：[`./architecture.zh-CN.md`](./architecture.zh-CN.md)
 - 部署指南：[`./deployment.zh-CN.md`](./deployment.zh-CN.md)
 - 服务器端开发说明：[`./server-development.zh-CN.md`](./server-development.zh-CN.md)
+- 数据库结构变更默认走 `server-api` 启动时的内置自动迁移，当前真值口径见部署指南与 `apps/server-api/README.md`
 - 教师后台 mock 浏览器验证与自动化脚本：[`./server-web-mock-smoke-test.zh-CN.md`](./server-web-mock-smoke-test.zh-CN.md)
 - 教师后台 real-mode 浏览器验证与自动化脚本：[`./server-web-real-smoke-test.zh-CN.md`](./server-web-real-smoke-test.zh-CN.md)
 - 文档维护约定：[`./maintenance.zh-CN.md`](./maintenance.zh-CN.md)

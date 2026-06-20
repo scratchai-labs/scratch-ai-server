@@ -83,6 +83,7 @@ npm run dev
 
 - 默认本地开发使用 `SQLite`
 - 配置 `DATABASE_URL` 后切到 `Postgres`
+- `server-api` 启动时会自动执行内置 schema migrations；现有 `SQLite` / `Postgres` / `Neon` 老库会自动升级到当前代码所需结构
 - `sb3` 原文件默认落到本地目录 `SB3_STORAGE_DIR`
 
 当前部署口径：
