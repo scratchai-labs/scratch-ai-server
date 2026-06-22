@@ -62,18 +62,21 @@ onMounted(() => {
 
     <p v-if="error" role="alert" class="feedback feedback--error">{{ error }}</p>
 
-    <section v-if="detail && analysis" class="panel">
+    <section class="panel">
       <div class="panel__head">
         <div>
           <h2 class="panel__title">项目概览</h2>
-          <p class="panel__meta">{{ detail.description }}</p>
+          <p class="panel__meta">{{ detail?.description || '项目概览加载完成后会显示任务说明。' }}</p>
         </div>
-        <StatusBadge :tone="detail.status === 'published' ? 'success' : 'warning'">
-          {{ detail.status }}
+        <StatusBadge
+          :tone="loading ? 'warning' : detail ? (detail.status === 'published' ? 'success' : 'warning') : 'muted'"
+        >
+          {{ detail ? detail.status : loading ? '加载中' : '空' }}
         </StatusBadge>
       </div>
 
-      <div class="table-wrap">
+      <div v-if="loading && (!detail || !analysis)" class="empty-state">正在拉取项目概览…</div>
+      <div v-else-if="detail && analysis" class="table-wrap">
         <table class="data-table">
           <tbody>
             <tr>
@@ -91,6 +94,7 @@ onMounted(() => {
           </tbody>
         </table>
       </div>
+      <div v-else class="empty-state">暂无项目概览</div>
     </section>
 
     <section class="panel">
@@ -101,9 +105,8 @@ onMounted(() => {
         </div>
       </div>
 
-      <div v-if="!live" class="empty-state">正在拉取项目实时进度…</div>
-
-      <div v-else class="table-wrap">
+      <div v-if="loading && !live" class="empty-state">正在拉取项目实时进度…</div>
+      <div v-else-if="live" class="table-wrap">
         <table class="data-table">
           <thead>
             <tr>
@@ -125,6 +128,7 @@ onMounted(() => {
           </tbody>
         </table>
       </div>
+      <div v-else class="empty-state">暂无项目实时进度</div>
     </section>
   </AppShell>
 </template>

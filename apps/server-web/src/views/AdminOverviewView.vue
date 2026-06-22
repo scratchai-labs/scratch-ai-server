@@ -51,7 +51,7 @@ onMounted(() => {
         {{ loading ? '加载中' : '数据已同步' }}
       </StatusBadge>
       <button class="button button--ghost" type="button" :disabled="loading" @click="reloadOverview">
-        刷新指标
+        刷新总览
       </button>
     </template>
 
@@ -59,34 +59,43 @@ onMounted(() => {
       {{ error }}
     </p>
 
-    <section class="metric-grid">
-      <article class="metric-card">
-        <p class="metric-card__label">管理员账号</p>
-        <strong class="metric-card__value">{{ overview.adminCount }}</strong>
-        <p class="metric-card__note">当前拥有后台权限的系统账号数量。</p>
-      </article>
+    <section class="panel">
+      <div class="panel__head">
+        <div>
+          <h2 class="panel__title">账号规模总览</h2>
+          <p class="panel__meta">先看管理员、教师和学生的当前规模，再进入具体治理页。</p>
+        </div>
+      </div>
 
-      <article class="metric-card">
-        <p class="metric-card__label">教师账号</p>
-        <strong class="metric-card__value">{{ overview.teacherCount }}</strong>
-        <p class="metric-card__note">
-          启用 {{ overview.activeTeacherCount }} · 禁用 {{ overview.disabledTeacherCount }}
-        </p>
-      </article>
+      <div class="metric-grid">
+        <article class="metric-card">
+          <p class="metric-card__label">管理员账号</p>
+          <strong class="metric-card__value">{{ overview.adminCount }}</strong>
+          <p class="metric-card__note">当前拥有后台权限的系统账号数量。</p>
+        </article>
 
-      <article class="metric-card">
-        <p class="metric-card__label">学生账号</p>
-        <strong class="metric-card__value">{{ overview.studentCount }}</strong>
-        <p class="metric-card__note">
-          启用 {{ overview.activeStudentCount }} · 禁用 {{ overview.disabledStudentCount }}
-        </p>
-      </article>
+        <article class="metric-card">
+          <p class="metric-card__label">教师账号</p>
+          <strong class="metric-card__value">{{ overview.teacherCount }}</strong>
+          <p class="metric-card__note">
+            启用 {{ overview.activeTeacherCount }} · 禁用 {{ overview.disabledTeacherCount }}
+          </p>
+        </article>
 
-      <article class="metric-card">
-        <p class="metric-card__label">禁用学生</p>
-        <strong class="metric-card__value">{{ overview.disabledStudentCount }}</strong>
-        <p class="metric-card__note">优先检查是否为已毕业、误操作或临时停用账号。</p>
-      </article>
+        <article class="metric-card">
+          <p class="metric-card__label">学生账号</p>
+          <strong class="metric-card__value">{{ overview.studentCount }}</strong>
+          <p class="metric-card__note">
+            启用 {{ overview.activeStudentCount }} · 禁用 {{ overview.disabledStudentCount }}
+          </p>
+        </article>
+
+        <article class="metric-card">
+          <p class="metric-card__label">禁用学生</p>
+          <strong class="metric-card__value">{{ overview.disabledStudentCount }}</strong>
+          <p class="metric-card__note">优先检查是否为已毕业、误操作或临时停用账号。</p>
+        </article>
+      </div>
     </section>
 
     <section class="panel">

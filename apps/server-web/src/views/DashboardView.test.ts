@@ -76,6 +76,8 @@ describe('DashboardView', () => {
 
     await flushPromises()
 
+    expect(wrapper.findAll('section.panel')).toHaveLength(2)
+    expect(wrapper.text()).toContain('课堂关键指标')
     expect(wrapper.text()).toContain('已上报学生')
     expect(wrapper.text()).toContain('1 / 2')
     expect(wrapper.text()).toContain('已上报')

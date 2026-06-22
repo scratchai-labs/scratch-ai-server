@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import AppShell from '@/components/AppShell.vue'
 import MetricCard from '@/components/MetricCard.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
@@ -11,6 +11,7 @@ import { useTeacherDirectoryStore } from '@/stores/teacherDirectory'
 const apiClient = useTeacherApiClient()
 const sessionStore = useSessionStore()
 const directoryStore = useTeacherDirectoryStore()
+const loading = ref(false)
 
 const activeStudentSummary = computed(() => {
   if (!directoryStore.students.length) {
@@ -25,10 +26,15 @@ const latestStudent = computed(() => directoryStore.students[0] ?? null)
 const latestRelease = computed(() => directoryStore.releases[0] ?? null)
 
 async function loadDashboard() {
-  await Promise.all([
-    directoryStore.loadStudents(apiClient),
-    directoryStore.loadReleases(apiClient),
-  ])
+  loading.value = true
+  try {
+    await Promise.all([
+      directoryStore.loadStudents(apiClient),
+      directoryStore.loadReleases(apiClient),
+    ])
+  } finally {
+    loading.value = false
+  }
 }
 
 onMounted(() => {
@@ -42,27 +48,36 @@ onMounted(() => {
     description="先把当天课堂中最关键的状态放在一页里，方便老师快速判断要不要进入学生或发布单页。"
   >
     <template #actions>
-      <StatusBadge tone="success">
-        {{ sessionStore.teacherName ? `欢迎 ${sessionStore.teacherName}` : '已登录' }}
+      <StatusBadge :tone="loading ? 'warning' : 'success'">
+        {{ loading ? '同步中' : sessionStore.teacherName ? `欢迎 ${sessionStore.teacherName}` : '已登录' }}
       </StatusBadge>
     </template>
 
-    <section class="metric-grid">
-      <MetricCard
-        label="在册学生"
-        :value="directoryStore.studentCount"
-        note="来自 /api/students"
-      />
-      <MetricCard
-        label="发布单"
-        :value="`${directoryStore.publishedReleaseCount} / ${directoryStore.releaseCount}`"
-        note="已发布 / 总发布单"
-      />
-      <MetricCard
-        label="已上报学生"
-        :value="activeStudentSummary"
-        note="已提交最近一次进度 / 在册学生"
-      />
+    <section class="panel">
+      <div class="panel__head">
+        <div>
+          <h2 class="panel__title">课堂关键指标</h2>
+          <p class="panel__meta">先看在册、发布与已上报数量，再进入学生或发布单详情。</p>
+        </div>
+      </div>
+
+      <div class="metric-grid">
+        <MetricCard
+          label="在册学生"
+          :value="directoryStore.studentCount"
+          note="来自 /api/students"
+        />
+        <MetricCard
+          label="发布单"
+          :value="`${directoryStore.publishedReleaseCount} / ${directoryStore.releaseCount}`"
+          note="已发布 / 总发布单"
+        />
+        <MetricCard
+          label="已上报学生"
+          :value="activeStudentSummary"
+          note="已提交最近一次进度 / 在册学生"
+        />
+      </div>
     </section>
 
     <section class="panel">
@@ -73,7 +88,17 @@ onMounted(() => {
         </div>
       </div>
 
-      <div class="card-grid">
+      <div
+        v-if="loading && !directoryStore.students.length && !directoryStore.releases.length"
+        class="empty-state"
+      >
+        正在拉取课堂最新状态…
+      </div>
+      <div v-else-if="!directoryStore.students.length && !directoryStore.releases.length" class="empty-state">
+        暂无课堂数据，先去班级管理或发布单页补一条内容。
+      </div>
+
+      <div v-else class="card-grid">
         <article class="release-card">
           <div class="release-card__head">
             <div>

@@ -56,6 +56,8 @@ describe('AdminOverviewView', () => {
     await flushPromises()
 
     expect(api.getAdminOverview).toHaveBeenCalledTimes(1)
+    expect(wrapper.findAll('section.panel')).toHaveLength(2)
+    expect(wrapper.text()).toContain('账号规模总览')
     expect(wrapper.text()).toContain('后台总览')
     expect(wrapper.text()).toContain('教师账号')
     expect(wrapper.text()).toContain('48')

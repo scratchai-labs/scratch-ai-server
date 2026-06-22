@@ -78,6 +78,13 @@ onMounted(() => {
       </button>
     </template>
 
+    <p v-if="directoryStore.error" role="alert" class="feedback feedback--error">
+      {{ directoryStore.error }}
+    </p>
+    <p v-else-if="directoryStore.feedback" role="status" class="feedback feedback--success">
+      {{ directoryStore.feedback }}
+    </p>
+
     <section class="panel">
       <div class="panel__head">
         <div>
@@ -124,14 +131,10 @@ onMounted(() => {
         </div>
       </div>
 
-      <p v-if="directoryStore.error" role="alert" class="feedback feedback--error">
-        {{ directoryStore.error }}
-      </p>
-      <p v-else-if="directoryStore.feedback" role="status" class="feedback feedback--success">
-        {{ directoryStore.feedback }}
-      </p>
-
-      <div v-if="!directoryStore.loading && !teachers.length" class="empty-state">
+      <div v-if="directoryStore.loading && !teachers.length" class="empty-state">
+        正在拉取教师账号…
+      </div>
+      <div v-else-if="!teachers.length" class="empty-state">
         暂无教师账号
       </div>
 

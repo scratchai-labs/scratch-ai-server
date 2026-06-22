@@ -89,57 +89,59 @@ async function handleSubmit() {
     <main class="auth-main">
       <div class="site-frame auth-main__frame">
         <section class="auth-card auth-card--solo">
-          <div class="stack">
+          <header class="stack">
             <h2>登录教学后台</h2>
             <p class="auth-card__description">
               {{ runtime.showMockLoginHint ? '这里先接 mock client，支持教师或管理员演示登录；切到真实环境后统一走 `/api/teacher/login`。' : '当前会直接调用真实 `/api/teacher/login`，并按账号角色进入对应后台。' }}
             </p>
+          </header>
+
+          <div class="stack">
+            <form class="form-grid" @submit.prevent="handleSubmit">
+              <label class="field">
+                <span>账号</span>
+                <input
+                  v-model="form.username"
+                  class="input"
+                  name="username"
+                  autocomplete="username"
+                  placeholder="teacher"
+                />
+              </label>
+
+              <label class="field">
+                <span>密码</span>
+                <input
+                  v-model="form.password"
+                  class="input"
+                  name="password"
+                  type="password"
+                  autocomplete="current-password"
+                  placeholder="teach123"
+                />
+              </label>
+
+              <button class="button button--primary" type="submit" :disabled="submitting">
+                {{ submitting ? '登录中…' : '登录' }}
+              </button>
+            </form>
+
+            <p v-if="runtime.showMockLoginHint" class="helper-text">
+              Mock 登录：
+              <code>teacher</code> / <code>teach123</code>
+              ·
+              <code>admin</code> / <code>admin12345</code>
+            </p>
+
+            <p
+              v-if="feedback"
+              :role="feedbackTone === 'error' ? 'alert' : 'status'"
+              class="feedback"
+              :class="`feedback--${feedbackTone}`"
+            >
+              {{ feedback }}
+            </p>
           </div>
-
-          <form class="form-grid" @submit.prevent="handleSubmit">
-            <label class="field">
-              <span>账号</span>
-              <input
-                v-model="form.username"
-                class="input"
-                name="username"
-                autocomplete="username"
-                placeholder="teacher"
-              />
-            </label>
-
-            <label class="field">
-              <span>密码</span>
-              <input
-                v-model="form.password"
-                class="input"
-                name="password"
-                type="password"
-                autocomplete="current-password"
-                placeholder="teach123"
-              />
-            </label>
-
-            <button class="button button--primary" type="submit" :disabled="submitting">
-              {{ submitting ? '登录中…' : '登录' }}
-            </button>
-          </form>
-
-          <p v-if="runtime.showMockLoginHint" class="helper-text">
-            Mock 登录：
-            <code>teacher</code> / <code>teach123</code>
-            ·
-            <code>admin</code> / <code>admin12345</code>
-          </p>
-
-          <p
-            v-if="feedback"
-            :role="feedbackTone === 'error' ? 'alert' : 'status'"
-            class="feedback"
-            :class="`feedback--${feedbackTone}`"
-          >
-            {{ feedback }}
-          </p>
         </section>
       </div>
     </main>

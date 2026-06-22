@@ -85,6 +85,10 @@ onMounted(() => {
       </button>
     </template>
 
+    <p v-if="error" role="alert" class="feedback feedback--error">
+      {{ error }}
+    </p>
+
     <section class="panel">
       <div class="panel__head">
         <div>
@@ -101,12 +105,8 @@ onMounted(() => {
             {{ actionLabel(action) }}
           </option>
         </select>
-      </label>
-    </section>
-
-    <p v-if="error" role="alert" class="feedback feedback--error">
-      {{ error }}
-    </p>
+        </label>
+      </section>
 
     <section class="panel">
       <div class="panel__head">
@@ -116,7 +116,10 @@ onMounted(() => {
         </div>
       </div>
 
-      <div v-if="!loading && !filteredLogs.length" class="empty-state">
+      <div v-if="loading && !filteredLogs.length" class="empty-state">
+        正在拉取审计日志…
+      </div>
+      <div v-else-if="!filteredLogs.length" class="empty-state">
         暂无匹配日志
       </div>
 

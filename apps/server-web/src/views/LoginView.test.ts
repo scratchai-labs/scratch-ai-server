@@ -38,6 +38,7 @@ describe('LoginView', () => {
 
     expect(wrapper.get('header.auth-header').text()).toContain('Scratch 教师后台')
     expect(wrapper.find('.auth-hero').exists()).toBe(false)
+    expect(wrapper.find('section.auth-card').exists()).toBe(true)
     expect(wrapper.get('main.auth-main').text()).toContain('登录教学后台')
     expect(wrapper.get('footer.auth-footer').text()).toContain('开发说明')
   })

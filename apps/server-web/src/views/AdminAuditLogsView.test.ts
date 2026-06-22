@@ -71,6 +71,7 @@ describe('AdminAuditLogsView', () => {
     await flushPromises()
 
     expect(api.listAdminAuditLogs).toHaveBeenCalledTimes(1)
+    expect(wrapper.findAll('section.panel')).toHaveLength(2)
     expect(wrapper.text()).toContain('操作日志')
     expect(wrapper.text()).toContain('teacher.role_change')
     expect(wrapper.text()).toContain('student.disable')

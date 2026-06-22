@@ -31,6 +31,7 @@ describe('ProjectDetailView', () => {
 
     await flushPromises()
 
+    expect(wrapper.findAll('section.panel')).toHaveLength(2)
     expect(wrapper.text()).toContain('迷宫项目')
     expect(wrapper.text()).toContain('让角色按事件响应')
     expect(wrapper.text()).toContain('分析状态')

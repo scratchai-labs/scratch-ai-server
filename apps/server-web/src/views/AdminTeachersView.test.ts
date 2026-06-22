@@ -99,6 +99,7 @@ describe('AdminTeachersView', () => {
     })
 
     await flushPromises()
+    expect(wrapper.findAll('section.panel')).toHaveLength(2)
     expect(wrapper.text()).toContain('admin')
 
     await wrapper.get('input[name="teacher-username"]').setValue('teacher-1')
@@ -178,6 +179,7 @@ describe('AdminTeachersView', () => {
 
     await flushPromises()
 
+    expect(wrapper.findAll('section.panel')).toHaveLength(2)
     expect(wrapper.text()).toContain('teacher-1')
     await wrapper.get('button[data-testid="teacher-role-2"]').trigger('click')
     await flushPromises()

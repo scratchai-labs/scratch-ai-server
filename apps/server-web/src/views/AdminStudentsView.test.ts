@@ -100,6 +100,7 @@ describe('AdminStudentsView', () => {
     })
 
     await flushPromises()
+    expect(wrapper.findAll('section.panel')).toHaveLength(2)
     expect(wrapper.text()).toContain('student-1')
     expect(wrapper.text()).toContain('teacher-1')
 

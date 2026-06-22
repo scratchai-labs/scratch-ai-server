@@ -164,6 +164,13 @@ function compareStudentsByCreatedAt(left: ManagedStudent, right: ManagedStudent)
       </button>
     </template>
 
+    <p v-if="error" role="alert" class="feedback feedback--error">
+      {{ error }}
+    </p>
+    <p v-else-if="feedback" role="status" class="feedback feedback--success">
+      {{ feedback }}
+    </p>
+
     <section class="panel">
       <div class="panel__head">
         <div>
@@ -230,14 +237,10 @@ function compareStudentsByCreatedAt(left: ManagedStudent, right: ManagedStudent)
         </div>
       </div>
 
-      <p v-if="error" role="alert" class="feedback feedback--error">
-        {{ error }}
-      </p>
-      <p v-else-if="feedback" role="status" class="feedback feedback--success">
-        {{ feedback }}
-      </p>
-
-      <div v-if="!loading && !students.length" class="empty-state">
+      <div v-if="loading && !students.length" class="empty-state">
+        正在拉取学生账号…
+      </div>
+      <div v-else-if="!students.length" class="empty-state">
         暂无学生账号
       </div>
 
