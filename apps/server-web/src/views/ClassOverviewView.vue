@@ -1,33 +1,14 @@
 <script setup lang="ts">
-import { RouterLink } from 'vue-router'
 import type { TeacherClassroomDetail } from '@/services/teacherApi'
 
 defineProps<{
   classroom: TeacherClassroomDetail | null
-  classroomId: string
+  classroomId?: string
   refreshClassroom?: () => Promise<void>
 }>()
 </script>
 
 <template>
-  <section class="quick-links">
-    <article class="quick-link-card">
-      <div class="stack">
-        <h2>学生工作区</h2>
-        <p>单个创建、批量导入和学生列表拆成独立节奏，适合老师先处理账号，再回头检查列表。</p>
-      </div>
-      <RouterLink class="button button--primary" :to="`/classes/${classroomId}/students`">进入学生页</RouterLink>
-    </article>
-
-    <article class="quick-link-card">
-      <div class="stack">
-        <h2>项目工作区</h2>
-        <p>项目标题、目标、说明和 <code>sb3</code> 上传统一放在项目页，列表与创建表单不再紧贴在一起。</p>
-      </div>
-      <RouterLink class="button button--primary" :to="`/classes/${classroomId}/projects`">进入项目页</RouterLink>
-    </article>
-  </section>
-
   <section class="section-grid section-grid--aside">
     <div class="panel">
       <div class="panel__head">

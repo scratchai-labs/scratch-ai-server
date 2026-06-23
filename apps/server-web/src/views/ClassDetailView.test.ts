@@ -55,11 +55,14 @@ describe('ClassDetailView', () => {
 
     expect(router.currentRoute.value.fullPath).toBe('/classes/class-1')
     expect(wrapper.text()).toContain('四年级一班')
-    expect(wrapper.text()).toContain('学生工作区')
-    expect(wrapper.text()).toContain('项目工作区')
+    expect(wrapper.text()).toContain('班级摘要')
+    expect(wrapper.text()).toContain('建议操作顺序')
     expect(wrapper.text()).toContain('概览')
     expect(wrapper.text()).toContain('学生')
     expect(wrapper.text()).toContain('项目')
+    const linkTexts = wrapper.findAll('a').map((node) => node.text())
+    expect(linkTexts).not.toContain('进入学生页')
+    expect(linkTexts).not.toContain('进入项目页')
   })
 
   it('creates students and batch imports from the students subpage', async () => {
