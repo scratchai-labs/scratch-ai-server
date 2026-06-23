@@ -6,6 +6,9 @@ import AdminAuditLogsView from '@/views/AdminAuditLogsView.vue'
 import AdminStudentsView from '@/views/AdminStudentsView.vue'
 import AdminTeachersView from '@/views/AdminTeachersView.vue'
 import ClassDetailView from '@/views/ClassDetailView.vue'
+import ClassOverviewView from '@/views/ClassOverviewView.vue'
+import ClassProjectsView from '@/views/ClassProjectsView.vue'
+import ClassStudentsView from '@/views/ClassStudentsView.vue'
 import ClassesView from '@/views/ClassesView.vue'
 import DashboardView from '@/views/DashboardView.vue'
 import LoginView from '@/views/LoginView.vue'
@@ -51,6 +54,23 @@ export function createTeacherRouter(pinia: Pinia) {
         meta: {
           requiresTeacher: true,
         },
+        children: [
+          {
+            path: '',
+            name: 'class-overview',
+            component: ClassOverviewView,
+          },
+          {
+            path: 'students',
+            name: 'class-students',
+            component: ClassStudentsView,
+          },
+          {
+            path: 'projects',
+            name: 'class-projects',
+            component: ClassProjectsView,
+          },
+        ],
       },
       {
         path: '/projects/:id',

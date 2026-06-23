@@ -196,13 +196,18 @@ async function runBrowserSmoke({
     await assertVisible(classCard, '新建班级卡片')
     await Promise.all([
       page.waitForURL((url) => url.pathname.startsWith('/classes/')),
-      classCard.getByRole('link', { name: '进入班级' }).click(),
+      classCard.getByRole('link', { name: '进入工作区' }).click(),
+    ])
+    await page.locator('.workspace-nav').waitFor()
+
+    await Promise.all([
+      page.waitForURL((url) => url.pathname.endsWith('/students')),
+      page.getByRole('link', { name: '学生', exact: true }).click(),
     ])
     await waitForBodyIncludes(page, [
-      '学生管理',
-      '项目管理',
+      '创建学生',
       '批量导入学生',
-      '创建项目',
+      '学生列表',
     ])
 
     const studentInputs = page.locator('input')
@@ -212,10 +217,19 @@ async function runBrowserSmoke({
     await page.getByRole('button', { name: '创建学生' }).click()
     await waitForBodyIncludes(page, [student.username, student.displayName])
 
+    await Promise.all([
+      page.waitForURL((url) => url.pathname.endsWith('/projects')),
+      page.getByRole('link', { name: '项目', exact: true }).click(),
+    ])
+    await waitForBodyIncludes(page, [
+      '创建项目',
+      '项目列表',
+    ])
+
     await page.locator('input[type="file"]').setInputFiles(sb3FilePath)
-    await studentInputs.nth(4).fill(release.title)
-    await studentInputs.nth(5).fill(release.goal)
-    await studentInputs.nth(6).fill(release.description)
+    await page.getByPlaceholder('迷宫项目').fill(release.title)
+    await page.getByPlaceholder('让角色按事件响应').fill(release.goal)
+    await page.getByPlaceholder('第一节课项目').fill(release.description)
     await page.getByRole('button', { name: '创建项目' }).click()
     await waitForBodyIncludes(page, [release.title, 'pending'])
 

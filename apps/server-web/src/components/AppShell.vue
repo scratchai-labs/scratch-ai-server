@@ -67,25 +67,27 @@ async function handleLogout() {
 <template>
   <div class="shell">
     <aside class="shell__sidebar">
-      <div class="shell__brand">
-        <div class="shell__brand-mark">S</div>
-        <div>
-          <strong>{{ session.isAdmin ? 'Scratch 管理后台' : 'Scratch 教师后台' }}</strong>
-          <p>{{ session.isAdmin ? '管理员入口 · Accounts Overview' : 'mockable API · Vue 3 + Vite' }}</p>
+      <div class="shell__sidebar-top">
+        <div class="shell__brand">
+          <div class="shell__brand-mark">S</div>
+          <div>
+            <strong>{{ session.isAdmin ? 'Scratch 管理后台' : 'Scratch 教师后台' }}</strong>
+            <p>{{ session.isAdmin ? '管理员入口 · Account operations' : '课堂工作区 · Class workspace' }}</p>
+          </div>
         </div>
-      </div>
 
-      <nav class="shell__nav">
-        <RouterLink
-          v-for="item in navigation"
-          :key="item.to"
-          :to="item.to"
-          class="shell__nav-link"
-          :class="{ 'shell__nav-link--active': isActive(item.to) }"
-        >
-          {{ item.label }}
-        </RouterLink>
-      </nav>
+        <nav class="shell__nav">
+          <RouterLink
+            v-for="item in navigation"
+            :key="item.to"
+            :to="item.to"
+            class="shell__nav-link"
+            :class="{ 'shell__nav-link--active': isActive(item.to) }"
+          >
+            {{ item.label }}
+          </RouterLink>
+        </nav>
+      </div>
 
       <div class="shell__footer">
         <p class="shell__footer-label">当前教师</p>
@@ -98,20 +100,24 @@ async function handleLogout() {
     </aside>
 
     <main class="shell__content">
-      <header class="page-header">
-        <div class="stack">
-          <p class="page-header__eyebrow">Teacher Console</p>
-          <h1 class="page-header__title">{{ title }}</h1>
-          <p v-if="description" class="page-header__description">
-            {{ description }}
-          </p>
-        </div>
-        <div class="page-header__actions">
-          <slot name="actions" />
-        </div>
-      </header>
+      <div class="shell__content-inner">
+        <header class="page-header">
+          <div class="stack">
+            <p class="page-header__eyebrow">Teacher Console</p>
+            <h1 class="page-header__title">{{ title }}</h1>
+            <p v-if="description" class="page-header__description">
+              {{ description }}
+            </p>
+          </div>
+          <div class="page-header__actions">
+            <slot name="actions" />
+          </div>
+        </header>
 
-      <slot />
+        <div class="page-content">
+          <slot />
+        </div>
+      </div>
     </main>
   </div>
 </template>

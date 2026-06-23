@@ -2,13 +2,12 @@
 
 ## 待确认
 
-- 2026-06-22：待确认：重构教师端班级流，把 `/classes/:id` 拆成班级工作区，并补齐“概览 / 学生 / 项目”子页与对应测试。
-- 2026-06-22：待确认：统一非班级流页面结构接入新的轻量设计语义，覆盖 `LoginView`、`DashboardView`、`ProjectDetailView`、`AdminOverviewView`、`AdminTeachersView`、`AdminStudentsView`、`AdminAuditLogsView` 及其测试文件，收口页头、主操作、筛选区、表格区、空状态和反馈层级。
 - 2026-06-20：待确认：调研当前主流“测试数据与正式数据”数据库方案，聚焦本地开发、测试环境、staging、production 的常见拆分方式，以及当前项目更合适的落地建议。
 - 2026-06-19：待确认：梳理当前教师端服务器流程，聚焦教师侧服务入口、核心接口链路、数据流转与当前实现边界，输出一版可对照代码的现状说明。
 
 ## 已完成
 
+- 2026-06-23：完成教师端 `server-web` 首期整站 UI 统一与班级工作区重构：共享样式与 `AppShell` 统一收口为参考 Geist 的轻量设计语义；班级详情从单长页拆成“概览 / 学生 / 项目”子页，学生创建、批量导入、学生列表与项目创建、`sb3` 上传、项目列表不再混在同一页；同步更新 mock / real smoke 脚本到新链路。已通过 `npm run test --workspace=@scratch-ai/server-web`、`VITE_SERVER_WEB_API_MODE=real VITE_SERVER_WEB_API_BASE_URL=https://api.example.com npm run build --workspace=@scratch-ai/server-web`、`npm run server:web:smoke:mock`、`npm run server:web:smoke:real`。
 - 2026-06-20：修复教师端 `classes/3` 班级详情页样式不统一问题：确认根因是 `ClassDetailView` 偏离了现有共享样式约定，批量导入区误用了未定义的 `.textarea`，项目卡片标题使用了未被卡片标题选择器覆盖的裸 `strong`；现已统一回共享 `.input` 与 `release-card__head h2` 结构，并补页面结构回归测试。已通过 `npm run test --workspace=@scratch-ai/server-web -- src/views/ClassDetailView.test.ts`。
 - 2026-06-20：将 `server-api` 数据库初始化升级为正式自动迁移机制：新增启动即执行的版本化 schema migrations 与 `schema_migrations` 记录表，收口现有“基础建表 / 教师 role+status 补列 / classroom_id 补列回填 / assignment_analysis 扩展列 / 索引”到顺序迁移；兼容现有 `SQLite` / `Postgres` / `Neon` 老库自动升级，避免后续推代码时因缺表/缺列/索引顺序问题导致启动失败。已通过 `go test ./internal/store/memory`，并同步 README / 部署文档口径。
 - 2026-06-20：修复 `server-api` 连接旧数据库时因 `classroom_id` 缺列导致启动失败：确认根因是 schema 初始化先创建依赖 `students.classroom_id` / `assignments.classroom_id` 的索引，再执行老库补列迁移，致使旧库在启动阶段提前报 `column "classroom_id" does not exist`；现已调整为“先建表、再补列、最后建索引”，并补旧版 SQLite schema 升级回归测试。已通过 `go test ./internal/store/memory`。

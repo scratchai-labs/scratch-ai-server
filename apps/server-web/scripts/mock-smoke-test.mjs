@@ -115,13 +115,28 @@ async function runBrowserSmoke(baseUrl) {
 
     await Promise.all([
       page.waitForURL((url) => url.pathname === '/classes/class-1'),
-      page.getByRole('link', { name: '进入班级' }).first().click(),
+      page.getByRole('link', { name: '进入工作区' }).first().click(),
+    ])
+    await page.locator('.workspace-nav').waitFor()
+
+    await Promise.all([
+      page.waitForURL((url) => url.pathname === '/classes/class-1/students'),
+      page.getByRole('link', { name: '学生', exact: true }).click(),
     ])
     await waitForBodyIncludes(page, [
-      '学生管理',
-      '项目管理',
       'Ada',
+      '批量导入学生',
+      '学生列表',
+    ])
+
+    await Promise.all([
+      page.waitForURL((url) => url.pathname === '/classes/class-1/projects'),
+      page.getByRole('link', { name: '项目', exact: true }).click(),
+    ])
+    await waitForBodyIncludes(page, [
       '迷宫项目',
+      '创建项目',
+      '项目列表',
       '查看项目详情',
     ])
 
