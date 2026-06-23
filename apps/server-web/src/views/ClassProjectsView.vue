@@ -34,6 +34,18 @@ function projectTone(project: TeacherRelease) {
   return project.status === 'published' ? 'success' : 'warning'
 }
 
+function projectDetailRoute(project: TeacherRelease) {
+  return {
+    name: 'project-detail',
+    params: {
+      id: project.id,
+    },
+    query: {
+      classroomId: project.classroomId || props.classroomId,
+    },
+  }
+}
+
 async function loadProjects() {
   if (!props.classroomId || !apiClient.listClassroomProjects) {
     projects.value = []
@@ -188,7 +200,7 @@ watch(() => props.classroomId, () => {
           </div>
         </dl>
 
-        <RouterLink class="button button--primary" :to="`/projects/${project.id}`">查看项目详情</RouterLink>
+        <RouterLink class="button button--primary" :to="projectDetailRoute(project)">查看项目详情</RouterLink>
       </article>
     </div>
   </section>

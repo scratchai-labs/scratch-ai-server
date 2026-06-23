@@ -742,6 +742,12 @@ button {
   border-color: rgba(21, 32, 43, 0.24);
 }
 
+.button--small {
+  min-height: 2.35rem;
+  padding: 0.58rem 0.82rem;
+  font-size: 0.88rem;
+}
+
 .shell__footer .button--ghost {
   color: rgba(255, 255, 255, 0.94);
   background: rgba(255, 255, 255, 0.08);
@@ -875,6 +881,28 @@ button {
   grid-template-columns: minmax(320px, 1fr) minmax(280px, 0.95fr);
   gap: 1rem;
   align-items: start;
+}
+
+.batch-import-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.batch-import-setup {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 260px);
+  gap: 1rem;
+  align-items: start;
+}
+
+.batch-import-setup__controls {
+  display: grid;
+  gap: 0.85rem;
+  align-content: start;
+}
+
+.batch-import-setup__download {
+  justify-self: start;
 }
 
 .batch-import-guide {
@@ -1169,6 +1197,7 @@ button {
   .metric-grid,
   .card-grid,
   .batch-import-layout,
+  .batch-import-setup,
   .section-grid--aside,
   .form-grid--two-column,
   .form-grid--four-column {

@@ -7,6 +7,7 @@
 
 ## 已完成
 
+- 2026-06-23：收口班级学生页批量导入布局与项目详情返回路径：把批量导入区改成单列表单，缩小 Excel 下载入口，并把模板下载、统一初始密码、表格粘贴说明收进同一块；项目列表进入详情时带上 `classroomId`，项目详情页补“返回班级项目”显式入口，浏览器历史回退也已复核正常。已通过 `npm run test --workspace=@scratch-ai/server-web -- src/views/ClassDetailView.test.ts src/views/ProjectDetailView.test.ts`、`npm run server:web:smoke:mock`、`npm run server:web:smoke:real`，并用 `playwright-cli` 手动点击验证 `登录 → 班级 → 学生 → 项目 → 项目详情 → 返回`。
 - 2026-06-23：收口班级工作区概览页重复入口：既然班级详情已经有 `概览 / 学生 / 项目` tabs，就移除概览页里重复的“进入学生页 / 进入项目页”按钮，只保留摘要与操作顺序说明。已通过 `npm run test --workspace=@scratch-ai/server-web -- src/views/ClassDetailView.test.ts`、`npm run test --workspace=@scratch-ai/server-web -- src/router/index.test.ts`。
 - 2026-06-23：完成教师端 `server-web` 首期整站 UI 统一与班级工作区重构：共享样式与 `AppShell` 统一收口为参考 Geist 的轻量设计语义；班级详情从单长页拆成“概览 / 学生 / 项目”子页，学生创建、批量导入、学生列表与项目创建、`sb3` 上传、项目列表不再混在同一页；同步更新 mock / real smoke 脚本到新链路。已通过 `npm run test --workspace=@scratch-ai/server-web`、`VITE_SERVER_WEB_API_MODE=real VITE_SERVER_WEB_API_BASE_URL=https://api.example.com npm run build --workspace=@scratch-ai/server-web`、`npm run server:web:smoke:mock`、`npm run server:web:smoke:real`。
 - 2026-06-20：修复教师端 `classes/3` 班级详情页样式不统一问题：确认根因是 `ClassDetailView` 偏离了现有共享样式约定，批量导入区误用了未定义的 `.textarea`，项目卡片标题使用了未被卡片标题选择器覆盖的裸 `strong`；现已统一回共享 `.input` 与 `release-card__head h2` 结构，并补页面结构回归测试。已通过 `npm run test --workspace=@scratch-ai/server-web -- src/views/ClassDetailView.test.ts`。

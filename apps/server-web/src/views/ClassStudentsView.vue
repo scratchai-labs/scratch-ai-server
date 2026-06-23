@@ -137,27 +137,45 @@ watch(() => props.classroomId, () => {
         </div>
       </div>
 
-      <div class="batch-import-layout">
-        <div class="batch-import-guide">
-          <p class="batch-import-guide__eyebrow">Batch import</p>
-          <p class="batch-import-guide__note">先下载模板，再从第 8 行开始录入，最后复制 A 到 C 列粘贴回来。</p>
-          <a class="button button--ghost" :href="studentBatchTemplate.href" :download="studentBatchTemplate.downloadName">
-            下载 Excel 模板
-          </a>
+      <form class="batch-import-form" @submit.prevent="submitBatchCreateStudents">
+        <div class="batch-import-setup">
+          <div class="batch-import-guide">
+            <p class="batch-import-guide__eyebrow">Batch import</p>
+            <p class="batch-import-guide__note">先下载模板，从第 8 行开始填写，再把已填写的 A 到 C 列整块复制回来。</p>
+          </div>
+
+          <div class="batch-import-setup__controls">
+            <a
+              class="button button--ghost button--small batch-import-setup__download"
+              :href="studentBatchTemplate.href"
+              :download="studentBatchTemplate.downloadName"
+            >
+              下载 Excel 模板
+            </a>
+
+            <label class="field">
+              <span>统一初始密码</span>
+              <input v-model="batchForm.defaultPassword" class="input" type="password" placeholder="abc12345" />
+            </label>
+          </div>
         </div>
 
-        <form class="stack" @submit.prevent="submitBatchCreateStudents">
-          <label class="field">
-            <span>统一初始密码</span>
-            <input v-model="batchForm.defaultPassword" class="input" type="password" />
-          </label>
-          <label class="field">
-            <span>粘贴 Excel 内容</span>
-            <textarea v-model="batchForm.pastedText" class="input" rows="8" />
-          </label>
-          <button class="button button--primary" type="submit">批量导入学生</button>
-        </form>
-      </div>
+        <label class="field">
+          <span>粘贴 Excel 内容</span>
+          <textarea
+            v-model="batchForm.pastedText"
+            class="input"
+            rows="7"
+            placeholder="姓名&#9;账号&#9;密码&#10;小明&#9;student-01&#9;"
+          />
+        </label>
+
+        <p class="helper-text">
+          支持直接粘贴 Excel / Numbers / WPS 表格。账号留空会自动生成，密码留空会使用上方统一初始密码。
+        </p>
+
+        <button class="button button--primary" type="submit">批量导入学生</button>
+      </form>
     </section>
   </section>
 

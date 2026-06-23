@@ -9,10 +9,16 @@ import ClassStudentsView from './ClassStudentsView.vue'
 import { createMockTeacherApiClient } from '@/services/mockTeacherApi'
 import { teacherApiKey } from '@/services/teacherApi'
 
+const StubView = { template: '<div />' }
+
 function createRouterForTest() {
   return createRouter({
     history: createMemoryHistory(),
     routes: [
+      {
+        path: '/classes',
+        component: StubView,
+      },
       {
         path: '/classes/:id',
         component: ClassDetailView,
@@ -30,6 +36,15 @@ function createRouterForTest() {
             component: ClassProjectsView,
           },
         ],
+      },
+      {
+        path: '/dashboard',
+        component: StubView,
+      },
+      {
+        path: '/projects/:id',
+        name: 'project-detail',
+        component: StubView,
       },
     ],
   })
@@ -84,6 +99,7 @@ describe('ClassDetailView', () => {
 
     expect(wrapper.text()).toContain('批量导入学生')
     expect(wrapper.get('textarea.input').exists()).toBe(true)
+    expect(wrapper.find('.batch-import-setup').exists()).toBe(true)
 
     await wrapper.get('input[placeholder="student-01"]').setValue('student-03')
     await wrapper.get('input[placeholder="小明"]').setValue('小明')
@@ -136,5 +152,6 @@ describe('ClassDetailView', () => {
     expect(wrapper.text()).toContain('追逐项目')
     expect(wrapper.text()).toContain('已创建项目 追逐项目')
     expect(wrapper.text()).toContain('pending')
+    expect(wrapper.get('a[href*="/projects/rel-"]').attributes('href')).toContain('classroomId=class-1')
   })
 })

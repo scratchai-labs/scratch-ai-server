@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
@@ -14,6 +14,12 @@ import { toErrorMessage } from '@/stores/storeUtils'
 const route = useRoute()
 const apiClient = useTeacherApiClient()
 const projectId = String(route.params.id ?? '')
+const classroomId = computed(() => {
+  const value = route.query.classroomId
+  return typeof value === 'string' ? value : ''
+})
+const returnLink = computed(() => classroomId.value ? `/classes/${classroomId.value}/projects` : '/classes')
+const returnLabel = computed(() => classroomId.value ? '返回班级项目' : '返回班级管理')
 
 const detail = ref<TeacherReleaseDetail | null>(null)
 const analysis = ref<TeacherReleaseAnalysis | null>(null)
@@ -55,9 +61,12 @@ onMounted(() => {
     description="查看班级项目分析结果、每个学生当前进度和当前提示。"
   >
     <template #actions>
-      <StatusBadge :tone="loading ? 'warning' : 'info'">
-        {{ loading ? '加载中' : `${live?.students.length ?? 0} 名学生` }}
-      </StatusBadge>
+      <div class="inline-actions">
+        <RouterLink class="button button--ghost" :to="returnLink">{{ returnLabel }}</RouterLink>
+        <StatusBadge :tone="loading ? 'warning' : 'info'">
+          {{ loading ? '加载中' : `${live?.students.length ?? 0} 名学生` }}
+        </StatusBadge>
+      </div>
     </template>
 
     <p v-if="error" role="alert" class="feedback feedback--error">{{ error }}</p>
